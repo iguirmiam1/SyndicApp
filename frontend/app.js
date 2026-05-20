@@ -1,7 +1,5 @@
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const API = 'https://syndicpro-api.onrender.com/api' || window.location.port === '3000'
-  ? '/api'
-  : (window.location.origin.includes('3000') ? '/api' : 'http://localhost:4000/api');
+const API = 'https://syndicpro-api.onrender.com/api';
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let state = {
