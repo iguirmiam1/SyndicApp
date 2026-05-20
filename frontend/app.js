@@ -1,5 +1,5 @@
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const API = window.location.hostname === 'localhost' || window.location.port === '3000'
+const API = 'https://syndicpro-api.onrender.com/api' || window.location.port === '3000'
   ? '/api'
   : (window.location.origin.includes('3000') ? '/api' : 'http://localhost:4000/api');
 
