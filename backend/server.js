@@ -4,9 +4,16 @@ const cors = require('cors');
 const path = require('path');
 const app = express();
 
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'] }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
 
 app.use('/api/auth',      require('./routes/auth'));
 app.use('/api/dashboard', require('./routes/dashboard'));
@@ -39,14 +46,20 @@ app.get('/api/reset-passwords', async (req, res) => {
       const hash = await bcrypt.hash(u.password, 10);
       await query(`UPDATE utilisateurs SET password_hash=$1 WHERE email=$2`, [hash, u.email]);
     }
-    res.json({ success: true });
+    res.json({ success: true, message: 'Mots de passe réinitialisés' });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.use((req, res) => res.status(404).json({ error: 'Route non trouvée' }));
-app.use((err, req, res, next) => { console.error(err); res.status(500).json({ error: 'Erreur interne' }); });
 
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Erreur interne serveur' });
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`✅ SyndicPro API démarrée sur http://localhost:${PORT}`));
