@@ -1,6 +1,7 @@
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-// const API = 'https://syndicapp.onrender.com/api'; //
-const API = '/api';
+const API = window.location.hostname === 'localhost' || window.location.port === '3000'
+  ? '/api'
+  : (window.location.origin.includes('3000') ? '/api' : 'http://localhost:4000/api');
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let state = {
@@ -95,34 +96,45 @@ async function initApp() {
   const initials = (state.user.prenom[0] + state.user.nom[0]).toUpperCase();
   av.textContent = initials;
   document.getElementById('user-name-top').textContent = `${state.user.prenom} ${state.user.nom}`;
-  document.getElementById('user-role-top').textContent = state.user.role === 'gestionnaire'
-    ? `Gestionnaire · ${state.user.residence_nom}` : `Copropriétaire · Lot ${state.user.lot}`;
 
-  if (state.user.role === 'gestionnaire') {
-    document.getElementById('role-switcher').style.display = 'flex';
+  if (state.user.role === 'admin') {
+    av.style.background = '#7c3aed';
+    document.getElementById('user-role-top').textContent = 'Administrateur · SyndicPro';
+    document.getElementById('role-switcher').style.display = 'none';
+  } else if (state.user.role === 'gestionnaire') {
     av.style.background = 'var(--accent)';
+    document.getElementById('user-role-top').textContent = `Gestionnaire · ${state.user.residence_nom}`;
+    document.getElementById('role-switcher').style.display = 'flex';
+  } else {
+    av.style.background = 'var(--info)';
+    document.getElementById('user-role-top').textContent = `Copropriétaire · Lot ${state.user.lot}`;
   }
 
-  state.currentRole = state.user.role ; //=== 'gestionnaire' ? 'gestionnaire' : 'resident';
+  state.currentRole = state.user.role;
   setRole(state.currentRole, true);
 }
 
 // ── ROLE SWITCH ───────────────────────────────────────────────────────────────
 function setRole(role, init = false) {
   state.currentRole = role;
-  ['resident','gestionnaire'].forEach(r => {
+  ['resident','gestionnaire','admin'].forEach(r => {
     document.getElementById('btn-' + r)?.classList.toggle('active', r === role);
-    document.getElementById('nav-' + r).style.display = r === role ? '' : 'none';
+    const nav = document.getElementById('nav-' + r);
+    if (nav) nav.style.display = r === role ? '' : 'none';
   });
   const av = document.getElementById('user-av');
-  if (role === 'gestionnaire') {
+  if (role === 'admin') {
+    av.style.background = '#7c3aed';
+    document.getElementById('user-role-top').textContent = 'Administrateur · SyndicPro';
+  } else if (role === 'gestionnaire') {
     av.style.background = 'var(--accent)';
     document.getElementById('user-role-top').textContent = `Gestionnaire · ${state.user.residence_nom}`;
   } else {
     av.style.background = 'var(--info)';
     document.getElementById('user-role-top').textContent = `Copropriétaire · Lot ${state.user.lot}`;
   }
-  showPage(role === 'resident' ? 'r-dashboard' : 'g-dashboard');
+  const firstPage = role === 'admin' ? 'a-dashboard' : role === 'gestionnaire' ? 'g-dashboard' : 'r-dashboard';
+  showPage(firstPage);
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
@@ -1039,30 +1051,10 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── BOOT ─────────────────────────────────────────────────────────────────────
+initApp();
 
-// ═══════════ ADMIN PAGES ══════════════════════════════════════════════════════
-
-function setRole(role, init = false) {
-  state.currentRole = role;
-  ['resident','gestionnaire','admin'].forEach(r => {
-    const btn = document.getElementById('btn-' + r);
-    if (btn) btn.classList.toggle('active', r === role);
-    const nav = document.getElementById('nav-' + r);
-    if (nav) nav.style.display = r === role ? '' : 'none';
-  });
-  const av = document.getElementById('user-av');
-  if (role === 'admin') {
-    av.style.background = '#7c3aed';
-    document.getElementById('user-role-top').textContent = 'Administrateur · SyndicPro';
-  } else if (role === 'gestionnaire') {
-    av.style.background = 'var(--accent)';
-    document.getElementById('user-role-top').textContent = `Gestionnaire · ${state.user.residence_nom}`;
-  } else {
-    av.style.background = 'var(--info)';
-    document.getElementById('user-role-top').textContent = `Copropriétaire · Lot ${state.user.lot}`;
-  }
-  showPage(role === 'resident' ? 'r-dashboard' : role === 'gestionnaire' ? 'g-dashboard' : 'a-dashboard');
-}
+// ═══════════ ADMIN PAGES ═════════════════════════════════════════════════════
 
 async function loadADashboard() {
   const stats = await GET('/admin/stats');
@@ -1078,12 +1070,10 @@ async function loadADashboard() {
         <div class="metric-sub">${stats.userStats.resident||0} résidents · ${stats.userStats.gestionnaire||0} syndics · ${stats.userStats.admin||0} admins</div>
       </div>
       <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-building"></i></div>
-        <div class="metric-val">${stats.totalResidences}</div>
-        <div class="metric-label">Résidences</div>
+        <div class="metric-val">${stats.totalResidences}</div><div class="metric-label">Résidences</div>
       </div>
       <div class="metric info"><div class="metric-icon"><i class="fa-solid fa-file-invoice"></i></div>
-        <div class="metric-val">${stats.totalCharges}</div>
-        <div class="metric-label">Appels de fonds</div>
+        <div class="metric-val">${stats.totalCharges}</div><div class="metric-label">Appels de fonds</div>
       </div>
       <div class="metric danger"><div class="metric-icon"><i class="fa-solid fa-wrench"></i></div>
         <div class="metric-val">${(stats.incStats.ouvert||0)+(stats.incStats.en_cours||0)}</div>
@@ -1093,15 +1083,15 @@ async function loadADashboard() {
     <div class="grid-2">
       <div class="card">
         <div class="card-hdr"><i class="fa-solid fa-users-cog"></i> Répartition par rôle</div>
-        <div class="chart-bar-wrap">
+        <div class="chart-bar-wrap" style="margin-top:.5rem">
           <div class="chart-bar-row"><div class="chart-bar-label">Résidents</div>
-            <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.min(100,((stats.userStats.resident||0)/Math.max(stats.totalUsers,1))*100)}%"><span>${stats.userStats.resident||0}</span></div></div>
+            <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.min(100,Math.round(((stats.userStats.resident||0)/Math.max(stats.totalUsers,1))*100))}%"><span>${stats.userStats.resident||0}</span></div></div>
           </div>
           <div class="chart-bar-row"><div class="chart-bar-label">Gestionnaires</div>
-            <div class="chart-bar-track"><div class="chart-bar-fill accent" style="width:${Math.min(100,((stats.userStats.gestionnaire||0)/Math.max(stats.totalUsers,1))*100)}%"><span>${stats.userStats.gestionnaire||0}</span></div></div>
+            <div class="chart-bar-track"><div class="chart-bar-fill accent" style="width:${Math.min(100,Math.round(((stats.userStats.gestionnaire||0)/Math.max(stats.totalUsers,1))*100))}%"><span>${stats.userStats.gestionnaire||0}</span></div></div>
           </div>
           <div class="chart-bar-row"><div class="chart-bar-label">Administrateurs</div>
-            <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.min(100,((stats.userStats.admin||0)/Math.max(stats.totalUsers,1))*100)}%;background:#7c3aed"><span>${stats.userStats.admin||0}</span></div></div>
+            <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.min(100,Math.round(((stats.userStats.admin||0)/Math.max(stats.totalUsers,1))*100))}%;background:#7c3aed"><span>${stats.userStats.admin||0}</span></div></div>
           </div>
         </div>
       </div>
@@ -1109,9 +1099,10 @@ async function loadADashboard() {
         <div class="card-hdr"><i class="fa-solid fa-bolt"></i> Accès rapides</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-primary" onclick="showPage('a-users')"><i class="fa-solid fa-user-plus"></i> Gérer les utilisateurs</button>
+          <button class="btn btn-ghost" onclick="showPage('a-roles')"><i class="fa-solid fa-user-shield"></i> Affecter les rôles</button>
           <button class="btn btn-ghost" onclick="showPage('a-types-charges')"><i class="fa-solid fa-tags"></i> Types de charges</button>
           <button class="btn btn-ghost" onclick="showPage('a-types-depenses')"><i class="fa-solid fa-receipt"></i> Types de dépenses</button>
-          <button class="btn btn-ghost" onclick="showPage('a-roles')"><i class="fa-solid fa-user-shield"></i> Affecter les rôles</button>
+          <button class="btn btn-ghost" onclick="showPage('a-residences')"><i class="fa-solid fa-building"></i> Résidences</button>
         </div>
       </div>
     </div>`);
@@ -1136,15 +1127,15 @@ async function loadAUsers() {
           <tr>
             <td><div style="display:flex;align-items:center;gap:8px">
               <div style="width:32px;height:32px;border-radius:8px;background:${roleColors[u.role]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${(u.prenom[0]+u.nom[0]).toUpperCase()}</div>
-              <div><strong>${u.prenom} ${u.nom}</strong></div>
+              <strong>${u.prenom} ${u.nom}</strong>
             </div></td>
-            <td><span class="pill" style="background:${roleColors[u.role]}20;color:${roleColors[u.role]}">${roleLabels[u.role]}</span></td>
+            <td><span class="pill" style="background:${roleColors[u.role]}25;color:${roleColors[u.role]};border:1px solid ${roleColors[u.role]}40">${roleLabels[u.role]}</span></td>
             <td style="color:var(--info)">${u.email}</td>
             <td>${u.lot||'—'}</td>
             <td>${u.residence_nom||'—'}</td>
             <td><div style="display:flex;gap:6px">
-              <button class="btn-icon btn-sm" title="Modifier" onclick="openUserModal(${JSON.stringify(u).replace(/"/g,'&quot;')})"><i class="fa-solid fa-edit"></i></button>
-              ${u.role !== 'admin' ? `<button class="btn-icon btn-sm" title="Supprimer" onclick="deleteUser(${u.id},'${u.prenom} ${u.nom}')" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>` : ''}
+              <button class="btn-icon btn-sm" title="Modifier" onclick='openUserModal(${JSON.stringify(u)})'><i class="fa-solid fa-edit"></i></button>
+              ${u.role!=='admin'?`<button class="btn-icon btn-sm" title="Supprimer" style="color:var(--danger)" onclick="deleteUser(${u.id},'${u.prenom} ${u.nom}')"><i class="fa-solid fa-trash"></i></button>`:''}
             </div></td>
           </tr>`).join('')}
         </tbody>
@@ -1163,24 +1154,20 @@ async function loadARoles() {
     <div class="card">
       <div class="card-hdr"><i class="fa-solid fa-user-shield"></i> Affectation des rôles</div>
       <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle actuel</th><th>Changer le rôle</th></tr></thead>
+        <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle actuel</th><th>Modifier le rôle</th></tr></thead>
         <tbody>${users.map(u => `
           <tr>
             <td><strong>${u.prenom} ${u.nom}</strong></td>
             <td>${u.email}</td>
-            <td><span class="pill" style="background:${roleColors[u.role]}20;color:${roleColors[u.role]}">${u.role}</span></td>
-            <td>
-              <div style="display:flex;gap:6px;align-items:center">
-                <select class="form-control" id="role-sel-${u.id}" style="padding:5px 8px;font-size:12px;max-width:140px">
-                  <option value="resident" ${u.role==='resident'?'selected':''}>Résident</option>
-                  <option value="gestionnaire" ${u.role==='gestionnaire'?'selected':''}>Gestionnaire</option>
-                  <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
-                </select>
-                <button class="btn btn-primary btn-sm" onclick="changeRole(${u.id})">
-                  <i class="fa-solid fa-check"></i> Appliquer
-                </button>
-              </div>
-            </td>
+            <td><span class="pill" style="background:${roleColors[u.role]}25;color:${roleColors[u.role]}">${u.role}</span></td>
+            <td><div style="display:flex;gap:6px;align-items:center">
+              <select class="form-control" id="role-sel-${u.id}" style="padding:5px 8px;font-size:12px;max-width:140px">
+                <option value="resident" ${u.role==='resident'?'selected':''}>Résident</option>
+                <option value="gestionnaire" ${u.role==='gestionnaire'?'selected':''}>Gestionnaire</option>
+                <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="changeRole(${u.id})"><i class="fa-solid fa-check"></i> Appliquer</button>
+            </div></td>
           </tr>`).join('')}
         </tbody>
       </table></div>
@@ -1198,7 +1185,6 @@ async function loadATypesCharges() {
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><i class="fa-solid fa-tags"></i> Catalogue des types de charges</div>
       <div style="overflow-x:auto"><table class="data-table">
         <thead><tr><th>Nom</th><th>Description</th><th>Résidence</th><th>Statut</th><th>Actions</th></tr></thead>
         <tbody>${data.map(t => `
@@ -1206,9 +1192,9 @@ async function loadATypesCharges() {
             <td><strong>${t.nom}</strong></td>
             <td style="color:var(--text-2)">${t.description||'—'}</td>
             <td>${t.residence_nom||'—'}</td>
-            <td>${t.actif ? '<span class="pill pill-green">Actif</span>' : '<span class="pill pill-gray">Inactif</span>'}</td>
+            <td>${t.actif?'<span class="pill pill-green">Actif</span>':'<span class="pill pill-gray">Inactif</span>'}</td>
             <td><div style="display:flex;gap:6px">
-              <button class="btn-icon btn-sm" onclick="openTypeModal('charges',${JSON.stringify(t).replace(/"/g,'&quot;')})"><i class="fa-solid fa-edit"></i></button>
+              <button class="btn-icon btn-sm" onclick='openTypeModal("charges",${JSON.stringify(t)})'><i class="fa-solid fa-edit"></i></button>
               <button class="btn-icon btn-sm" style="color:var(--danger)" onclick="deleteType('charges',${t.id},'${t.nom}')"><i class="fa-solid fa-trash"></i></button>
             </div></td>
           </tr>`).join('')}
@@ -1220,7 +1206,7 @@ async function loadATypesCharges() {
 async function loadATypesDepenses() {
   const data = await GET('/admin/types-depenses');
   if (!data) return;
-  const catColors = { personnel:'pill-blue', energie:'pill-orange', entretien:'pill-green', administratif:'pill-gray', travaux:'pill-yellow', general:'pill-gray' };
+  const catColors = {personnel:'pill-blue',energie:'pill-orange',entretien:'pill-green',administratif:'pill-gray',travaux:'pill-yellow',general:'pill-gray'};
   setPageContent('a-types-depenses', `
     <div class="page-hdr">
       <div class="page-hdr-left"><h1>Types de dépenses</h1><p>${data.length} type(s) configurés</p></div>
@@ -1229,7 +1215,6 @@ async function loadATypesDepenses() {
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><i class="fa-solid fa-receipt"></i> Catalogue des types de dépenses</div>
       <div style="overflow-x:auto"><table class="data-table">
         <thead><tr><th>Nom</th><th>Catégorie</th><th>Description</th><th>Statut</th><th>Actions</th></tr></thead>
         <tbody>${data.map(t => `
@@ -1237,9 +1222,9 @@ async function loadATypesDepenses() {
             <td><strong>${t.nom}</strong></td>
             <td><span class="pill ${catColors[t.categorie]||'pill-gray'}">${t.categorie}</span></td>
             <td style="color:var(--text-2)">${t.description||'—'}</td>
-            <td>${t.actif ? '<span class="pill pill-green">Actif</span>' : '<span class="pill pill-gray">Inactif</span>'}</td>
+            <td>${t.actif?'<span class="pill pill-green">Actif</span>':'<span class="pill pill-gray">Inactif</span>'}</td>
             <td><div style="display:flex;gap:6px">
-              <button class="btn-icon btn-sm" onclick="openTypeModal('depenses',${JSON.stringify(t).replace(/"/g,'&quot;')})"><i class="fa-solid fa-edit"></i></button>
+              <button class="btn-icon btn-sm" onclick='openTypeModal("depenses",${JSON.stringify(t)})'><i class="fa-solid fa-edit"></i></button>
               <button class="btn-icon btn-sm" style="color:var(--danger)" onclick="deleteType('depenses',${t.id},'${t.nom}')"><i class="fa-solid fa-trash"></i></button>
             </div></td>
           </tr>`).join('')}
@@ -1253,18 +1238,15 @@ async function loadAResidences() {
   if (!data) return;
   setPageContent('a-residences', `
     <div class="page-hdr">
-      <div class="page-hdr-left"><h1>Résidences</h1><p>${data.length} résidence(s) enregistrée(s)</p></div>
+      <div class="page-hdr-left"><h1>Résidences</h1><p>${data.length} résidence(s)</p></div>
     </div>
     <div class="card">
-      <div class="card-hdr"><i class="fa-solid fa-building"></i> Liste des résidences</div>
       <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Résidence</th><th>Adresse</th><th>Ville</th><th>Lots</th><th>Utilisateurs</th></tr></thead>
+        <thead><tr><th>Nom</th><th>Adresse</th><th>Ville</th><th>Lots</th><th>Utilisateurs</th></tr></thead>
         <tbody>${data.map(r => `
           <tr>
             <td><strong>${r.nom}</strong></td>
-            <td>${r.adresse}</td>
-            <td>${r.ville}</td>
-            <td>${r.nb_lots}</td>
+            <td>${r.adresse}</td><td>${r.ville}</td><td>${r.nb_lots}</td>
             <td><span class="pill pill-blue">${r.nb_utilisateurs} utilisateurs</span></td>
           </tr>`).join('')}
         </tbody>
@@ -1273,75 +1255,78 @@ async function loadAResidences() {
 }
 
 // ── ADMIN ACTIONS ─────────────────────────────────────────────────────────────
-function openUserModal(user = null) {
+function openUserModal(user) {
   const isEdit = !!user;
-  document.getElementById('modal-user-title').innerHTML = `<i class="fa-solid fa-user-${isEdit?'edit':'plus'}" style="color:var(--primary);margin-right:6px"></i> ${isEdit?'Modifier':'Nouvel'} utilisateur`;
-  document.getElementById('au-id').value = user?.id || '';
-  document.getElementById('au-prenom').value = user?.prenom || '';
-  document.getElementById('au-nom').value = user?.nom || '';
-  document.getElementById('au-email').value = user?.email || '';
+  document.getElementById('modal-user-title').innerHTML =
+    `<i class="fa-solid fa-user-${isEdit?'edit':'plus'}" style="color:var(--primary);margin-right:6px"></i> ${isEdit?'Modifier':'Nouvel'} utilisateur`;
+  document.getElementById('au-id').value = user?.id||'';
+  document.getElementById('au-prenom').value = user?.prenom||'';
+  document.getElementById('au-nom').value = user?.nom||'';
+  document.getElementById('au-email').value = user?.email||'';
   document.getElementById('au-password').value = '';
-  document.getElementById('au-role').value = user?.role || 'resident';
-  document.getElementById('au-lot').value = user?.lot || '';
-  document.getElementById('au-tantiemes').value = user?.tantiemes || '';
-  document.getElementById('au-tel').value = user?.telephone || '';
-  document.getElementById('au-pwd-hint').style.display = isEdit ? '' : 'none';
+  document.getElementById('au-role').value = user?.role||'resident';
+  document.getElementById('au-lot').value = user?.lot||'';
+  document.getElementById('au-tantiemes').value = user?.tantiemes||'';
+  document.getElementById('au-tel').value = user?.telephone||'';
+  document.getElementById('au-pwd-hint').style.display = isEdit?'':'none';
   openModal('modal-admin-user');
 }
 
 async function submitAdminUser() {
   const id = document.getElementById('au-id').value;
+  const pwd = document.getElementById('au-password').value;
   const body = {
     prenom: document.getElementById('au-prenom').value,
     nom: document.getElementById('au-nom').value,
     email: document.getElementById('au-email').value,
-    password: document.getElementById('au-password').value || undefined,
     role: document.getElementById('au-role').value,
     lot: document.getElementById('au-lot').value,
-    tantiemes: parseInt(document.getElementById('au-tantiemes').value) || 0,
+    tantiemes: parseInt(document.getElementById('au-tantiemes').value)||0,
     telephone: document.getElementById('au-tel').value,
   };
-  if (!body.prenom || !body.nom || !body.email) return showError('Champs requis manquants');
+  if (pwd) body.password = pwd;
+  if (!body.prenom||!body.nom||!body.email) return showError('Champs requis manquants');
   try {
-    if (id) { await PUT('/admin/users/' + id, body); showToast('✅ Utilisateur mis à jour'); }
+    if (id) { await PUT('/admin/users/'+id, body); showToast('✅ Utilisateur mis à jour'); }
     else { await POST('/admin/users', body); showToast('✅ Utilisateur créé'); }
     closeModal('modal-admin-user');
-    loaded.delete('a-users'); loaded.delete('a-roles');
+    ['a-users','a-roles'].forEach(p => loaded.delete(p));
     loadAUsers();
-  } catch(e) { showError(e.error || 'Erreur'); }
+  } catch(e) { showError(e.error||'Erreur'); }
 }
 
 async function deleteUser(id, nom) {
   if (!confirm(`Supprimer ${nom} ?`)) return;
   try {
-    await DEL('/admin/users/' + id);
+    await DEL('/admin/users/'+id);
     showToast('✅ Utilisateur supprimé');
-    loaded.delete('a-users'); loaded.delete('a-roles');
+    ['a-users','a-roles'].forEach(p => loaded.delete(p));
     loadAUsers();
-  } catch(e) { showError(e.error || 'Erreur'); }
+  } catch(e) { showError(e.error||'Erreur'); }
 }
 
 async function changeRole(id) {
-  const sel = document.getElementById('role-sel-' + id);
+  const sel = document.getElementById('role-sel-'+id);
   if (!sel) return;
   try {
-    await PUT('/admin/users/' + id + '/role', { role: sel.value });
+    await PUT('/admin/users/'+id+'/role', { role: sel.value });
     showToast('✅ Rôle mis à jour');
-    loaded.delete('a-users'); loaded.delete('a-roles');
+    ['a-users','a-roles'].forEach(p => loaded.delete(p));
     loadARoles();
-  } catch(e) { showError(e.error || 'Erreur'); }
+  } catch(e) { showError(e.error||'Erreur'); }
 }
 
-function openTypeModal(kind, item = null) {
-  document.getElementById('t-id').value = item?.id || '';
+function openTypeModal(kind, item) {
+  document.getElementById('t-id').value = item?.id||'';
   document.getElementById('t-kind').value = kind;
-  document.getElementById('t-nom').value = item?.nom || '';
-  document.getElementById('t-desc').value = item?.description || '';
-  document.getElementById('t-actif').checked = item?.actif ?? true;
-  document.getElementById('modal-type-title').innerHTML = `<i class="fa-solid fa-tag" style="color:var(--primary);margin-right:6px"></i> ${item?'Modifier':'Nouveau'} type de ${kind==='charges'?'charge':'dépense'}`;
+  document.getElementById('t-nom').value = item?.nom||'';
+  document.getElementById('t-desc').value = item?.description||'';
+  document.getElementById('t-actif').checked = item?.actif??true;
+  document.getElementById('modal-type-title').innerHTML =
+    `<i class="fa-solid fa-tag" style="color:var(--primary);margin-right:6px"></i> ${item?'Modifier':'Nouveau'} type de ${kind==='charges'?'charge':'dépense'}`;
   const catWrap = document.getElementById('t-cat-wrap');
-  catWrap.style.display = kind === 'depenses' ? '' : 'none';
-  if (kind === 'depenses' && item?.categorie) document.getElementById('t-cat').value = item.categorie;
+  catWrap.style.display = kind==='depenses'?'':'none';
+  if (kind==='depenses'&&item?.categorie) document.getElementById('t-cat').value = item.categorie;
   openModal('modal-type');
 }
 
@@ -1356,13 +1341,13 @@ async function submitType() {
   };
   if (!body.nom) return showError('Nom requis');
   try {
-    const endpoint = `/admin/types-${kind}`;
-    if (id) { await PUT(endpoint + '/' + id, body); showToast('✅ Type mis à jour'); }
+    const endpoint = '/admin/types-'+kind;
+    if (id) { await PUT(endpoint+'/'+id, body); showToast('✅ Type mis à jour'); }
     else { await POST(endpoint, body); showToast('✅ Type créé'); }
     closeModal('modal-type');
-    loaded.delete('a-types-' + kind);
-    kind === 'charges' ? loadATypesCharges() : loadATypesDepenses();
-  } catch(e) { showError(e.error || 'Erreur'); }
+    loaded.delete('a-types-'+kind);
+    kind==='charges' ? loadATypesCharges() : loadATypesDepenses();
+  } catch(e) { showError(e.error||'Erreur'); }
 }
 
 async function deleteType(kind, id, nom) {
@@ -1370,9 +1355,7 @@ async function deleteType(kind, id, nom) {
   try {
     await DEL(`/admin/types-${kind}/${id}`);
     showToast('✅ Type supprimé');
-    loaded.delete('a-types-' + kind);
-    kind === 'charges' ? loadATypesCharges() : loadATypesDepenses();
-  } catch(e) { showError(e.error || 'Erreur'); }
+    loaded.delete('a-types-'+kind);
+    kind==='charges' ? loadATypesCharges() : loadATypesDepenses();
+  } catch(e) { showError(e.error||'Erreur'); }
 }
-// ── BOOT ─────────────────────────────────────────────────────────────────────
-initApp();
