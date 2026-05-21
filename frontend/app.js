@@ -103,7 +103,7 @@ async function initApp() {
     av.style.background = 'var(--accent)';
   }
 
-  state.currentRole = state.user.role === 'gestionnaire' ? 'gestionnaire' : 'resident';
+  state.currentRole = state.user.role ; //=== 'gestionnaire' ? 'gestionnaire' : 'resident';
   setRole(state.currentRole, true);
 }
 
@@ -160,6 +160,12 @@ async function loadPage(id) {
       case 'g-ag':          await loadGAG(); break;
       case 'g-residents':   await loadGResidents(); break;
       case 'g-settings':    await loadGSettings(); break;
+      case 'a-dashboard':      await loadADashboard(); break;
+      case 'a-users':          await loadAUsers(); break;
+      case 'a-roles':          await loadARoles(); break;
+      case 'a-types-charges':  await loadATypesCharges(); break;
+      case 'a-types-depenses': await loadATypesDepenses(); break;
+      case 'a-residences':     await loadAResidences(); break;
     }
   } catch(e) { console.error('Page load error', id, e); }
 }
