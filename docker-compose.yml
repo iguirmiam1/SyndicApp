@@ -22,8 +22,8 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
-    container_name: syndicpro_api
+    build: .
+    container_name: syndicpro_app
     restart: unless-stopped
     depends_on:
       db:
@@ -35,22 +35,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:-changeme_super_secret_jwt_key_2026}
       BCRYPT_ROUNDS: 10
     ports:
-      - "4000:4000"
+      - "3000:4000"
     volumes:
       - ./backend:/app
       - /app/node_modules
-
-  frontend:
-    image: nginx:alpine
-    container_name: syndicpro_web
-    restart: unless-stopped
-    depends_on:
-      - backend
-    ports:
-      - "3000:80"
-    volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend:/app/public:ro
 
 volumes:
   pgdata:
