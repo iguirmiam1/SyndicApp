@@ -1,5 +1,5 @@
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const API = 'https://syndicpro-api.onrender.com/api';
+const API = 'https://syndicapp.onrender.com/api';
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let state = {
