@@ -349,40 +349,6 @@ textarea.form-control{resize:vertical;min-height:80px}
         <div class="nav-item" onclick="showPage('g-comptabilite')"><i class="fa-solid fa-file-invoice-dollar"></i> Comptabilité</div>
         <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés <span class="nav-badge" id="badge-impayes"></span></div>
       </div>
-            <!-- ADMIN NAV -->
-      <div id="nav-admin" style="display:none">
-        <div class="nav-section">
-          <div class="nav-label">Administration</div>
-          <div class="nav-item active" onclick="showPage('a-dashboard')">
-            <i class="fa-solid fa-gauge-high"></i> Dashboard admin
-          </div>
-          <div class="nav-item" onclick="showPage('a-users')">
-            <i class="fa-solid fa-users-cog"></i> Utilisateurs
-          </div>
-          <div class="nav-item" onclick="showPage('a-roles')">
-            <i class="fa-solid fa-user-shield"></i> Rôles & Accès
-          </div>
-        </div>
-        <div class="nav-section">
-          <div class="nav-label">Paramétrage</div>
-          <div class="nav-item" onclick="showPage('a-types-charges')">
-            <i class="fa-solid fa-tags"></i> Types de charges
-          </div>
-          <div class="nav-item" onclick="showPage('a-types-depenses')">
-            <i class="fa-solid fa-receipt"></i> Types de dépenses
-          </div>
-          <div class="nav-item" onclick="showPage('a-residences')">
-            <i class="fa-solid fa-building"></i> Résidences
-          </div>
-        </div>
-        <div class="nav-section">
-          <div class="nav-label">Compte</div>
-          <button class="logout-btn" onclick="doLogout()">
-            <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
-          </button>
-        </div>
-      </div>
-      
       <div class="nav-section">
         <div class="nav-label">Opérations</div>
         <div class="nav-item" onclick="showPage('g-travaux')"><i class="fa-solid fa-hammer"></i> Travaux & Entretien</div>
@@ -392,6 +358,26 @@ textarea.form-control{resize:vertical;min-height:80px}
       <div class="nav-section">
         <div class="nav-label">Configuration</div>
         <div class="nav-item" onclick="showPage('g-settings')"><i class="fa-solid fa-gear"></i> Paramètres</div>
+        <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button>
+      </div>
+    </div>
+
+    <!-- ADMIN NAV -->
+    <div id="nav-admin" style="display:none">
+      <div class="nav-section">
+        <div class="nav-label">Administration</div>
+        <div class="nav-item active" onclick="showPage('a-dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard admin</div>
+        <div class="nav-item" onclick="showPage('a-users')"><i class="fa-solid fa-users-cog"></i> Utilisateurs</div>
+        <div class="nav-item" onclick="showPage('a-roles')"><i class="fa-solid fa-user-shield"></i> Rôles & Accès</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Paramétrage</div>
+        <div class="nav-item" onclick="showPage('a-types-charges')"><i class="fa-solid fa-tags"></i> Types de charges</div>
+        <div class="nav-item" onclick="showPage('a-types-depenses')"><i class="fa-solid fa-receipt"></i> Types de dépenses</div>
+        <div class="nav-item" onclick="showPage('a-residences')"><i class="fa-solid fa-building"></i> Résidences</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Compte</div>
         <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button>
       </div>
     </div>
@@ -496,9 +482,7 @@ textarea.form-control{resize:vertical;min-height:80px}
 <button class="fab" id="fab-btn" onclick="fabAction()"><i class="fa-solid fa-plus"></i></button>
 <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toast-msg"></span></div>
 
-<script src="app.js"></script>
-
-  <!-- Modal Utilisateur Admin -->
+<!-- Modal Utilisateur Admin -->
 <div class="modal-overlay" id="modal-admin-user">
   <div class="modal">
     <div class="modal-hdr">
@@ -512,7 +496,8 @@ textarea.form-control{resize:vertical;min-height:80px}
         <div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="au-nom"></div>
       </div>
       <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="au-email" type="email"></div>
-      <div class="form-group"><label class="form-label">Mot de passe <span id="au-pwd-hint" style="color:var(--text-3);font-weight:400">(laisser vide = inchangé)</span></label>
+      <div class="form-group">
+        <label class="form-label">Mot de passe <span id="au-pwd-hint" style="color:var(--text-3);font-weight:400">(laisser vide = inchangé)</span></label>
         <input class="form-control" id="au-password" type="password" placeholder="••••••••">
       </div>
       <div class="form-row">
@@ -537,7 +522,7 @@ textarea.form-control{resize:vertical;min-height:80px}
   </div>
 </div>
 
-<!-- Modal Type Charge/Dépense -->
+<!-- Modal Type Charge / Dépense -->
 <div class="modal-overlay" id="modal-type">
   <div class="modal">
     <div class="modal-hdr">
@@ -560,7 +545,7 @@ textarea.form-control{resize:vertical;min-height:80px}
           <option value="general">Général</option>
         </select>
       </div>
-      <div class="switch-wrap" id="t-actif-wrap">
+      <div class="switch-wrap">
         <label class="switch"><input type="checkbox" id="t-actif" checked><span class="slider-sw"></span></label>
         <span class="switch-label">Actif</span>
       </div>
@@ -571,6 +556,7 @@ textarea.form-control{resize:vertical;min-height:80px}
     </div>
   </div>
 </div>
-  
+
+<script src="app.js"></script>
 </body>
 </html>
