@@ -349,6 +349,40 @@ textarea.form-control{resize:vertical;min-height:80px}
         <div class="nav-item" onclick="showPage('g-comptabilite')"><i class="fa-solid fa-file-invoice-dollar"></i> Comptabilité</div>
         <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés <span class="nav-badge" id="badge-impayes"></span></div>
       </div>
+            <!-- ADMIN NAV -->
+      <div id="nav-admin" style="display:none">
+        <div class="nav-section">
+          <div class="nav-label">Administration</div>
+          <div class="nav-item active" onclick="showPage('a-dashboard')">
+            <i class="fa-solid fa-gauge-high"></i> Dashboard admin
+          </div>
+          <div class="nav-item" onclick="showPage('a-users')">
+            <i class="fa-solid fa-users-cog"></i> Utilisateurs
+          </div>
+          <div class="nav-item" onclick="showPage('a-roles')">
+            <i class="fa-solid fa-user-shield"></i> Rôles & Accès
+          </div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Paramétrage</div>
+          <div class="nav-item" onclick="showPage('a-types-charges')">
+            <i class="fa-solid fa-tags"></i> Types de charges
+          </div>
+          <div class="nav-item" onclick="showPage('a-types-depenses')">
+            <i class="fa-solid fa-receipt"></i> Types de dépenses
+          </div>
+          <div class="nav-item" onclick="showPage('a-residences')">
+            <i class="fa-solid fa-building"></i> Résidences
+          </div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Compte</div>
+          <button class="logout-btn" onclick="doLogout()">
+            <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
+          </button>
+        </div>
+      </div>
+      
       <div class="nav-section">
         <div class="nav-label">Opérations</div>
         <div class="nav-item" onclick="showPage('g-travaux')"><i class="fa-solid fa-hammer"></i> Travaux & Entretien</div>
@@ -380,6 +414,13 @@ textarea.form-control{resize:vertical;min-height:80px}
     <div class="page" id="page-g-ag"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-g-residents"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-g-settings"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <!-- ADMIN PAGES -->
+    <div class="page" id="page-a-dashboard"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-a-users"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-a-roles"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-a-types-charges"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-a-types-depenses"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-a-residences"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
   </main>
 </div>
 
@@ -456,5 +497,80 @@ textarea.form-control{resize:vertical;min-height:80px}
 <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toast-msg"></span></div>
 
 <script src="app.js"></script>
+
+  <!-- Modal Utilisateur Admin -->
+<div class="modal-overlay" id="modal-admin-user">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="modal-user-title"><i class="fa-solid fa-user-plus" style="color:var(--primary);margin-right:6px"></i> Nouvel utilisateur</h3>
+      <button class="close-modal" onclick="closeModal('modal-admin-user')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="au-id">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Prénom</label><input class="form-control" id="au-prenom"></div>
+        <div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="au-nom"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="au-email" type="email"></div>
+      <div class="form-group"><label class="form-label">Mot de passe <span id="au-pwd-hint" style="color:var(--text-3);font-weight:400">(laisser vide = inchangé)</span></label>
+        <input class="form-control" id="au-password" type="password" placeholder="••••••••">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Rôle</label>
+          <select class="form-control" id="au-role">
+            <option value="resident">Résident</option>
+            <option value="gestionnaire">Gestionnaire</option>
+            <option value="admin">Administrateur</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Lot</label><input class="form-control" id="au-lot" placeholder="Ex: 4B"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tantièmes</label><input class="form-control" id="au-tantiemes" type="number" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="au-tel"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-admin-user')">Annuler</button>
+      <button class="btn btn-primary" onclick="submitAdminUser()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Type Charge/Dépense -->
+<div class="modal-overlay" id="modal-type">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="modal-type-title"><i class="fa-solid fa-tag" style="color:var(--primary);margin-right:6px"></i> Nouveau type</h3>
+      <button class="close-modal" onclick="closeModal('modal-type')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="t-id">
+      <input type="hidden" id="t-kind">
+      <div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="t-nom" placeholder="Nom du type"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="t-desc" placeholder="Description optionnelle..."></textarea></div>
+      <div class="form-group" id="t-cat-wrap" style="display:none">
+        <label class="form-label">Catégorie</label>
+        <select class="form-control" id="t-cat">
+          <option value="personnel">Personnel</option>
+          <option value="energie">Énergie</option>
+          <option value="entretien">Entretien</option>
+          <option value="administratif">Administratif</option>
+          <option value="travaux">Travaux</option>
+          <option value="general">Général</option>
+        </select>
+      </div>
+      <div class="switch-wrap" id="t-actif-wrap">
+        <label class="switch"><input type="checkbox" id="t-actif" checked><span class="slider-sw"></span></label>
+        <span class="switch-label">Actif</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-type')">Annuler</button>
+      <button class="btn btn-primary" onclick="submitType()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
+    </div>
+  </div>
+</div>
+  
 </body>
 </html>
