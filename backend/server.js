@@ -25,6 +25,7 @@ app.use('/api/messages',  require('./routes/messages'));
 app.use('/api/ag',        require('./routes/ag'));
 app.use('/api/settings',  require('./routes/settings'));
 app.use('/api/admin',     require('./routes/admin'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 app.get('/api/health', async (req, res) => {
   try {
