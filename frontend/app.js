@@ -79,6 +79,167 @@ function doLogout() {
 
 document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
+
+// ═══════════ PATCH À AJOUTER À LA FIN DE app.js ══════════════════════════════
+
+// ── API Notifications ─────────────────────────────────────────────────────────
+async function sendNotification(endpoint, body = {}) {
+  try {
+    const res = await POST('/notifications/' + endpoint, body);
+    if (res?.sent !== undefined)
+      showToast(`📧 ${res.sent} email(s) envoyé(s)${res.smsSent ? ' · ' + res.smsSent + ' SMS' : ''}`);
+    else if (res?.success)
+      showToast('📧 Notification envoyée avec succès !');
+    else
+      showError('Envoi échoué — vérifiez la configuration SMTP');
+    return res;
+  } catch(e) { showError(e.error || 'Erreur envoi notification'); }
+}
+
+// Tester l'email
+async function testEmail() {
+  const email = prompt('Email de test :');
+  if (!email) return;
+  await sendNotification('test', { email });
+}
+
+// Notifier un appel de fonds
+async function notifyAppelFonds(id, periode) {
+  if (!confirm(`Envoyer les notifications email+SMS pour l'appel de fonds "${periode}" ?`)) return;
+  await sendNotification('appel-fonds/' + id);
+}
+
+// Envoyer convocations AG
+async function notifyAG(id, dateAG) {
+  if (!confirm(`Envoyer les convocations pour l'AG du ${dateAG} à tous les résidents ?`)) return;
+  await sendNotification('convocation-ag/' + id);
+}
+
+// Relances impayés
+async function notifyImpayes() {
+  if (!confirm('Envoyer les rappels email+SMS à tous les résidents en impayé ?')) return;
+  await sendNotification('rappel-impayes');
+}
+
+// Email de bienvenue
+async function sendBienvenue(userId, password) {
+  await sendNotification('bienvenue/' + userId, { password });
+}
+
+// Voir le log des notifications
+async function loadGNotifications() {
+  const data = await GET('/notifications/log');
+  if (!data) return;
+
+  const typeIcon = { email:'envelope', sms:'mobile-screen' };
+  const statusColor = { sent:'pill-green', failed:'pill-red', pending:'pill-yellow' };
+
+  setPageContent('g-notifications', `
+    <div class="page-hdr">
+      <div class="page-hdr-left"><h1>Historique des notifications</h1><p>${data.length} notification(s) envoyée(s)</p></div>
+      <div class="hdr-actions">
+        <button class="btn btn-ghost btn-sm" onclick="testEmail()"><i class="fa-solid fa-flask"></i> Tester email</button>
+      </div>
+    </div>
+    <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric"><div class="metric-icon"><i class="fa-solid fa-envelope"></i></div>
+        <div class="metric-val">${data.filter(n=>n.type==='email').length}</div>
+        <div class="metric-label">Emails envoyés</div></div>
+      <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+        <div class="metric-val">${data.filter(n=>n.type==='sms').length}</div>
+        <div class="metric-label">SMS envoyés</div></div>
+      <div class="metric danger"><div class="metric-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+        <div class="metric-val">${data.filter(n=>n.status==='failed').length}</div>
+        <div class="metric-label">Échecs</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-clock-rotate-left"></i> Journal des envois</div>
+      ${data.length === 0 ? `<div class="empty-state"><i class="fa-solid fa-envelope"></i><p>Aucune notification envoyée</p></div>` : `
+      <div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Date</th><th>Type</th><th>Événement</th><th>Destinataire</th><th>Objet</th><th>Statut</th></tr></thead>
+        <tbody>${data.map(n => `
+          <tr>
+            <td style="white-space:nowrap">${new Date(n.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+            <td><span class="pill ${n.type==='email'?'pill-blue':'pill-green'}"><i class="fa-solid fa-${typeIcon[n.type]||'bell'}"></i> ${n.type}</span></td>
+            <td><span class="pill pill-gray">${n.event}</span></td>
+            <td style="font-size:12px">${n.recipient_email||'—'}</td>
+            <td style="font-size:12px;color:var(--text-2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.subject||'—'}</td>
+            <td><span class="pill ${statusColor[n.status]||'pill-gray'}">${n.status}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>`}
+    </div>`);
+}
+
+// ── Upload document ───────────────────────────────────────────────────────────
+function openUploadModal() {
+  openModal('modal-upload-doc');
+}
+
+async function submitUploadDoc() {
+  const nom = document.getElementById('udoc-nom').value.trim();
+  const categorie = document.getElementById('udoc-categorie').value;
+  const notifier = document.getElementById('udoc-notifier').checked;
+  const fichier = document.getElementById('udoc-fichier').files[0];
+
+  if (!nom) return showError('Nom du document requis');
+
+  const btn = document.getElementById('udoc-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Envoi...';
+
+  try {
+    const formData = new FormData();
+    formData.append('nom', nom);
+    formData.append('categorie', categorie);
+    formData.append('notifier_residents', notifier.toString());
+    if (fichier) formData.append('fichier', fichier);
+
+    const headers = {};
+    if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
+
+    const res = await fetch(API + '/documents', {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) { const e = await res.json(); throw e; }
+
+    showToast('✅ Document ajouté' + (notifier ? ' · Résidents notifiés' : ''));
+    closeModal('modal-upload-doc');
+    loaded.delete('r-documents');
+    loaded.delete('g-notifications');
+    if (state.currentPage === 'r-documents') loadRDocuments();
+    document.getElementById('udoc-nom').value = '';
+    document.getElementById('udoc-fichier').value = '';
+  } catch(e) {
+    showError(e.error || 'Erreur upload');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Publier';
+  }
+}
+
+// ── Helpers UI upload ─────────────────────────────────────────────────────────
+function updateZoneLabel() {
+  const f = document.getElementById('udoc-fichier')?.files[0];
+  const label = document.getElementById('upload-zone-label');
+  if (label) label.textContent = f ? `✅ ${f.name} (${Math.round(f.size/1024)} Ko)` : 'Cliquer ou glisser-déposer';
+}
+
+async function submitManualNotif() {
+  const type = document.getElementById('notif-type').value;
+  const email = document.getElementById('notif-email').value;
+  closeModal('modal-notif-manual');
+  if (type === 'test') await sendNotification('test', { email });
+  else if (type === 'rappel-impayes') await notifyImpayes();
+}
+
+// ── Patches loadPage ──────────────────────────────────────────────────────────
+// Ajouter dans le switch de loadPage :
+// case 'g-notifications': await loadGNotifications(); break;
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 async function initApp() {
   if (!state.token) return;
@@ -176,6 +337,7 @@ async function loadPage(id) {
       case 'a-types-charges':  await loadATypesCharges(); break;
       case 'a-types-depenses': await loadATypesDepenses(); break;
       case 'a-residences':     await loadAResidences(); break;
+      case 'g-notifications': await loadGNotifications(); break;
     }
   } catch(e) { console.error('Page load error', id, e); }
 }
