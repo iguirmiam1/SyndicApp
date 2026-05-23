@@ -72,7 +72,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 /* ── LAYOUT ── */
 #layout{display:flex;padding-top:var(--header-h);min-height:100vh}
-#sidebar{position:fixed;top:var(--header-h);left:0;width:var(--sidebar-w);height:calc(100vh - var(--header-h));background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:100;transition:transform .3s ease;padding:.75rem 0 2rem}
+#sidebar{position:fixed;top:var(--header-h);left:0;width:var(--sidebar-w);height:calc(100vh - var(--header-h));background:var(--surface);border-right:1px solid var(--border);z-index:100;transition:transform .3s ease;display:flex;flex-direction:column}.nav-scroll{flex:1;overflow-y:auto;padding:.75rem 0 .5rem}.sidebar-footer{padding:.75rem 1.25rem 1rem;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
 #sidebar.closed{transform:translateX(-100%)}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;backdrop-filter:blur(2px)}
 .sidebar-overlay.show{display:block}
@@ -347,82 +347,92 @@ textarea.form-control{resize:vertical;min-height:75px}
   <nav id="sidebar">
     <!-- RÉSIDENT -->
     <div id="nav-resident" style="display:none">
-      <div class="nav-section">
-        <div class="nav-label">Mon espace</div>
-        <div class="nav-item" onclick="showPage('r-dashboard')"><i class="fa-solid fa-chart-pie"></i> Tableau de bord</div>
-        <div class="nav-item" onclick="showPage('r-finances')"><i class="fa-solid fa-wallet"></i> Finances & Paiements</div>
-        <div class="nav-item" onclick="showPage('r-incidents')"><i class="fa-solid fa-wrench"></i> Mes réclamations <span class="nav-badge" id="badge-incidents" style="display:none">!</span></div>
+      <div class="nav-scroll">
+        <div class="nav-section">
+          <div class="nav-label">Mon espace</div>
+          <div class="nav-item" onclick="showPage('r-dashboard')"><i class="fa-solid fa-chart-pie"></i> Tableau de bord</div>
+          <div class="nav-item" onclick="showPage('r-finances')"><i class="fa-solid fa-wallet"></i> Finances & Paiements</div>
+          <div class="nav-item" onclick="showPage('r-incidents')"><i class="fa-solid fa-wrench"></i> Mes réclamations <span class="nav-badge" id="badge-incidents" style="display:none">!</span></div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Copropriété</div>
+          <div class="nav-item" onclick="showPage('r-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
+          <div class="nav-item" onclick="showPage('r-messagerie')"><i class="fa-solid fa-comments"></i> Messagerie</div>
+          <div class="nav-item" onclick="showPage('r-ag')"><i class="fa-solid fa-users"></i> Assemblées Générales</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Compte</div>
+          <div class="nav-item" onclick="showPage('r-profil')"><i class="fa-solid fa-user-circle"></i> Mon profil</div>
+        </div>
       </div>
-      <div class="nav-section">
-        <div class="nav-label">Copropriété</div>
-        <div class="nav-item" onclick="showPage('r-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
-        <div class="nav-item" onclick="showPage('r-messagerie')"><i class="fa-solid fa-comments"></i> Messagerie</div>
-        <div class="nav-item" onclick="showPage('r-ag')"><i class="fa-solid fa-users"></i> Assemblées Générales</div>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label">Compte</div>
-        <div class="nav-item" onclick="showPage('r-profil')"><i class="fa-solid fa-user-circle"></i> Mon profil</div>
+      <div class="sidebar-footer">
         <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button>
       </div>
     </div>
     <!-- GESTIONNAIRE -->
     <div id="nav-gestionnaire" style="display:none">
-      <div class="nav-section">
-        <div class="nav-label">Gestion</div>
-        <div class="nav-item" onclick="showPage('g-dashboard')"><i class="fa-solid fa-chart-line"></i> Vue d'ensemble</div>
-        <div class="nav-item" onclick="showPage('g-comptabilite')"><i class="fa-solid fa-file-invoice-dollar"></i> Comptabilité</div>
-        <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés <span class="nav-badge" id="badge-impayes" style="display:none"></span></div>
+      <div class="nav-scroll">
+        <div class="nav-section">
+          <div class="nav-label">Gestion</div>
+          <div class="nav-item" onclick="showPage('g-dashboard')"><i class="fa-solid fa-chart-line"></i> Vue d'ensemble</div>
+          <div class="nav-item" onclick="showPage('g-comptabilite')"><i class="fa-solid fa-file-invoice-dollar"></i> Comptabilité</div>
+          <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés <span class="nav-badge" id="badge-impayes" style="display:none"></span></div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Opérations</div>
+          <div class="nav-item" onclick="showPage('g-travaux')"><i class="fa-solid fa-hammer"></i> Travaux & Entretien</div>
+          <div class="nav-item" onclick="showPage('g-ag')"><i class="fa-solid fa-presentation-screen"></i> Tenue des AG</div>
+          <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
+          <div class="nav-item" onclick="showPage('g-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Communications</div>
+          <div class="nav-item" onclick="showPage('g-notifications')"><i class="fa-solid fa-paper-plane"></i> Notifications</div>
+          <div class="nav-item" onclick="showPage('g-agenda')"><i class="fa-solid fa-calendar-check"></i> Agenda auto.</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Configuration</div>
+          <div class="nav-item" onclick="showPage('g-settings')"><i class="fa-solid fa-gear"></i> Paramètres</div>
+        </div>
       </div>
-      <div class="nav-section">
-        <div class="nav-label">Opérations</div>
-        <div class="nav-item" onclick="showPage('g-travaux')"><i class="fa-solid fa-hammer"></i> Travaux & Entretien</div>
-        <div class="nav-item" onclick="showPage('g-ag')"><i class="fa-solid fa-presentation-screen"></i> Tenue des AG</div>
-        <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label">Communications</div>
-        <div class="nav-item" onclick="showPage('g-documents')"><i class="fa-solid fa-folder-open"></i> Documents </div>
-        <div class="nav-item" onclick="showPage('g-notifications')">
-        <div class="nav-item" onclick="showPage('g-agenda')"><i class="fa-solid fa-calendar-check"></i> Agenda auto.</div>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label">Configuration</div>
-        <div class="nav-item" onclick="showPage('g-settings')"><i class="fa-solid fa-gear"></i> Paramètres</div>
+      <div class="sidebar-footer">
         <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button>
       </div>
     </div>
     <!-- ADMIN -->
     <div id="nav-admin" style="display:none">
-      <div class="nav-section">
-        <div class="nav-label">Administration</div>
-        <div class="nav-item" onclick="showPage('a-dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard</div>
-        <div class="nav-item" onclick="showPage('a-users')"><i class="fa-solid fa-users-cog"></i> Utilisateurs</div>
-        <div class="nav-item" onclick="showPage('a-roles')"><i class="fa-solid fa-user-shield"></i> Rôles & Accès</div>
+      <div class="nav-scroll">
+        <div class="nav-section">
+          <div class="nav-label">Administration</div>
+          <div class="nav-item" onclick="showPage('a-dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard</div>
+          <div class="nav-item" onclick="showPage('a-users')"><i class="fa-solid fa-users-cog"></i> Utilisateurs</div>
+          <div class="nav-item" onclick="showPage('a-roles')"><i class="fa-solid fa-user-shield"></i> Rôles & Accès</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Paramétrage</div>
+          <div class="nav-item" onclick="showPage('a-types-charges')"><i class="fa-solid fa-tags"></i> Types de charges</div>
+          <div class="nav-item" onclick="showPage('a-types-depenses')"><i class="fa-solid fa-receipt"></i> Types de dépenses</div>
+          <div class="nav-item" onclick="showPage('a-types-reclamations')"><i class="fa-solid fa-triangle-exclamation"></i> Types de réclamations</div>
+          <div class="nav-item" onclick="showPage('a-residences')"><i class="fa-solid fa-building"></i> Résidences</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Gestion syndic</div>
+          <div class="nav-item" onclick="showPage('g-dashboard')"><i class="fa-solid fa-chart-line"></i> Vue d'ensemble</div>
+          <div class="nav-item" onclick="showPage('g-comptabilite')"><i class="fa-solid fa-file-invoice-dollar"></i> Comptabilité</div>
+          <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés</div>
+          <div class="nav-item" onclick="showPage('g-travaux')"><i class="fa-solid fa-hammer"></i> Travaux & Entretien</div>
+          <div class="nav-item" onclick="showPage('g-ag')"><i class="fa-solid fa-presentation-screen"></i> Tenue des AG</div>
+          <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
+          <div class="nav-item" onclick="showPage('g-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Monitoring</div>
+          <div class="nav-item" onclick="showPage('g-notifications')"><i class="fa-solid fa-paper-plane"></i> Notifications</div>
+          <div class="nav-item" onclick="showPage('a-notifications-log')"><i class="fa-solid fa-bell"></i> Log notifications</div>
+          <div class="nav-item" onclick="showPage('a-agenda')"><i class="fa-solid fa-calendar-check"></i> Agenda global</div>
+        </div>
       </div>
-      <div class="nav-section">
-        <div class="nav-label">Paramétrage</div>
-        <div class="nav-item" onclick="showPage('a-types-charges')"><i class="fa-solid fa-tags"></i> Types de charges</div>
-        <div class="nav-item" onclick="showPage('a-types-depenses')"><i class="fa-solid fa-receipt"></i> Types de dépenses</div>
-        <div class="nav-item" onclick="showPage('a-types-reclamations')"><i class="fa-solid fa-triangle-exclamation"></i> Types de réclamations</div>
-        <div class="nav-item" onclick="showPage('a-residences')"><i class="fa-solid fa-building"></i> Résidences</div>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label">Gestion syndic</div>
-        <div class="nav-item" onclick="showPage('g-dashboard')"><i class="fa-solid fa-chart-line"></i> Vue d'ensemble</div>
-        <div class="nav-item" onclick="showPage('g-comptabilite')"><i class="fa-solid fa-file-invoice-dollar"></i> Comptabilité</div>
-        <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés</div>
-        <div class="nav-item" onclick="showPage('g-travaux')"><i class="fa-solid fa-hammer"></i> Travaux & Entretien</div>
-        <div class="nav-item" onclick="showPage('g-ag')"><i class="fa-solid fa-presentation-screen"></i> Tenue des AG</div>
-        <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
-        <div class="nav-item" onclick="showPage('g-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label">Monitoring</div>
-        <div class="nav-item" onclick="showPage('g-notifications')"><i class="fa-solid fa-paper-plane"></i> Notifications</div>
-        <div class="nav-item" onclick="showPage('a-notifications-log')"><i class="fa-solid fa-bell"></i> Log notifications</div>
-        <div class="nav-item" onclick="showPage('a-agenda')"><i class="fa-solid fa-calendar-check"></i> Agenda global</div>
-      </div>
-      <div class="nav-section">
+      <div class="sidebar-footer">
         <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button>
       </div>
     </div>
