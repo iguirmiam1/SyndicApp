@@ -78,24 +78,25 @@ async function initApp(){
   document.getElementById('user-name-top').textContent=`${u.prenom} ${u.nom}`;
 
   // ── Isolation stricte par rôle ─────────────────────────
-  document.getElementById('nav-resident').style.display='none';
-  document.getElementById('nav-gestionnaire').style.display='none';
-  document.getElementById('nav-admin').style.display='none';
+  ['nav-resident','nav-gestionnaire','nav-admin'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.cssText='display:none';
+  });
 
   if(u.role==='admin'){
     document.getElementById('user-av').style.background='var(--violet)';
     document.getElementById('user-role-top').textContent='Administrateur';
-    document.getElementById('nav-admin').style.display='';
+    document.getElementById('nav-admin').style.cssText='display:block';
     showPage('a-dashboard');
   } else if(u.role==='gestionnaire'){
     document.getElementById('user-av').style.background='var(--accent)';
     document.getElementById('user-role-top').textContent='Gestionnaire · Syndic';
-    document.getElementById('nav-gestionnaire').style.display='';
+    document.getElementById('nav-gestionnaire').style.cssText='display:block';
     showPage('g-dashboard');
   } else {
     document.getElementById('user-av').style.background='var(--info)';
     document.getElementById('user-role-top').textContent=`Copropriétaire · Lot ${u.lot||'—'}`;
-    document.getElementById('nav-resident').style.display='';
+    document.getElementById('nav-resident').style.cssText='display:block';
     showPage('r-dashboard');
   }
 }
