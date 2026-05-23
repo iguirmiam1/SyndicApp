@@ -407,7 +407,18 @@ textarea.form-control{resize:vertical;min-height:75px}
         <div class="nav-item" onclick="showPage('a-residences')"><i class="fa-solid fa-building"></i> Résidences</div>
       </div>
       <div class="nav-section">
+        <div class="nav-label">Gestion syndic</div>
+        <div class="nav-item" onclick="showPage('g-dashboard')"><i class="fa-solid fa-chart-line"></i> Vue d'ensemble</div>
+        <div class="nav-item" onclick="showPage('g-comptabilite')"><i class="fa-solid fa-file-invoice-dollar"></i> Comptabilité</div>
+        <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés</div>
+        <div class="nav-item" onclick="showPage('g-travaux')"><i class="fa-solid fa-hammer"></i> Travaux & Entretien</div>
+        <div class="nav-item" onclick="showPage('g-ag')"><i class="fa-solid fa-presentation-screen"></i> Tenue des AG</div>
+        <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
+        <div class="nav-item" onclick="showPage('g-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
+      </div>
+      <div class="nav-section">
         <div class="nav-label">Monitoring</div>
+        <div class="nav-item" onclick="showPage('g-notifications')"><i class="fa-solid fa-paper-plane"></i> Notifications</div>
         <div class="nav-item" onclick="showPage('a-notifications-log')"><i class="fa-solid fa-bell"></i> Log notifications</div>
         <div class="nav-item" onclick="showPage('a-agenda')"><i class="fa-solid fa-calendar-check"></i> Agenda global</div>
       </div>
@@ -670,6 +681,60 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="switch-wrap"><label class="switch"><input type="checkbox" id="t-actif" checked><span class="slider-sw"></span></label><span class="switch-label">Actif</span></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-type')">Annuler</button><button class="btn btn-primary" onclick="submitType()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- Modal Intervention Gestionnaire -->
+<div class="modal-overlay" id="modal-intervention">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="modal-intv-title"><i class="fa-solid fa-hard-hat" style="color:var(--primary)"></i> Nouvelle intervention</h3>
+      <button class="close-modal" onclick="closeModal('modal-intervention');document.getElementById('intv-id').value=''"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="intv-id">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Type d'intervention</label>
+          <select class="form-control" id="intv-type">
+            <option>Plomberie</option><option>Ascenseur</option><option>Électricité</option>
+            <option>Parties communes</option><option>Sécurité</option><option>Peinture</option>
+            <option>Jardinage</option><option>Toiture</option><option>Nuisances</option><option>Autre</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Urgence</label>
+          <select class="form-control" id="intv-urgence">
+            <option value="normal">🟡 Normal</option>
+            <option value="urgent">🟠 Urgent</option>
+            <option value="tres_urgent">🔴 Très urgent</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Localisation précise</label>
+        <input class="form-control" id="intv-loc" placeholder="Ex: Couloir 3e étage, Parking B2, Toit terrasse…">
+      </div>
+      <div class="form-group"><label class="form-label">Description</label>
+        <textarea class="form-control" id="intv-desc" placeholder="Décrivez l'intervention à réaliser…" style="min-height:75px"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Prestataire / Entreprise</label>
+          <input class="form-control" id="intv-prestataire" placeholder="Ex: Plomberie Dupont…">
+        </div>
+        <div class="form-group"><label class="form-label">Coût estimé (MAD)</label>
+          <input class="form-control" id="intv-cout" type="number" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Statut</label>
+        <select class="form-control" id="intv-statut">
+          <option value="ouvert">Ouvert — à traiter</option>
+          <option value="en_cours">En cours — traitement en cours</option>
+          <option value="resolu">Résolu</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-intervention');document.getElementById('intv-id').value=''">Annuler</button>
+      <button class="btn btn-primary" onclick="submitIntervention()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
+    </div>
   </div>
 </div>
 
