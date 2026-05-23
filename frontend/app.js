@@ -105,7 +105,7 @@ function showPage(id){
   // Vérification de sécurité : rôle vs page
   const role=state.user?.role||'resident';
   if(id.startsWith('a-')&&role!=='admin')return;
-  if(id.startsWith('g-')&&role!=='gestionnaire')return;
+  if(id.startsWith('g-')&&role!=='gestionnaire'&&role!=='admin')return;
   if(id.startsWith('r-')&&role==='admin')return;
 
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -495,33 +495,95 @@ async function loadGTravaux(){
   const data=await GET('/incidents'); if(!data)return;
   const actifs=data.filter(i=>i.statut==='ouvert'||i.statut==='en_cours');
   const resolus=data.filter(i=>i.statut==='resolu').slice(0,5);
+  const urgIcon={normal:'🟡',urgent:'🟠',tres_urgent:'🔴'};
   setPageContent('g-travaux',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Travaux & Entretien</h1><p>${actifs.length} active(s)</p></div>
-      <div class="hdr-actions"><button class="btn btn-primary" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Nouvelle intervention</button></div>
+    <div class="page-hdr">
+      <div class="page-hdr-left"><h1>Travaux & Entretien</h1><p>${actifs.length} intervention(s) en cours</p></div>
+      <div class="hdr-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openModal('modal-intervention')"><i class="fa-solid fa-hard-hat"></i> Intervention prestataire</button>
+        <button class="btn btn-primary" onclick="openModal('modal-intervention')"><i class="fa-solid fa-plus"></i> Ajouter</button>
+      </div>
     </div>
-    <div class="card"><div class="card-hdr"><i class="fa-solid fa-hard-hat"></i> Interventions en cours</div>
-      ${actifs.length?`<div class="incident-list">${actifs.map(i=>`
-        <div class="incident-card">
-          <div class="inc-icon inc-${i.statut==='ouvert'?'red':'orange'}"><i class="fa-solid fa-wrench"></i></div>
-          <div class="incident-body"><div class="incident-title">${i.type} — ${i.localisation||''}</div>
-          <div class="incident-sub">${i.prenom||''} ${i.nom||''} ${i.lot?'(Lot '+i.lot+')':''} · ${fmtDate(i.created_at)}</div>
-          ${i.prestataire?`<div class="incident-sub" style="color:var(--primary)">Prestataire : ${i.prestataire}</div>`:''}
-          </div>
-          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
-            ${statusPill(i.statut)}
-            <button class="btn btn-ghost btn-xs" onclick="resolveIncident(${i.id})"><i class="fa-solid fa-check"></i> Résoudre</button>
-          </div>
-        </div>`).join('')}</div>`:`<div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>Aucune intervention</p></div>`}
+    <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric danger"><div class="metric-icon"><i class="fa-solid fa-circle-dot"></i></div><div class="metric-val">${actifs.filter(i=>i.statut==='ouvert').length}</div><div class="metric-label">Nouveaux signalements</div></div>
+      <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-person-digging"></i></div><div class="metric-val">${actifs.filter(i=>i.statut==='en_cours').length}</div><div class="metric-label">En cours de traitement</div></div>
+      <div class="metric"><div class="metric-icon"><i class="fa-solid fa-circle-check"></i></div><div class="metric-val">${resolus.length}</div><div class="metric-label">Résolus récemment</div></div>
     </div>
-    ${resolus.length?`<div class="card"><div class="card-hdr"><i class="fa-solid fa-check-circle"></i> Résolus récemment</div>
-      <div class="incident-list">${resolus.map(i=>`<div class="incident-card" style="opacity:.65">
-        <div class="inc-icon inc-green"><i class="fa-solid fa-check"></i></div>
-        <div class="incident-body"><div class="incident-title">${i.type} — ${i.localisation||''}</div>
-        <div class="incident-sub">Résolu ${fmtDate(i.date_resolution)}</div></div><span class="pill pill-green">✓</span></div>`).join('')}</div></div>`:''}`);}
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-hard-hat"></i> Interventions actives
+        <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openModal('modal-intervention')"><i class="fa-solid fa-plus"></i> Ajouter</button></div>
+      </div>
+      ${actifs.length?`<div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Type</th><th>Localisation</th><th>Signalé par</th><th>Date</th><th>Prestataire</th><th>Coût</th><th>Urgence</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>${actifs.map(i=>`<tr>
+          <td><strong>${i.type}</strong></td>
+          <td>${i.localisation||'—'}</td>
+          <td style="font-size:12px">${i.prenom||''} ${i.nom||''} ${i.lot?'(Lot '+i.lot+')':''}</td>
+          <td style="white-space:nowrap">${fmtDate(i.created_at)}</td>
+          <td>${i.prestataire?`<span style="color:var(--primary);font-weight:600">${i.prestataire}</span>`:'<span style="color:var(--text-3)">—</span>'}</td>
+          <td>${i.cout?parseFloat(i.cout).toLocaleString('fr-FR')+' MAD':'—'}</td>
+          <td>${urgIcon[i.urgence]||'🟡'} ${i.urgence||'normal'}</td>
+          <td>${statusPill(i.statut)}</td>
+          <td><div style="display:flex;gap:4px">
+            <button class="btn btn-ghost btn-xs" onclick='openEditIntervention(${JSON.stringify(i).replace(/'/g,"\\'")})'><i class="fa-solid fa-edit"></i></button>
+            <button class="btn btn-primary btn-xs" onclick="resolveIncident(${i.id})"><i class="fa-solid fa-check"></i> Résoudre</button>
+          </div></td>
+        </tr>`).join('')}</tbody>
+      </table></div>`:`<div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>Aucune intervention en cours</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openModal('modal-intervention')"><i class="fa-solid fa-plus"></i> Créer la première</button></div>`}
+    </div>
+    ${resolus.length?`<div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-check-circle"></i> Résolus récemment</div>
+      <div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Type</th><th>Localisation</th><th>Résolu le</th><th>Prestataire</th><th>Coût final</th></tr></thead>
+        <tbody>${resolus.map(i=>`<tr>
+          <td><strong>${i.type}</strong></td><td>${i.localisation||'—'}</td>
+          <td>${fmtDate(i.date_resolution)}</td>
+          <td>${i.prestataire||'—'}</td>
+          <td>${i.cout?parseFloat(i.cout).toLocaleString('fr-FR')+' MAD':'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`:''}`);}
+
+function openEditIntervention(i){
+  document.getElementById('intv-id').value=i.id;
+  document.getElementById('intv-type').value=i.type||'Plomberie';
+  document.getElementById('intv-loc').value=i.localisation||'';
+  document.getElementById('intv-desc').value=i.description||'';
+  document.getElementById('intv-urgence').value=i.urgence||'normal';
+  document.getElementById('intv-prestataire').value=i.prestataire||'';
+  document.getElementById('intv-cout').value=i.cout||'';
+  document.getElementById('intv-statut').value=i.statut||'ouvert';
+  document.getElementById('modal-intv-title').innerHTML='<i class="fa-solid fa-edit" style="color:var(--primary)"></i> Modifier l\'intervention';
+  openModal('modal-intervention');
+}
+
+async function submitIntervention(){
+  const id=document.getElementById('intv-id').value;
+  const body={
+    type:document.getElementById('intv-type').value,
+    localisation:document.getElementById('intv-loc').value,
+    description:document.getElementById('intv-desc').value,
+    urgence:document.getElementById('intv-urgence').value,
+    prestataire:document.getElementById('intv-prestataire').value,
+    cout:document.getElementById('intv-cout').value||null,
+    statut:document.getElementById('intv-statut').value,
+  };
+  if(!body.type)return showError('Type requis');
+  try{
+    if(id){ await PUT('/incidents/'+id, body); showToast('✅ Intervention mise à jour'); }
+    else { await POST('/incidents', body); showToast('✅ Intervention créée'); }
+    closeModal('modal-intervention');
+    document.getElementById('intv-id').value='';
+    loaded.delete('g-travaux'); loadGTravaux();
+  }catch(e){showError(e.error||'Erreur');}
+}
 
 async function resolveIncident(id){
-  try{await PUT('/incidents/'+id,{statut:'resolu',date_resolution:new Date().toISOString().split('T')[0]});showToast('✅ Incident résolu');loaded.delete('g-travaux');loadGTravaux();}
-  catch{showError('Erreur');}
+  try{
+    await PUT('/incidents/'+id,{statut:'resolu',date_resolution:new Date().toISOString().split('T')[0]});
+    showToast('✅ Intervention résolue');
+    loaded.delete('g-travaux');loadGTravaux();
+  }catch{showError('Erreur');}
 }
 
 async function loadGAG(){
