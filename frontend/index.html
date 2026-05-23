@@ -7,325 +7,351 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <style>
-
 :root{
   --primary:#0d5c47;--primary-light:#1a8a6a;--primary-pale:#e6f4ef;
   --accent:#e8703a;--accent-pale:#fdf0e8;
+  --violet:#7c3aed;--violet-pale:#f3effe;
   --bg:#f7f6f2;--surface:#ffffff;--surface2:#f0efe9;
   --border:#e2e0d8;--border-dark:#c8c5ba;
   --text:#1a1917;--text-2:#5a5750;--text-3:#9a9590;
   --danger:#c0392b;--danger-pale:#fdf1f0;
   --info:#1a6fa8;--info-pale:#e8f3fb;
   --success:#1a7a52;--warning:#b06b10;--warning-pale:#fef8ec;
-  --radius:12px;--radius-sm:8px;--sidebar-w:240px;--header-h:60px;
+  --radius:12px;--radius-sm:8px;--sidebar-w:242px;--header-h:64px;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);
   --shadow-md:0 4px 16px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);
   --font:'Plus Jakarta Sans',sans-serif;--font-display:'Fraunces',serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;overflow-x:hidden}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--border-dark);border-radius:10px}
 
-/* LOGIN */
-#login-screen{
-  display:flex;min-height:100vh;
-  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 50%,#1f6e55 100%);
-  align-items:center;justify-content:center;padding:1rem;
-}
-.login-card{
-  background:#fff;border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:400px;
-  box-shadow:0 20px 60px rgba(0,0,0,.25);
-}
+/* ── LOGIN ── */
+#login-screen{display:flex;min-height:100vh;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 60%,#168a67 100%);align-items:center;justify-content:center;padding:1rem}
+.login-card{background:#fff;border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .login-logo{text-align:center;margin-bottom:2rem}
-.login-logo .mark{
-  width:60px;height:60px;background:var(--primary);border-radius:14px;
-  display:inline-flex;align-items:center;justify-content:center;
-  font-size:1.8rem;color:#fff;margin-bottom:.75rem;
-}
-.login-logo h1{font-family:var(--font-display);font-size:2rem;font-weight:600;color:var(--primary)}
-.login-logo p{font-size:13px;color:var(--text-3)}
+.login-logo .mark{width:60px;height:60px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;margin-bottom:.75rem}
+.login-logo h1{font-family:var(--font-display);font-size:2rem;font-weight:600;color:var(--primary);line-height:1}
+.login-logo p{font-size:13px;color:var(--text-3);margin-top:4px}
 .login-field{margin-bottom:1rem}
 .login-field label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:5px}
-.login-field input{
-  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
-  font-family:var(--font);font-size:14px;color:var(--text);outline:none;transition:border .2s;
-}
+.login-field input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;color:var(--text);outline:none;transition:border .2s}
 .login-field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(13,92,71,.1)}
-.login-error{background:#fdf1f0;color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;margin-bottom:1rem;display:none}
-.login-btn{
-  width:100%;padding:12px;background:var(--primary);color:#fff;border:none;
-  border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;font-weight:700;
-  cursor:pointer;transition:all .2s;
-}
+.login-error{background:#fdf1f0;color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;margin-bottom:1rem;display:none;align-items:center;gap:8px}
+.login-btn{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .login-btn:hover{background:var(--primary-light);transform:translateY(-1px)}
 .login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .demo-creds{margin-top:1.25rem;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)}
-.demo-creds strong{color:var(--text);font-size:11px;display:block;margin-bottom:4px}
-.demo-creds code{background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:11px}
+.demo-creds strong{color:var(--text);font-size:11px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.demo-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
+.demo-row:last-child{border-bottom:none}
+.demo-role{font-weight:600;color:var(--text);font-size:11px}
+.demo-cred{font-family:monospace;font-size:10px;background:#fff;padding:2px 6px;border-radius:4px;cursor:pointer;color:var(--primary)}
+.demo-cred:hover{background:var(--primary-pale)}
 
-/* APP */
+/* ── APP SHELL ── */
 #app{display:none;min-height:100vh}
-#topbar{
-  position:fixed;top:0;left:0;right:0;height:var(--header-h);
-  background:var(--primary);z-index:100;
-  display:flex;align-items:center;padding:0 1.5rem;gap:1rem;
-  box-shadow:0 2px 12px rgba(0,0,0,.18);
-}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font-display);font-size:1.3rem;font-weight:600;color:#fff}
-.logo-mark{width:34px;height:34px;background:rgba(255,255,255,.18);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+#topbar{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--primary);z-index:200;display:flex;align-items:center;padding:0 1.25rem;gap:1rem;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font-display);font-size:1.3rem;font-weight:600;color:#fff;flex-shrink:0}
+.logo-mark{width:32px;height:32px;background:rgba(255,255,255,.18);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.95rem}
 .logo em{font-style:italic;font-weight:300;color:rgba(255,255,255,.7)}
-.role-switcher{margin-left:auto;display:flex;background:rgba(255,255,255,.12);border-radius:8px;padding:3px;gap:2px}
-.role-btn{padding:5px 14px;border:none;border-radius:6px;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:500;color:rgba(255,255,255,.7);background:transparent;transition:all .2s;white-space:nowrap}
+.role-switcher{display:flex;background:rgba(255,255,255,.12);border-radius:8px;padding:3px;gap:2px;margin-left:auto}
+.role-btn{padding:5px 12px;border:none;border-radius:6px;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:500;color:rgba(255,255,255,.75);background:transparent;transition:all .2s;white-space:nowrap}
 .role-btn.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.15)}
-.topbar-right{display:flex;align-items:center;gap:10px;margin-left:16px}
-.notif-btn{position:relative;width:36px;height:36px;border-radius:8px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .2s}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.role-switcher~.topbar-right{margin-left:12px}
+.notif-btn{position:relative;width:34px;height:34px;border-radius:8px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .2s}
 .notif-btn:hover{background:rgba(255,255,255,.2)}
-.notif-badge{position:absolute;top:4px;right:4px;width:16px;height:16px;background:var(--accent);border-radius:50%;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border:2px solid var(--primary)}
-.user-chip{display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(255,255,255,.12);border-radius:8px;padding:4px 12px 4px 4px;transition:background .2s}
+.notif-badge{position:absolute;top:4px;right:4px;width:15px;height:15px;background:var(--accent);border-radius:50%;font-size:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border:2px solid var(--primary)}
+.user-chip{display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(255,255,255,.12);border-radius:8px;padding:4px 10px 4px 4px;transition:background .2s}
 .user-chip:hover{background:rgba(255,255,255,.2)}
-.user-av{width:30px;height:30px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
-.user-info{line-height:1.2}
+.user-av{width:28px;height:28px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
 .user-name{font-size:12px;font-weight:600;color:#fff}
-.user-role{font-size:10px;color:rgba(255,255,255,.6)}
-.hamburger{display:none;width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;align-items:center;justify-content:center;font-size:16px}
+.user-role-label{font-size:10px;color:rgba(255,255,255,.6)}
+.hamburger{display:none;width:34px;height:34px;border:none;border-radius:8px;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;align-items:center;justify-content:center;font-size:16px}
 
+/* ── LAYOUT ── */
 #layout{display:flex;padding-top:var(--header-h);min-height:100vh}
-#sidebar{position:fixed;top:var(--header-h);left:0;width:var(--sidebar-w);height:calc(100vh - var(--header-h));background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:90;transition:transform .3s ease;padding:1rem 0 2rem}
-#sidebar.hidden{transform:translateX(-100%)}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:89;backdrop-filter:blur(2px)}
+#sidebar{position:fixed;top:var(--header-h);left:0;width:var(--sidebar-w);height:calc(100vh - var(--header-h));background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:100;transition:transform .3s ease;padding:.75rem 0 2rem}
+#sidebar.closed{transform:translateX(-100%)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;backdrop-filter:blur(2px)}
 .sidebar-overlay.show{display:block}
-.nav-section{margin-bottom:1.5rem}
-.nav-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:4px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.25rem;cursor:pointer;font-size:13.5px;color:var(--text-2);transition:all .15s;border-right:2px solid transparent}
+.nav-section{margin-bottom:1.25rem}
+.nav-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:2px;margin-top:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 1.25rem;cursor:pointer;font-size:13.5px;color:var(--text-2);transition:all .15s;border-right:2px solid transparent;border-left:2px solid transparent;user-select:none}
 .nav-item:hover{background:var(--surface2);color:var(--text)}
 .nav-item.active{background:var(--primary-pale);color:var(--primary);font-weight:600;border-right-color:var(--primary)}
-.nav-item i{width:18px;text-align:center;font-size:14px}
-.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px}
-.logout-btn{margin:1rem 1.25rem 0;width:calc(100% - 2.5rem);padding:9px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-2);font-size:13px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
+.nav-item.active-violet{background:var(--violet-pale);color:var(--violet);font-weight:600;border-right-color:var(--violet)}
+.nav-item i{width:16px;text-align:center;font-size:13px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 6px;flex-shrink:0}
+.logout-btn{margin:.75rem 1.25rem 0;width:calc(100% - 2.5rem);padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-2);font-size:13px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
 .logout-btn:hover{background:var(--danger-pale);color:var(--danger);border-color:rgba(192,57,43,.2)}
 
-#main{margin-left:var(--sidebar-w);flex:1;padding:1.75rem 2rem;min-height:calc(100vh - var(--header-h))}
-.page{display:none;flex-direction:column;gap:1.5rem;animation:fadeIn .25s ease}
+/* ── MAIN ── */
+#main{margin-left:var(--sidebar-w);flex:1;padding:1.5rem 2rem;min-height:calc(100vh - var(--header-h))}
+.page{display:none;flex-direction:column;gap:1.25rem;animation:fadeIn .2s ease}
 .page.active{display:flex}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
-.page-hdr-left h1{font-size:1.5rem;font-weight:700;color:var(--text);letter-spacing:-.02em}
-.page-hdr-left p{font-size:13px;color:var(--text-2);margin-top:2px}
+/* ── PAGE HEADER ── */
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-bottom:.5rem;border-bottom:1px solid var(--border);margin-bottom:.25rem}
+.page-hdr-left h1{font-size:1.4rem;font-weight:700;color:var(--text);letter-spacing:-.02em;line-height:1.2}
+.page-hdr-left p{font-size:13px;color:var(--text-2);margin-top:3px}
 .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
+/* ── CARDS ── */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow)}
-.card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:14px;font-weight:600;color:var(--text)}
-.card-hdr i{font-size:15px;color:var(--primary)}
+.card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:13.5px;font-weight:600;color:var(--text)}
+.card-hdr i{font-size:14px;color:var(--primary)}
 .card-hdr .card-hdr-right{margin-left:auto;display:flex;gap:6px;align-items:center}
 
-.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem}
-.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow);position:relative;overflow:hidden}
+/* ── METRICS ── */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:1rem}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .metric::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--primary)}
-.metric.accent::before{background:var(--accent)}.metric.danger::before{background:var(--danger)}.metric.info::before{background:var(--info)}
-.metric-icon{width:36px;height:36px;border-radius:8px;background:var(--primary-pale);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:.75rem}
-.metric.accent .metric-icon{background:var(--accent-pale);color:var(--accent)}.metric.danger .metric-icon{background:var(--danger-pale);color:var(--danger)}.metric.info .metric-icon{background:var(--info-pale);color:var(--info)}
-.metric-val{font-size:1.8rem;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1}
+.metric.accent::before{background:var(--accent)}.metric.danger::before{background:var(--danger)}.metric.info::before{background:var(--info)}.metric.violet::before{background:var(--violet)}
+.metric-icon{width:34px;height:34px;border-radius:8px;background:var(--primary-pale);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:.6rem}
+.metric.accent .metric-icon{background:var(--accent-pale);color:var(--accent)}.metric.danger .metric-icon{background:var(--danger-pale);color:var(--danger)}.metric.info .metric-icon{background:var(--info-pale);color:var(--info)}.metric.violet .metric-icon{background:var(--violet-pale);color:var(--violet)}
+.metric-val{font-size:1.65rem;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1}
 .metric-label{font-size:12px;color:var(--text-2);margin-top:4px}
 .metric-sub{font-size:11px;color:var(--text-3);margin-top:2px}
 
+/* ── GRIDS ── */
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
 .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:1.25rem}
 
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;transition:all .15s;text-decoration:none;white-space:nowrap}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;transition:all .15s;text-decoration:none;white-space:nowrap;line-height:1.4}
 .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-light);transform:translateY(-1px);box-shadow:0 4px 12px rgba(13,92,71,.3)}
 .btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:#d4622f}
+.btn-violet{background:var(--violet);color:#fff}.btn-violet:hover{background:#6d28d9}
 .btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2)}
 .btn-danger{background:var(--danger-pale);color:var(--danger);border:1px solid rgba(192,57,43,.15)}.btn-danger:hover{background:var(--danger);color:#fff}
-.btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
-.btn-icon{padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+.btn-icon{padding:7px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
 .btn-icon:hover{background:var(--surface2)}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.btn:disabled,.btn-icon:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
 
-.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
-.pill-green{background:#e6f4ef;color:#0d5c47}.pill-orange{background:#fdf0e8;color:#b05a1a}.pill-red{background:#fdf1f0;color:#c0392b}.pill-blue{background:#e8f3fb;color:#1a6fa8}.pill-gray{background:var(--surface2);color:var(--text-2)}.pill-yellow{background:#fef8ec;color:#b06b10}
+/* ── PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.pill-green{background:#e6f4ef;color:#0d5c47}.pill-orange{background:#fdf0e8;color:#b05a1a}.pill-red{background:#fdf1f0;color:#c0392b}.pill-blue{background:#e8f3fb;color:#1a6fa8}.pill-gray{background:var(--surface2);color:var(--text-2)}.pill-yellow{background:#fef8ec;color:#b06b10}.pill-violet{background:var(--violet-pale);color:var(--violet)}
 
+/* ── TABLE ── */
 .data-table{width:100%;border-collapse:collapse}
-.data-table th{text-align:left;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;padding:0 10px 10px;border-bottom:1px solid var(--border)}
-.data-table td{padding:11px 10px;border-bottom:1px solid var(--border);color:var(--text-2);font-size:13px;vertical-align:middle}
+.data-table th{text-align:left;font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;padding:0 10px 10px;border-bottom:1px solid var(--border)}
+.data-table td{padding:10px;border-bottom:1px solid var(--border);color:var(--text-2);font-size:13px;vertical-align:middle}
 .data-table tr:last-child td{border-bottom:none}.data-table tr:hover td{background:var(--surface2)}
 .data-table td strong{color:var(--text);font-weight:600}
 
+/* ── TIMELINE ── */
 .timeline{display:flex;flex-direction:column}
-.tl-item{display:flex;gap:12px;padding:10px 0;position:relative}
-.tl-item:not(:last-child)::before{content:'';position:absolute;left:5px;top:22px;bottom:0;width:1px;background:var(--border)}
-.tl-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:5px;border:2px solid var(--surface);box-shadow:0 0 0 2px var(--primary);background:var(--primary)}
-.tl-dot.orange{background:var(--accent);box-shadow:0 0 0 2px var(--accent)}.tl-dot.gray{background:var(--border-dark);box-shadow:0 0 0 2px var(--border-dark)}.tl-dot.red{background:var(--danger);box-shadow:0 0 0 2px var(--danger)}
-.tl-body{flex:1}.tl-date{font-size:11px;color:var(--text-3);margin-bottom:2px}.tl-text{font-size:13px;color:var(--text-2)}.tl-text strong{color:var(--text);font-weight:600}
+.tl-item{display:flex;gap:12px;padding:8px 0;position:relative}
+.tl-item:not(:last-child)::before{content:'';position:absolute;left:5px;top:20px;bottom:0;width:1px;background:var(--border)}
+.tl-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:4px;border:2px solid var(--surface);box-shadow:0 0 0 2px var(--primary);background:var(--primary)}
+.tl-dot.orange{background:var(--accent);box-shadow:0 0 0 2px var(--accent)}.tl-dot.gray{background:var(--border-dark);box-shadow:0 0 0 2px var(--border-dark)}.tl-dot.red{background:var(--danger);box-shadow:0 0 0 2px var(--danger)}.tl-dot.violet{background:var(--violet);box-shadow:0 0 0 2px var(--violet)}
+.tl-body{flex:1;min-width:0}.tl-date{font-size:11px;color:var(--text-3);margin-bottom:1px}.tl-text{font-size:13px;color:var(--text-2)}.tl-text strong{color:var(--text);font-weight:600}
 
-.incident-list{display:flex;flex-direction:column;gap:10px}
-.incident-card{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid transparent;cursor:pointer;transition:all .15s}
+/* ── INCIDENT CARDS ── */
+.incident-list{display:flex;flex-direction:column;gap:8px}
+.incident-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid transparent;cursor:pointer;transition:all .15s}
 .incident-card:hover{background:var(--surface);border-color:var(--border);box-shadow:var(--shadow)}
-.inc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.inc-red{background:#fdf1f0;color:#c0392b}.inc-orange{background:#fdf0e8;color:#b05a1a}.inc-green{background:#e6f4ef;color:#0d5c47}.inc-blue{background:#e8f3fb;color:#1a6fa8}
-.incident-body{flex:1;min-width:0}.incident-title{font-size:13px;font-weight:600;color:var(--text)}.incident-sub{font-size:12px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.progress-bar{height:4px;background:var(--border);border-radius:4px;margin-top:6px;overflow:hidden}.progress-fill{height:100%;border-radius:4px;background:var(--primary)}.progress-fill.orange{background:var(--accent)}
+.inc-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.inc-red{background:#fdf1f0;color:#c0392b}.inc-orange{background:#fdf0e8;color:#b05a1a}.inc-green{background:#e6f4ef;color:#0d5c47}.inc-blue{background:#e8f3fb;color:#1a6fa8}.inc-violet{background:var(--violet-pale);color:var(--violet)}
+.incident-body{flex:1;min-width:0}.incident-title{font-size:13px;font-weight:600;color:var(--text)}.incident-sub{font-size:11.5px;color:var(--text-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.progress-bar{height:3px;background:var(--border);border-radius:3px;margin-top:5px;overflow:hidden}.progress-fill{height:100%;border-radius:3px;background:var(--primary)}.progress-fill.orange{background:var(--accent)}.progress-fill.red{background:var(--danger)}
 
-.msg-wrapper{display:flex;flex-direction:column;gap:14px;max-height:320px;overflow-y:auto;padding-right:4px}
+/* ── MESSAGES ── */
+.msg-wrapper{display:flex;flex-direction:column;gap:12px;max-height:300px;overflow-y:auto;padding-right:4px}
 .msg-row{display:flex;gap:8px;align-items:flex-end}.msg-row.me{flex-direction:row-reverse}
-.av{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
-.av-g{background:var(--primary);color:#fff}.av-b{background:var(--info);color:#fff}.av-a{background:var(--accent);color:#fff}
-.bubble{max-width:72%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5}
+.av{width:28px;height:28px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.av-g{background:var(--primary);color:#fff}.av-b{background:var(--info);color:#fff}.av-a{background:var(--accent);color:#fff}.av-v{background:var(--violet);color:#fff}
+.bubble{max-width:75%;padding:9px 13px;border-radius:13px;font-size:13px;line-height:1.5}
 .bubble-them{background:var(--surface2);color:var(--text);border-bottom-left-radius:4px}.bubble-me{background:var(--primary);color:#fff;border-bottom-right-radius:4px}
-.bubble-time{font-size:10px;color:var(--text-3);margin-top:4px}.bubble-time.me{text-align:right}
-.msg-input-area{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.bubble-time{font-size:10px;color:var(--text-3);margin-top:3px}.bubble-time.me{text-align:right}
+.msg-input-area{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 
-.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
-.doc-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:1.25rem 1rem;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid transparent;cursor:pointer;text-align:center;transition:all .15s}
+/* ── DOCS ── */
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:8px}
+.doc-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:1rem;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid transparent;cursor:pointer;text-align:center;transition:all .15s;position:relative}
 .doc-card:hover{background:var(--surface);border-color:var(--primary);box-shadow:var(--shadow)}
-.doc-icon{font-size:2rem;color:var(--accent)}.doc-name{font-size:12px;font-weight:600;color:var(--text);line-height:1.4}.doc-date{font-size:11px;color:var(--text-3)}
+.doc-icon{font-size:1.8rem;color:var(--accent)}.doc-name{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.3}.doc-date{font-size:10px;color:var(--text-3)}.doc-size{font-size:10px;color:var(--text-3)}
+.doc-dl{position:absolute;top:6px;right:6px;opacity:0;transition:opacity .15s}
+.doc-card:hover .doc-dl{opacity:1}
 
-.vote-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+/* ── VOTES ── */
+.vote-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .vote-item:last-child{border-bottom:none;padding-bottom:0}.vote-q{font-size:13.5px;font-weight:500;color:var(--text)}.vote-sub{font-size:11px;color:var(--text-3);margin-top:2px}
-.vote-actions{display:flex;gap:6px;flex-shrink:0}
+.vote-actions{display:flex;gap:5px;flex-shrink:0}
 .v-yes{background:#e6f4ef;color:#0d5c47;border:1px solid #b3dccb}.v-no{background:#fdf1f0;color:#c0392b;border:1px solid #f5c5c2}.v-abs{background:var(--surface2);color:var(--text-2);border:1px solid var(--border)}
 
-.budget-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
-.budget-row:last-child{border-bottom:none;padding-bottom:0}.budget-row:first-child{padding-top:0}
-.budget-label{color:var(--text-2);display:flex;align-items:center;gap:8px}.budget-label i{color:var(--primary);width:16px}.budget-value{font-weight:600;color:var(--text)}
-.budget-bar{height:3px;background:var(--primary-pale);border-radius:3px;margin-top:3px}.budget-fill{height:100%;background:var(--primary);border-radius:3px}
+/* ── AGENDA ── */
+.agenda-rule{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid transparent;transition:all .15s}
+.agenda-rule:hover{background:var(--surface);border-color:var(--border)}
+.agenda-rule.inactive{opacity:.5}
+.agenda-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.agenda-body{flex:1;min-width:0}
+.agenda-title{font-size:13px;font-weight:600;color:var(--text)}
+.agenda-meta{font-size:11px;color:var(--text-3);margin-top:2px}
+.agenda-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
 
-.pay-banner{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);border-radius:var(--radius);padding:1.5rem;color:#fff;display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap}
-.pay-banner .amount{font-size:2rem;font-weight:700;font-family:var(--font-display)}.pay-banner .label{flex:1;min-width:120px;opacity:.85;font-size:13.5px;line-height:1.5}.pay-banner .due{font-size:11px;opacity:.65;margin-top:2px}
-.pay-banner-btn{background:#fff;color:var(--primary);border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;font-family:var(--font)}
-.pay-banner-btn:hover{background:rgba(255,255,255,.9);transform:translateY(-1px)}
+/* ── NOTIF BAR ── */
+.notif-bar{display:flex;align-items:center;gap:10px;background:var(--primary-pale);border:1px solid #b3dccb;border-radius:var(--radius-sm);padding:10px 14px;flex-wrap:wrap}
+.notif-bar i{color:var(--primary);font-size:15px;flex-shrink:0}
+.notif-bar span{flex:1;font-size:13px;color:var(--primary);min-width:120px}
+.notif-bar-warn{background:var(--warning-pale);border-color:rgba(176,107,16,.3)}
+.notif-bar-warn i,.notif-bar-warn span{color:var(--warning)}
 
-.impaye-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
-.impaye-item:last-child{border-bottom:none}.impaye-item:first-child{padding-top:0}
-.imp-av{width:38px;height:38px;border-radius:10px;background:var(--danger-pale);color:var(--danger);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.imp-name{font-size:13.5px;font-weight:600;color:var(--text)}.imp-detail{font-size:11px;color:var(--text-3);margin-top:1px}
-.imp-amount{font-size:15px;font-weight:700;color:var(--danger);white-space:nowrap}
+/* ── UPLOAD ── */
+.upload-zone{border:2px dashed var(--border-dark);border-radius:var(--radius-sm);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--primary);background:var(--primary-pale)}
+.upload-zone input[type=file]{display:none}
+.upload-zone-icon{font-size:1.8rem;color:var(--text-3);margin-bottom:8px}
+.upload-zone p{font-size:13px;color:var(--text-2);margin:3px 0}
+.upload-zone .hint{font-size:11px;color:var(--text-3)}
 
+/* ── SWITCH ── */
 .switch-wrap{display:flex;align-items:center;gap:8px}
-.switch{position:relative;width:38px;height:21px;display:inline-block}.switch input{opacity:0;width:0;height:0}
-.slider-sw{position:absolute;inset:0;background:var(--border-dark);border-radius:21px;cursor:pointer;transition:background .2s}
-.slider-sw::before{content:'';position:absolute;left:3px;bottom:3px;width:15px;height:15px;background:#fff;border-radius:50%;transition:transform .2s}
-input:checked+.slider-sw{background:var(--primary)}input:checked+.slider-sw::before{transform:translateX(17px)}
+.switch{position:relative;width:36px;height:20px;display:inline-block;flex-shrink:0}.switch input{opacity:0;width:0;height:0}
+.slider-sw{position:absolute;inset:0;background:var(--border-dark);border-radius:20px;cursor:pointer;transition:background .2s}
+.slider-sw::before{content:'';position:absolute;left:3px;bottom:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s}
+input:checked+.slider-sw{background:var(--primary)}input:checked+.slider-sw::before{transform:translateX(16px)}
 .switch-label{font-size:13px;color:var(--text-2)}
 
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+/* ── FORMS ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
 .form-label{font-size:12px;font-weight:600;color:var(--text-2)}
-.form-control{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface);outline:none;transition:border .2s}
+.form-control{padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface);outline:none;transition:border .2s;width:100%}
 .form-control:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(13,92,71,.1)}
-textarea.form-control{resize:vertical;min-height:80px}
+textarea.form-control{resize:vertical;min-height:75px}
 
+/* ── MODALS ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px)}
 .modal-overlay.show{display:flex}
 .modal{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-md);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:fadeIn .2s ease}
-.modal-hdr{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.modal-hdr h3{font-size:15px;font-weight:700;color:var(--text)}
-.modal-body{padding:1.5rem}
-.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
-.close-modal{background:none;border:none;cursor:pointer;color:var(--text-2);font-size:18px;transition:color .15s}.close-modal:hover{color:var(--text)}
+.modal-hdr{padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:10}
+.modal-hdr h3{font-size:14.5px;font-weight:700;color:var(--text)}
+.modal-body{padding:1.4rem}
+.modal-footer{padding:.9rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surface)}
+.close-modal{background:none;border:none;cursor:pointer;color:var(--text-2);font-size:16px;transition:color .15s;padding:4px}.close-modal:hover{color:var(--text)}
 
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:600;background:var(--primary);color:#fff;padding:.85rem 1.25rem;border-radius:var(--radius-sm);font-size:13px;font-weight:500;box-shadow:var(--shadow-md);display:none;align-items:center;gap:8px;max-width:320px}
+/* ── PAY BANNER ── */
+.pay-banner{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);border-radius:var(--radius);padding:1.4rem;color:#fff;display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap}
+.pay-banner .amount{font-size:1.9rem;font-weight:700;font-family:var(--font-display)}.pay-banner .label{flex:1;min-width:110px;opacity:.85;font-size:13px;line-height:1.5}.pay-banner .due{font-size:11px;opacity:.6;margin-top:2px}
+.pay-banner-btn{background:#fff;color:var(--primary);border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;font-family:var(--font)}
+.pay-banner-btn:hover{background:rgba(255,255,255,.92);transform:translateY(-1px)}
+
+/* ── IMPAYÉS ── */
+.impaye-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.impaye-item:last-child{border-bottom:none}.impaye-item:first-child{padding-top:0}
+.imp-av{width:36px;height:36px;border-radius:9px;background:var(--danger-pale);color:var(--danger);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.imp-name{font-size:13px;font-weight:600;color:var(--text)}.imp-detail{font-size:11px;color:var(--text-3);margin-top:1px}.imp-amount{font-size:15px;font-weight:700;color:var(--danger);white-space:nowrap}
+
+/* ── CHARTS ── */
+.chart-bar-wrap{display:flex;flex-direction:column;gap:7px}
+.chart-bar-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.chart-bar-label{width:115px;color:var(--text-2);flex-shrink:0;text-align:right;font-size:11px}
+.chart-bar-track{flex:1;height:18px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.chart-bar-fill{height:100%;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:flex-end;padding-right:5px;transition:width .8s ease}
+.chart-bar-fill span{font-size:10px;color:#fff;font-weight:700;white-space:nowrap}
+.chart-bar-fill.accent{background:var(--accent)}.chart-bar-fill.violet{background:var(--violet)}.chart-bar-fill.danger{background:var(--danger)}
+
+/* ── PRESENCE ── */
+.presence-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:5px;margin-top:.75rem}
+.pres-dot{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;cursor:pointer;transition:transform .15s}
+.pres-dot:hover{transform:scale(1.1)}
+.pres-yes{background:#e6f4ef;color:#0d5c47;border:1px solid #b3dccb}.pres-no{background:var(--surface2);color:var(--text-3);border:1px solid var(--border)}.pres-mail{background:#fdf0e8;color:#b05a1a;border:1px solid rgba(224,112,58,.2)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:600;background:var(--primary);color:#fff;padding:.75rem 1.1rem;border-radius:var(--radius-sm);font-size:13px;font-weight:500;box-shadow:var(--shadow-md);display:none;align-items:center;gap:8px;max-width:320px}
 .toast.show{display:flex;animation:slideUp .3s ease}
-.toast.error{background:var(--danger)}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.toast.error{background:var(--danger)}.toast.warn{background:var(--warning)}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
+/* ── LOADING / EMPTY ── */
 .loading-state{text-align:center;padding:3rem 1rem;color:var(--text-3)}
 .loading-state i{font-size:2rem;margin-bottom:.75rem;display:block;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--text-3)}
-.empty-state i{font-size:2.5rem;margin-bottom:.75rem;display:block;opacity:.4}
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--text-3)}
+.empty-state i{font-size:2.5rem;margin-bottom:.75rem;display:block;opacity:.35}
 .empty-state p{font-size:13px}
 
-.presence-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin-top:.75rem}
-.pres-dot{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;transition:transform .15s}
-.pres-dot:hover{transform:scale(1.1)}
-.pres-yes{background:#e6f4ef;color:#0d5c47;border:1px solid #b3dccb}
-.pres-no{background:var(--surface2);color:var(--text-3);border:1px solid var(--border)}
-.pres-mail{background:#fdf0e8;color:#b05a1a;border:1px solid rgba(224,112,58,.2)}
-
-.chart-bar-wrap{display:flex;flex-direction:column;gap:8px}
-.chart-bar-row{display:flex;align-items:center;gap:10px;font-size:12px}
-.chart-bar-label{width:120px;color:var(--text-2);flex-shrink:0;text-align:right;font-size:11.5px}
-.chart-bar-track{flex:1;height:20px;background:var(--surface2);border-radius:4px;overflow:hidden}
-.chart-bar-fill{height:100%;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;transition:width .8s ease}
-.chart-bar-fill span{font-size:10px;color:#fff;font-weight:700;white-space:nowrap}
-.chart-bar-fill.accent{background:var(--accent)}
-
-.fab{display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:80;width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(13,92,71,.4);transition:all .2s;align-items:center;justify-content:center}
+/* ── FAB ── */
+.fab{display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:80;width:50px;height:50px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(13,92,71,.4);transition:all .2s;align-items:center;justify-content:center}
 .fab:hover{background:var(--primary-light);transform:scale(1.05)}
 
+/* ── RESPONSIVE ── */
 @media(max-width:1024px){.grid-2,.grid-3{grid-template-columns:1fr}}
 @media(max-width:768px){
-  :root { --header-h: 68px; }
+  :root{--sidebar-w:0px}
   #sidebar{transform:translateX(-100%);width:260px;box-shadow:4px 0 20px rgba(0,0,0,.15)}
   #sidebar.open{transform:translateX(0)}
+  #sidebar.closed{transform:translateX(-100%)}
   #main{margin-left:0;padding:1rem}
   .hamburger{display:flex}
-  .user-info{display:none}
+  .user-name,.user-role-label{display:none}
   .metrics-grid{grid-template-columns:1fr 1fr}
-  .doc-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
   .pay-banner{flex-direction:column;align-items:flex-start;gap:.75rem}
   .form-row{grid-template-columns:1fr}
   .vote-item{flex-direction:column;align-items:flex-start}
   .impaye-item{flex-wrap:wrap}
   .fab{display:flex}
+  .hdr-actions .btn:not(.btn-icon):not(.btn-sm){display:none}
 }
 @media(max-width:480px){.metrics-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- ══ LOGIN ══ -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
       <div class="mark"><i class="fa-solid fa-building-columns"></i></div>
-      <h1>Jasmine<em>Park</em></h1>
-      <p>Gestion Syndic</p>
+      <h1>Syndic<em>Pro</em></h1>
+      <p>Gestion intelligente de copropriété</p>
     </div>
-    <div class="login-error" id="login-error"></div>
-    <div class="login-field">
-      <label>Adresse email</label>
-      <input type="email" id="login-email" placeholder="votre@email.ma" autocomplete="email">
+    <div class="login-error" id="login-error"><i class="fa-solid fa-circle-exclamation"></i><span id="login-error-msg"></span></div>
+    <div class="login-field"><label>Adresse email</label><input type="email" id="login-email" placeholder="votre@email.com" autocomplete="email"></div>
+    <div class="login-field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="login-btn" id="login-submit" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
+    <div class="demo-creds">
+      <strong>Comptes de démonstration</strong>
+      <div class="demo-row"><span class="demo-role">Admin</span><span class="demo-cred" onclick="fillLogin('iguirmia.mustapha@gmail.com','Admin2026!')">Admin2026!</span></div>
+      <div class="demo-row"><span class="demo-role">Gestionnaire</span><span class="demo-cred" onclick="fillLogin('contact@servicepro-solutions.com','Syndic2026!')">Syndic2026!</span></div>
+      <div class="demo-row"><span class="demo-role">Résident</span><span class="demo-cred" onclick="fillLogin('iguirmia.mustapha@servicepro-solutions.com','Resident2026!')">Resident2026!</span></div>
     </div>
-    <div class="login-field">
-      <label>Mot de passe</label>
-      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="login-btn" id="login-submit" onclick="doLogin()">
-      <i class="fa-solid fa-right-to-bracket"></i> Se connecter
-    </button>
-
   </div>
 </div>
 
-<!-- APP -->
+<!-- ══ APP ══ -->
 <div id="app">
   <header id="topbar">
     <button class="hamburger" id="hamburger-btn"><i class="fa-solid fa-bars"></i></button>
     <a href="#" class="logo"><div class="logo-mark"><i class="fa-solid fa-building-columns"></i></div>Syndic<em>Pro</em></a>
     <div class="role-switcher" id="role-switcher" style="display:none">
-      <button class="role-btn active" id="btn-resident" onclick="setRole('resident')"><i class="fa-solid fa-user"></i> Résident</button>
-      <button class="role-btn" id="btn-gestionnaire" onclick="setRole('gestionnaire')"><i class="fa-solid fa-briefcase"></i> Gestionnaire</button>
+      <button class="role-btn" id="btn-resident" onclick="setRole('resident')"><i class="fa-solid fa-user"></i> Résident</button>
+      <button class="role-btn" id="btn-gestionnaire" onclick="setRole('gestionnaire')"><i class="fa-solid fa-briefcase"></i> Syndic</button>
     </div>
     <div class="topbar-right">
-      <button class="notif-btn" id="notif-toggle"><i class="fa-solid fa-bell"></i><span class="notif-badge" id="notif-count" style="display:none">!</span></button>
+      <button class="notif-btn" id="notif-toggle" title="Notifications"><i class="fa-solid fa-bell"></i><span class="notif-badge" id="notif-count" style="display:none">!</span></button>
       <div class="user-chip" id="user-chip">
         <div class="user-av" id="user-av">?</div>
-        <div class="user-info"><div class="user-name" id="user-name-top">Chargement...</div><div class="user-role" id="user-role-top"></div></div>
+        <div><div class="user-name" id="user-name-top">…</div><div class="user-role-label" id="user-role-top"></div></div>
       </div>
     </div>
   </header>
 
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-
   <nav id="sidebar">
-    <div id="nav-resident">
+    <!-- RÉSIDENT -->
+    <div id="nav-resident" style="display:none">
       <div class="nav-section">
         <div class="nav-label">Mon espace</div>
-        <div class="nav-item active" onclick="showPage('r-dashboard')"><i class="fa-solid fa-chart-pie"></i> Tableau de bord</div>
+        <div class="nav-item" onclick="showPage('r-dashboard')"><i class="fa-solid fa-chart-pie"></i> Tableau de bord</div>
         <div class="nav-item" onclick="showPage('r-finances')"><i class="fa-solid fa-wallet"></i> Finances & Paiements</div>
-        <div class="nav-item" onclick="showPage('r-incidents')"><i class="fa-solid fa-wrench"></i> Mes incidents <span class="nav-badge" id="badge-incidents">!</span></div>
+        <div class="nav-item" onclick="showPage('r-incidents')"><i class="fa-solid fa-wrench"></i> Mes réclamations <span class="nav-badge" id="badge-incidents" style="display:none">!</span></div>
       </div>
       <div class="nav-section">
         <div class="nav-label">Copropriété</div>
@@ -339,12 +365,13 @@ textarea.form-control{resize:vertical;min-height:80px}
         <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button>
       </div>
     </div>
+    <!-- GESTIONNAIRE -->
     <div id="nav-gestionnaire" style="display:none">
       <div class="nav-section">
         <div class="nav-label">Gestion</div>
-        <div class="nav-item active" onclick="showPage('g-dashboard')"><i class="fa-solid fa-chart-line"></i> Vue d'ensemble</div>
+        <div class="nav-item" onclick="showPage('g-dashboard')"><i class="fa-solid fa-chart-line"></i> Vue d'ensemble</div>
         <div class="nav-item" onclick="showPage('g-comptabilite')"><i class="fa-solid fa-file-invoice-dollar"></i> Comptabilité</div>
-        <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés <span class="nav-badge" id="badge-impayes"></span></div>
+        <div class="nav-item" onclick="showPage('g-impayes')"><i class="fa-solid fa-triangle-exclamation"></i> Impayés <span class="nav-badge" id="badge-impayes" style="display:none"></span></div>
       </div>
       <div class="nav-section">
         <div class="nav-label">Opérations</div>
@@ -353,17 +380,21 @@ textarea.form-control{resize:vertical;min-height:80px}
         <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
       </div>
       <div class="nav-section">
+        <div class="nav-label">Communications</div>
+        <div class="nav-item" onclick="showPage('g-notifications')"><i class="fa-solid fa-paper-plane"></i> Notifications</div>
+        <div class="nav-item" onclick="showPage('g-agenda')"><i class="fa-solid fa-calendar-check"></i> Agenda auto.</div>
+      </div>
+      <div class="nav-section">
         <div class="nav-label">Configuration</div>
         <div class="nav-item" onclick="showPage('g-settings')"><i class="fa-solid fa-gear"></i> Paramètres</div>
         <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button>
       </div>
     </div>
-
-    <!-- ADMIN NAV -->
+    <!-- ADMIN -->
     <div id="nav-admin" style="display:none">
       <div class="nav-section">
         <div class="nav-label">Administration</div>
-        <div class="nav-item active" onclick="showPage('a-dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard admin</div>
+        <div class="nav-item" onclick="showPage('a-dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard</div>
         <div class="nav-item" onclick="showPage('a-users')"><i class="fa-solid fa-users-cog"></i> Utilisateurs</div>
         <div class="nav-item" onclick="showPage('a-roles')"><i class="fa-solid fa-user-shield"></i> Rôles & Accès</div>
       </div>
@@ -371,18 +402,23 @@ textarea.form-control{resize:vertical;min-height:80px}
         <div class="nav-label">Paramétrage</div>
         <div class="nav-item" onclick="showPage('a-types-charges')"><i class="fa-solid fa-tags"></i> Types de charges</div>
         <div class="nav-item" onclick="showPage('a-types-depenses')"><i class="fa-solid fa-receipt"></i> Types de dépenses</div>
+        <div class="nav-item" onclick="showPage('a-types-reclamations')"><i class="fa-solid fa-triangle-exclamation"></i> Types de réclamations</div>
         <div class="nav-item" onclick="showPage('a-residences')"><i class="fa-solid fa-building"></i> Résidences</div>
       </div>
       <div class="nav-section">
-        <div class="nav-label">Compte</div>
+        <div class="nav-label">Monitoring</div>
+        <div class="nav-item" onclick="showPage('a-notifications-log')"><i class="fa-solid fa-bell"></i> Log notifications</div>
+        <div class="nav-item" onclick="showPage('a-agenda')"><i class="fa-solid fa-calendar-check"></i> Agenda global</div>
+      </div>
+      <div class="nav-section">
         <button class="logout-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</button>
       </div>
     </div>
   </nav>
 
   <main id="main">
-    <!-- RESIDENT -->
-    <div class="page active" id="page-r-dashboard"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i><p>Chargement...</p></div></div>
+    <!-- RÉSIDENT -->
+    <div class="page" id="page-r-dashboard"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-r-finances"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-r-incidents"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-r-documents"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
@@ -396,164 +432,247 @@ textarea.form-control{resize:vertical;min-height:80px}
     <div class="page" id="page-g-travaux"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-g-ag"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-g-residents"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-g-notifications"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-g-agenda"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-g-settings"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
-    <!-- ADMIN PAGES -->
+    <!-- ADMIN -->
     <div class="page" id="page-a-dashboard"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-a-users"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-a-roles"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-a-types-charges"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-a-types-depenses"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-a-types-reclamations"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-a-residences"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-a-notifications-log"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-a-agenda"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
   </main>
 </div>
 
-<!-- MODALS -->
+<!-- ══ MODALS ══ -->
+<!-- Incident / Réclamation -->
 <div class="modal-overlay" id="modal-incident">
   <div class="modal">
-    <div class="modal-hdr"><h3><i class="fa-solid fa-wrench" style="color:var(--primary);margin-right:6px"></i> Signaler un incident</h3><button class="close-modal" onclick="closeModal('modal-incident')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-hdr"><h3><i class="fa-solid fa-wrench" style="color:var(--primary);mr:6px"></i> Signaler une réclamation</h3><button class="close-modal" onclick="closeModal('modal-incident')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Type d'incident</label><select class="form-control" id="inc-type"><option>Plomberie</option><option>Ascenseur</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Autre</option></select></div>
-      <div class="form-group"><label class="form-label">Localisation</label><input class="form-control" id="inc-loc" placeholder="Ex: Couloir 3e étage, parking…"></div>
-      <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="inc-desc" placeholder="Décrivez l'incident…"></textarea></div>
-      <div class="form-group" style="margin-bottom:0"><label class="form-label">Urgence</label><select class="form-control" id="inc-urgence"><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="tres_urgent">Très urgent</option></select></div>
+      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Ascenseur</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
+      <div class="form-group"><label class="form-label">Localisation précise</label><input class="form-control" id="inc-loc" placeholder="Ex: Couloir 3e étage, parking B2…"></div>
+      <div class="form-group"><label class="form-label">Description détaillée</label><textarea class="form-control" id="inc-desc" placeholder="Décrivez l'incident avec le maximum de détails…"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Urgence</label><select class="form-control" id="inc-urgence"><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="tres_urgent">Très urgent</option></select></div>
+        <div class="form-group"><label class="form-label">Délai souhaité</label><input class="form-control" id="inc-delai" placeholder="Ex: Avant jeudi"></div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-incident')">Annuler</button><button class="btn btn-primary" onclick="submitIncident()"><i class="fa-solid fa-paper-plane"></i> Envoyer</button></div>
   </div>
 </div>
 
+<!-- Paiement -->
 <div class="modal-overlay" id="modal-paiement">
   <div class="modal">
-    <div class="modal-hdr"><h3><i class="fa-solid fa-credit-card" style="color:var(--primary);margin-right:6px"></i> Paiement sécurisé</h3><button class="close-modal" onclick="closeModal('modal-paiement')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-hdr"><h3><i class="fa-solid fa-credit-card" style="color:var(--primary)"></i> Paiement sécurisé</h3><button class="close-modal" onclick="closeModal('modal-paiement')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div id="modal-paiement-info" style="background:var(--primary-pale);border-radius:var(--radius-sm);padding:12px;margin-bottom:1.25rem;font-size:13px;color:var(--primary)"></div>
-      <div style="display:flex;gap:8px;margin-bottom:1.25rem">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="document.getElementById('pay-mode').value='carte'"><i class="fa-solid fa-credit-card"></i> Carte</button>
-        <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="document.getElementById('pay-mode').value='virement'"><i class="fa-solid fa-building-columns"></i> Virement</button>
+      <div id="modal-paiement-info" style="background:var(--primary-pale);border-radius:8px;padding:12px;margin-bottom:1rem;font-size:13px;color:var(--primary)"></div>
+      <div style="display:flex;gap:8px;margin-bottom:1rem">
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('pay-mode').value='carte'" style="flex:1;justify-content:center"><i class="fa-solid fa-credit-card"></i> Carte</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pay-mode').value='virement'" style="flex:1;justify-content:center"><i class="fa-solid fa-building-columns"></i> Virement</button>
       </div>
-      <input type="hidden" id="pay-mode" value="carte">
-      <input type="hidden" id="pay-paiement-id" value="">
+      <input type="hidden" id="pay-mode" value="carte"><input type="hidden" id="pay-paiement-id">
       <div class="form-group"><label class="form-label">Numéro de carte</label><input class="form-control" placeholder="1234 5678 9012 3456"></div>
-      <div class="form-row" style="margin-bottom:0"><div class="form-group" style="margin-bottom:0"><label class="form-label">Expiration</label><input class="form-control" placeholder="MM/AA"></div><div class="form-group" style="margin-bottom:0"><label class="form-label">CVV</label><input class="form-control" type="password" placeholder="123"></div></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Expiration</label><input class="form-control" placeholder="MM/AA"></div>
+        <div class="form-group"><label class="form-label">CVV</label><input class="form-control" type="password" placeholder="123"></div>
+      </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-paiement')">Annuler</button><button class="btn btn-primary" id="pay-submit-btn" onclick="submitPaiement()"><i class="fa-solid fa-lock"></i> Confirmer le paiement</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-paiement')">Annuler</button><button class="btn btn-primary" id="pay-submit-btn" onclick="submitPaiement()"><i class="fa-solid fa-lock"></i> Confirmer</button></div>
   </div>
 </div>
 
+<!-- Appel de fonds -->
 <div class="modal-overlay" id="modal-appel-fonds">
   <div class="modal">
-    <div class="modal-hdr"><h3><i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary);margin-right:6px"></i> Émettre un appel de fonds</h3><button class="close-modal" onclick="closeModal('modal-appel-fonds')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-hdr"><h3><i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary)"></i> Émettre un appel de fonds</h3><button class="close-modal" onclick="closeModal('modal-appel-fonds')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Période</label><input class="form-control" id="af-periode" placeholder="Ex: Q3 2026"></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Montant/tantième (MAD)</label><input class="form-control" id="af-montant" type="number" placeholder="10"></div><div class="form-group"><label class="form-label">Échéance</label><input class="form-control" id="af-echeance" type="date"></div></div>
-      <div class="form-group" style="margin-bottom:0"><label class="form-label">Description</label><textarea class="form-control" id="af-desc" placeholder="Description de l'appel de fonds…"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Période</label><input class="form-control" id="af-periode" placeholder="Ex: Q3 2026"></div>
+        <div class="form-group"><label class="form-label">Montant/tantième (MAD)</label><input class="form-control" id="af-montant" type="number" placeholder="10"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Échéance</label><input class="form-control" id="af-echeance" type="date"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="af-desc" style="min-height:65px" placeholder="Objet de cet appel de fonds…"></textarea></div>
+      <div class="switch-wrap"><label class="switch"><input type="checkbox" id="af-notifier" checked><span class="slider-sw"></span></label><span class="switch-label">Notifier les résidents immédiatement</span></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-appel-fonds')">Annuler</button><button class="btn btn-primary" onclick="submitAppelFonds()"><i class="fa-solid fa-paper-plane"></i> Émettre</button></div>
   </div>
 </div>
 
+<!-- Résident -->
 <div class="modal-overlay" id="modal-resident">
   <div class="modal">
-    <div class="modal-hdr"><h3><i class="fa-solid fa-user-plus" style="color:var(--primary);margin-right:6px"></i> Nouveau résident</h3><button class="close-modal" onclick="closeModal('modal-resident')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-hdr"><h3 id="modal-res-title"><i class="fa-solid fa-user-plus" style="color:var(--primary)"></i> Nouveau résident</h3><button class="close-modal" onclick="closeModal('modal-resident')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
+      <input type="hidden" id="res-id">
       <div class="form-row"><div class="form-group"><label class="form-label">Prénom</label><input class="form-control" id="res-prenom"></div><div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="res-nom"></div></div>
       <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="res-email" type="email"></div>
       <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="res-tel"></div>
-      <div class="form-row" style="margin-bottom:0"><div class="form-group" style="margin-bottom:0"><label class="form-label">Lot</label><input class="form-control" id="res-lot"></div><div class="form-group" style="margin-bottom:0"><label class="form-label">Tantièmes</label><input class="form-control" id="res-tantiemes" type="number"></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Lot</label><input class="form-control" id="res-lot"></div><div class="form-group"><label class="form-label">Tantièmes</label><input class="form-control" id="res-tantiemes" type="number"></div></div>
+      <div class="switch-wrap" id="res-welcome-wrap"><label class="switch"><input type="checkbox" id="res-welcome" checked><span class="slider-sw"></span></label><span class="switch-label">Envoyer email de bienvenue</span></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-resident')">Annuler</button><button class="btn btn-primary" onclick="submitResident()"><i class="fa-solid fa-floppy-disk"></i> Créer</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-resident')">Annuler</button><button class="btn btn-primary" onclick="submitResident()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button></div>
   </div>
 </div>
 
+<!-- AG -->
 <div class="modal-overlay" id="modal-ag-create">
   <div class="modal">
-    <div class="modal-hdr"><h3><i class="fa-solid fa-users" style="color:var(--primary);margin-right:6px"></i> Convoquer une AG</h3><button class="close-modal" onclick="closeModal('modal-ag-create')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-hdr"><h3><i class="fa-solid fa-users" style="color:var(--primary)"></i> Convoquer une AG</h3><button class="close-modal" onclick="closeModal('modal-ag-create')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
       <div class="form-row"><div class="form-group"><label class="form-label">Date</label><input class="form-control" id="ag-date" type="date"></div><div class="form-group"><label class="form-label">Heure</label><input class="form-control" id="ag-heure" type="time" value="18:00"></div></div>
-      <div class="form-group"><label class="form-label">Lieu</label><input class="form-control" id="ag-lieu" placeholder="Salle de réunion…"></div>
-      <div class="form-group" style="margin-bottom:0"><label class="form-label">Type</label><select class="form-control" id="ag-type"><option value="ordinaire">Ordinaire</option><option value="extraordinaire">Extraordinaire</option></select></div>
+      <div class="form-group"><label class="form-label">Lieu</label><input class="form-control" id="ag-lieu" placeholder="Salle de réunion, Rez-de-chaussée…"></div>
+      <div class="form-group"><label class="form-label">Type</label><select class="form-control" id="ag-type"><option value="ordinaire">Ordinaire</option><option value="extraordinaire">Extraordinaire</option></select></div>
+      <div class="switch-wrap"><label class="switch"><input type="checkbox" id="ag-notifier" checked><span class="slider-sw"></span></label><span class="switch-label">Envoyer les convocations maintenant</span></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-ag-create')">Annuler</button><button class="btn btn-primary" onclick="submitAG()"><i class="fa-solid fa-envelope"></i> Convoquer</button></div>
   </div>
 </div>
 
-<button class="fab" id="fab-btn" onclick="fabAction()"><i class="fa-solid fa-plus"></i></button>
-<div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toast-msg"></span></div>
-
-<!-- Modal Utilisateur Admin -->
-<div class="modal-overlay" id="modal-admin-user">
+<!-- Upload Document -->
+<div class="modal-overlay" id="modal-upload-doc">
   <div class="modal">
-    <div class="modal-hdr">
-      <h3 id="modal-user-title"><i class="fa-solid fa-user-plus" style="color:var(--primary);margin-right:6px"></i> Nouvel utilisateur</h3>
-      <button class="close-modal" onclick="closeModal('modal-admin-user')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
+    <div class="modal-hdr"><h3><i class="fa-solid fa-cloud-arrow-up" style="color:var(--primary)"></i> Publier un document</h3><button class="close-modal" onclick="closeModal('modal-upload-doc')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <input type="hidden" id="au-id">
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Prénom</label><input class="form-control" id="au-prenom"></div>
-        <div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="au-nom"></div>
+      <div class="form-group"><label class="form-label">Nom du document</label><input class="form-control" id="udoc-nom" placeholder="Ex: PV AG Juin 2026"></div>
+      <div class="form-group"><label class="form-label">Catégorie</label>
+        <select class="form-control" id="udoc-categorie">
+          <option value="ag">Assemblée Générale</option><option value="reglementation">Réglementation</option>
+          <option value="contrats">Contrats</option><option value="financier">Financier</option><option value="autre">Autre</option>
+        </select>
       </div>
-      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="au-email" type="email"></div>
-      <div class="form-group">
-        <label class="form-label">Mot de passe <span id="au-pwd-hint" style="color:var(--text-3);font-weight:400">(laisser vide = inchangé)</span></label>
-        <input class="form-control" id="au-password" type="password" placeholder="••••••••">
+      <div class="form-group"><label class="form-label">Fichier (PDF, Word, Excel, Image — max 10 MB)</label>
+        <div class="upload-zone" onclick="document.getElementById('udoc-fichier').click()"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="event.preventDefault();this.classList.remove('drag-over');document.getElementById('udoc-fichier').files=event.dataTransfer.files;updateZoneLabel()">
+          <div class="upload-zone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+          <p id="upload-zone-label">Cliquer ou glisser-déposer un fichier</p>
+          <p class="hint">PDF · Word · Excel · JPG · PNG</p>
+          <input type="file" id="udoc-fichier" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" onchange="updateZoneLabel()">
+        </div>
       </div>
+      <div class="switch-wrap"><label class="switch"><input type="checkbox" id="udoc-notifier" checked><span class="slider-sw"></span></label><span class="switch-label">Notifier les résidents par email</span></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-upload-doc')">Annuler</button><button class="btn btn-primary" id="udoc-submit" onclick="submitUploadDoc()"><i class="fa-solid fa-cloud-arrow-up"></i> Publier</button></div>
+  </div>
+</div>
+
+<!-- Agenda Rule -->
+<div class="modal-overlay" id="modal-agenda">
+  <div class="modal">
+    <div class="modal-hdr"><h3 id="modal-agenda-title"><i class="fa-solid fa-calendar-check" style="color:var(--primary)"></i> Règle de notification</h3><button class="close-modal" onclick="closeModal('modal-agenda')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="agenda-id">
+      <div class="form-group"><label class="form-label">Nom de la règle</label><input class="form-control" id="agenda-nom" placeholder="Ex: Rappel avant échéance"></div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="agenda-desc" placeholder="Description optionnelle"></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Rôle</label>
-          <select class="form-control" id="au-role">
-            <option value="resident">Résident</option>
-            <option value="gestionnaire">Gestionnaire</option>
-            <option value="admin">Administrateur</option>
+        <div class="form-group"><label class="form-label">Événement</label>
+          <select class="form-control" id="agenda-type">
+            <option value="appel_fonds">Appel de fonds</option>
+            <option value="rappel_paiement">Rappel paiement</option>
+            <option value="convocation_ag">Convocation AG</option>
           </select>
         </div>
+        <div class="form-group"><label class="form-label">Canal</label>
+          <select class="form-control" id="agenda-canal">
+            <option value="email">Email uniquement</option>
+            <option value="sms">SMS uniquement</option>
+            <option value="les_deux">Email + SMS</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Déclencheur</label>
+          <select class="form-control" id="agenda-declencheur">
+            <option value="avant_echeance">Avant l'échéance</option>
+            <option value="apres_echeance">Après l'échéance</option>
+            <option value="avant_ag">Avant l'AG</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Décalage (jours)</label><input class="form-control" id="agenda-jours" type="number" placeholder="Ex: 7" min="1" max="90"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Heure d'envoi</label><input class="form-control" id="agenda-heure" type="time" value="09:00"></div>
+        <div class="form-group" style="justify-content:flex-end"><div class="switch-wrap" style="margin-top:24px"><label class="switch"><input type="checkbox" id="agenda-actif" checked><span class="slider-sw"></span></label><span class="switch-label">Actif</span></div></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-agenda')">Annuler</button><button class="btn btn-primary" onclick="submitAgenda()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- Notif manuelle -->
+<div class="modal-overlay" id="modal-notif">
+  <div class="modal">
+    <div class="modal-hdr"><h3><i class="fa-solid fa-paper-plane" style="color:var(--primary)"></i> Envoyer une notification</h3><button class="close-modal" onclick="closeModal('modal-notif')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Type de notification</label>
+        <select class="form-control" id="notif-type-manual">
+          <option value="test">Test de configuration email</option>
+          <option value="appel-fonds">Appel de fonds (appel actif)</option>
+          <option value="rappel-impayes">Relance impayés</option>
+        </select>
+      </div>
+      <div class="form-group" id="notif-email-manual-wrap"><label class="form-label">Email de test (pour le mode test)</label><input class="form-control" id="notif-email-manual" type="email" placeholder="test@email.com"></div>
+      <div class="switch-wrap"><label class="switch"><input type="checkbox" id="notif-include-sms" checked><span class="slider-sw"></span></label><span class="switch-label">Inclure les SMS (si configuré)</span></div>
+      <div style="margin-top:12px;background:var(--warning-pale);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--warning)">
+        <i class="fa-solid fa-circle-info"></i> Les résidents reçoivent les notifications selon leurs préférences (email/SMS activés dans leur profil).
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-notif')">Annuler</button><button class="btn btn-primary" onclick="submitManualNotif()"><i class="fa-solid fa-paper-plane"></i> Envoyer</button></div>
+  </div>
+</div>
+
+<!-- Admin User -->
+<div class="modal-overlay" id="modal-admin-user">
+  <div class="modal">
+    <div class="modal-hdr"><h3 id="modal-user-title"><i class="fa-solid fa-user-plus" style="color:var(--primary)"></i> Utilisateur</h3><button class="close-modal" onclick="closeModal('modal-admin-user')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="au-id">
+      <div class="form-row"><div class="form-group"><label class="form-label">Prénom</label><input class="form-control" id="au-prenom"></div><div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="au-nom"></div></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="au-email" type="email"></div>
+      <div class="form-group"><label class="form-label">Mot de passe <span id="au-pwd-hint" style="color:var(--text-3);font-weight:400;font-size:11px">(vide = inchangé)</span></label><input class="form-control" id="au-password" type="password" placeholder="••••••••"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Rôle</label><select class="form-control" id="au-role"><option value="resident">Résident</option><option value="gestionnaire">Gestionnaire</option><option value="admin">Administrateur</option></select></div>
         <div class="form-group"><label class="form-label">Lot</label><input class="form-control" id="au-lot" placeholder="Ex: 4B"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Tantièmes</label><input class="form-control" id="au-tantiemes" type="number" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Tantièmes</label><input class="form-control" id="au-tantiemes" type="number"></div>
         <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="au-tel"></div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-admin-user')">Annuler</button>
-      <button class="btn btn-primary" onclick="submitAdminUser()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-admin-user')">Annuler</button><button class="btn btn-primary" onclick="submitAdminUser()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button></div>
   </div>
 </div>
 
-<!-- Modal Type Charge / Dépense -->
+<!-- Type modal (charges / dépenses / réclamations) -->
 <div class="modal-overlay" id="modal-type">
   <div class="modal">
-    <div class="modal-hdr">
-      <h3 id="modal-type-title"><i class="fa-solid fa-tag" style="color:var(--primary);margin-right:6px"></i> Nouveau type</h3>
-      <button class="close-modal" onclick="closeModal('modal-type')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
+    <div class="modal-hdr"><h3 id="modal-type-title"><i class="fa-solid fa-tag" style="color:var(--primary)"></i> Nouveau type</h3><button class="close-modal" onclick="closeModal('modal-type')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <input type="hidden" id="t-id">
-      <input type="hidden" id="t-kind">
-      <div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="t-nom" placeholder="Nom du type"></div>
-      <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="t-desc" placeholder="Description optionnelle..."></textarea></div>
-      <div class="form-group" id="t-cat-wrap" style="display:none">
-        <label class="form-label">Catégorie</label>
-        <select class="form-control" id="t-cat">
-          <option value="personnel">Personnel</option>
-          <option value="energie">Énergie</option>
-          <option value="entretien">Entretien</option>
-          <option value="administratif">Administratif</option>
-          <option value="travaux">Travaux</option>
-          <option value="general">Général</option>
-        </select>
+      <input type="hidden" id="t-id"><input type="hidden" id="t-kind">
+      <div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="t-nom"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="t-desc" style="min-height:65px"></textarea></div>
+      <div class="form-group" id="t-cat-wrap" style="display:none"><label class="form-label">Catégorie</label>
+        <select class="form-control" id="t-cat"><option value="personnel">Personnel</option><option value="energie">Énergie</option><option value="entretien">Entretien</option><option value="administratif">Administratif</option><option value="travaux">Travaux</option><option value="general">Général</option></select>
       </div>
-      <div class="switch-wrap">
-        <label class="switch"><input type="checkbox" id="t-actif" checked><span class="slider-sw"></span></label>
-        <span class="switch-label">Actif</span>
+      <div class="form-group" id="t-prio-wrap" style="display:none"><label class="form-label">Priorité</label>
+        <select class="form-control" id="t-priorite"><option value="faible">Faible</option><option value="normale">Normale</option><option value="haute">Haute</option><option value="urgente">Urgente</option></select>
       </div>
+      <div class="form-group" id="t-delai-wrap" style="display:none"><label class="form-label">Délai de traitement (jours)</label><input class="form-control" id="t-delai" type="number" value="7"></div>
+      <div class="switch-wrap"><label class="switch"><input type="checkbox" id="t-actif" checked><span class="slider-sw"></span></label><span class="switch-label">Actif</span></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-type')">Annuler</button>
-      <button class="btn btn-primary" onclick="submitType()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-type')">Annuler</button><button class="btn btn-primary" onclick="submitType()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button></div>
   </div>
 </div>
 
+<button class="fab" id="fab-btn" onclick="fabAction()"><i class="fa-solid fa-plus"></i></button>
+<div class="toast" id="toast"><i class="fa-solid fa-circle-check" id="toast-icon"></i><span id="toast-msg"></span></div>
 <script src="app.js"></script>
 </body>
 </html>
