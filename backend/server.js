@@ -9,6 +9,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Servir les uploads locaux (fallback sans Cloudinary)
+const uploadDir = process.env.UPLOAD_DIR || '/tmp/uploads';
+require('fs').mkdirSync(uploadDir, { recursive: true });
+app.use('/uploads', require('express').static(uploadDir));
+console.log('📁 Uploads servis depuis:', uploadDir);
+
 app.use((req, res, next) => { console.log(`${new Date().toISOString()} ${req.method} ${req.path}`); next(); });
 
 // ── Routes ────────────────────────────────────────────────
