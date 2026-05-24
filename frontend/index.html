@@ -359,6 +359,7 @@ textarea.form-control{resize:vertical;min-height:75px}
           <div class="nav-item" onclick="showPage('r-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
           <div class="nav-item" onclick="showPage('r-messagerie')"><i class="fa-solid fa-comments"></i> Messagerie</div>
           <div class="nav-item" onclick="showPage('r-ag')"><i class="fa-solid fa-users"></i> Assemblées Générales</div>
+          <div class="nav-item" onclick="showPage('r-jardinage')"><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Planning Jardinage</div>
         </div>
         <div class="nav-section">
           <div class="nav-label">Compte</div>
@@ -384,6 +385,8 @@ textarea.form-control{resize:vertical;min-height:75px}
           <div class="nav-item" onclick="showPage('g-ag')"><i class="fa-solid fa-presentation-screen"></i> Tenue des AG</div>
           <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
           <div class="nav-item" onclick="showPage('g-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
+          <div class="nav-item" onclick="showPage('g-jardinage')"><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Jardinage</div>
+          <div class="nav-item" onclick="showPage('g-bilan')"><i class="fa-solid fa-scale-balanced"></i> Bilan financier</div>
         </div>
         <div class="nav-section">
           <div class="nav-label">Communications</div>
@@ -424,6 +427,8 @@ textarea.form-control{resize:vertical;min-height:75px}
           <div class="nav-item" onclick="showPage('g-ag')"><i class="fa-solid fa-presentation-screen"></i> Tenue des AG</div>
           <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
           <div class="nav-item" onclick="showPage('g-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
+          <div class="nav-item" onclick="showPage('g-jardinage')"><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Jardinage</div>
+          <div class="nav-item" onclick="showPage('g-bilan')"><i class="fa-solid fa-scale-balanced"></i> Bilan financier</div>
         </div>
         <div class="nav-section">
           <div class="nav-label">Monitoring</div>
@@ -468,6 +473,10 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="page" id="page-a-residences"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-a-notifications-log"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-a-agenda"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <!-- JARDINAGE & BILAN -->
+    <div class="page" id="page-r-jardinage"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-g-jardinage"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-g-bilan"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
   </main>
 </div>
 
@@ -490,25 +499,37 @@ textarea.form-control{resize:vertical;min-height:75px}
 </div>
 
 <!-- Paiement -->
-<div class="modal-overlay" id="modal-paiement">
+<!-- Modal Déclarer paiement (résident) -->
+<div class="modal-overlay" id="modal-declarer-paiement">
   <div class="modal">
-    <div class="modal-hdr"><h3><i class="fa-solid fa-credit-card" style="color:var(--primary)"></i> Paiement sécurisé</h3><button class="close-modal" onclick="closeModal('modal-paiement')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-hdr"><h3><i class="fa-solid fa-pen-to-square" style="color:var(--primary)"></i> Déclarer mon paiement</h3><button class="close-modal" onclick="closeModal('modal-declarer-paiement')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div id="modal-paiement-info" style="background:var(--primary-pale);border-radius:8px;padding:12px;margin-bottom:1rem;font-size:13px;color:var(--primary)"></div>
-      <div style="display:flex;gap:8px;margin-bottom:1rem">
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('pay-mode').value='carte'" style="flex:1;justify-content:center"><i class="fa-solid fa-credit-card"></i> Carte</button>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pay-mode').value='virement'" style="flex:1;justify-content:center"><i class="fa-solid fa-building-columns"></i> Virement</button>
+      <input type="hidden" id="decl-paiement-id">
+      <div style="background:var(--primary-pale);border-radius:8px;padding:12px;margin-bottom:1rem;font-size:13px;color:var(--primary);display:flex;gap:10px;align-items:center">
+        <i class="fa-solid fa-file-invoice-dollar" style="font-size:1.2rem"></i>
+        <div><strong id="decl-periode"></strong> — <strong id="decl-montant"></strong><div style="font-size:11px;opacity:.8;margin-top:2px" id="decl-lot"></div></div>
       </div>
-      <input type="hidden" id="pay-mode" value="carte"><input type="hidden" id="pay-paiement-id">
-      <div class="form-group"><label class="form-label">Numéro de carte</label><input class="form-control" placeholder="1234 5678 9012 3456"></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Expiration</label><input class="form-control" placeholder="MM/AA"></div>
-        <div class="form-group"><label class="form-label">CVV</label><input class="form-control" type="password" placeholder="123"></div>
+      <div class="form-group"><label class="form-label">Mode de règlement</label>
+        <select class="form-control" id="decl-type">
+          <option value="virement">Virement bancaire</option>
+          <option value="versement">Versement espèces</option>
+          <option value="cheque">Chèque</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Date de règlement</label>
+        <input class="form-control" id="decl-date" type="date">
+      </div>
+      <div class="form-group"><label class="form-label">Référence / N° bordereau <span style="color:var(--text-3);font-weight:400">(optionnel)</span></label>
+        <input class="form-control" id="decl-ref" placeholder="Ex: VIR-2026-0542, CHQ-0012…">
+      </div>
+      <div style="background:var(--warning-pale);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--warning)">
+        <i class="fa-solid fa-circle-info"></i> Votre déclaration sera confirmée par le syndic après vérification.
       </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-paiement')">Annuler</button><button class="btn btn-primary" id="pay-submit-btn" onclick="submitPaiement()"><i class="fa-solid fa-lock"></i> Confirmer</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-declarer-paiement')">Annuler</button><button class="btn btn-primary" id="decl-submit" onclick="submitDeclarerPaiement()"><i class="fa-solid fa-paper-plane"></i> Envoyer au syndic</button></div>
   </div>
 </div>
+
 
 <!-- Appel de fonds -->
 <div class="modal-overlay" id="modal-appel-fonds">
@@ -745,6 +766,36 @@ textarea.form-control{resize:vertical;min-height:75px}
       <button class="btn btn-ghost" onclick="closeModal('modal-intervention');document.getElementById('intv-id').value=''">Annuler</button>
       <button class="btn btn-primary" onclick="submitIntervention()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal Jardinage -->
+<div class="modal-overlay" id="modal-jardinage">
+  <div class="modal">
+    <div class="modal-hdr"><h3><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Planifier une intervention jardinage</h3><button class="close-modal" onclick="closeModal('modal-jardinage')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Villa / Lot / Zone</label>
+        <input class="form-control" id="jard-villa" placeholder="Ex: Villa 12, Lot A3, Zone pelouse nord…">
+      </div>
+      <div class="form-group"><label class="form-label">Type d'intervention</label>
+        <select class="form-control" id="jard-type-select" onchange="document.getElementById('jard-desc').value=this.options[this.selectedIndex].text">
+          <option value="tonte">🌿 Tonte de pelouse</option>
+          <option value="taille">✂️ Taille haies / arbustes</option>
+          <option value="arrosage">💧 Arrosage / irrigation</option>
+          <option value="nettoyage">🧹 Nettoyage espaces verts</option>
+          <option value="plantation">🌱 Plantation</option>
+          <option value="traitement">🧪 Traitement / désherbant</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Description détaillée</label>
+        <textarea class="form-control" id="jard-desc" placeholder="Précisez l'intervention…" style="min-height:65px">Tonte de pelouse</textarea>
+      </div>
+      <div class="form-group"><label class="form-label">Prestataire / Jardinier</label>
+        <input class="form-control" id="jard-prestataire" placeholder="Nom du prestataire ou jardinier">
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-jardinage')">Annuler</button><button class="btn btn-primary" onclick="submitJardinage()" style="background:#27ae60"><i class="fa-solid fa-leaf"></i> Planifier</button></div>
   </div>
 </div>
 
