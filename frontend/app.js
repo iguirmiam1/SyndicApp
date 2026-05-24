@@ -244,7 +244,9 @@ async function loadRIncidents(){
   const resolus=data.filter(i=>i.statut==='resolu'||i.statut==='ferme');
   setPageContent('r-incidents',`
     <div class="page-hdr"><div class="page-hdr-left"><h1>Mes réclamations</h1><p>${actifs.length} en cours · ${resolus.length} résolues</p></div>
-      <div class="hdr-actions"><button class="btn btn-primary" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Signaler</button></div>
+      <div class="hdr-actions">
+        <button class="btn btn-primary" onclick="openNewIncident()"><i class="fa-solid fa-plus"></i> Nouvelle réclamation</button>
+      </div>
     </div>
     <div class="card">
       <div class="card-hdr"><i class="fa-solid fa-circle-dot"></i> En cours (${actifs.length})</div>
@@ -563,13 +565,14 @@ function openEditIntervention(i){
 
 async function submitIntervention(){
   const id=document.getElementById('intv-id').value;
+  const coutRaw=document.getElementById('intv-cout').value;
   const body={
     type:document.getElementById('intv-type').value,
     localisation:document.getElementById('intv-loc').value,
     description:document.getElementById('intv-desc').value,
     urgence:document.getElementById('intv-urgence').value,
     prestataire:document.getElementById('intv-prestataire').value,
-    cout:document.getElementById('intv-cout').value||null,
+    cout:coutRaw?parseFloat(coutRaw):null,
     statut:document.getElementById('intv-statut').value,
   };
   if(!body.type)return showError('Type requis');
@@ -850,7 +853,9 @@ async function deleteAgenda(id,nom){
 }
 
 async function loadGBilan(){
-  const [dash, charges]=await Promise.all([GET('/dashboard/gestionnaire'), GET('/charges')]);
+  const [dash, charges, incidents]=await Promise.all([
+    GET('/dashboard/gestionnaire'), GET('/charges'), GET('/incidents')
+  ]);
   if(!dash)return;
   const actif=charges?.find(c=>c.statut==='actif');
   let paiements=[];
@@ -862,6 +867,10 @@ async function loadGBilan(){
   const tauxRecouv=totalDu>0?Math.round((totalEncaisse/totalDu)*100):0;
   const paye=paiements.filter(p=>p.statut==='paye');
   const nonPaye=paiements.filter(p=>p.statut!=='paye');
+  // Coûts des interventions (travaux, jardinage...)
+  const incidentsAvecCout=(incidents||[]).filter(i=>i.cout&&parseFloat(i.cout)>0);
+  const totalTravaux=incidentsAvecCout.reduce((s,i)=>s+parseFloat(i.cout),0);
+  const solde=totalEncaisse-totalTravaux;
   setPageContent('g-bilan',`
     <div class="page-hdr"><div class="page-hdr-left"><h1>Bilan financier</h1><p>${actif?'Appel de fonds : '+actif.periode:'Vue consolidée'}</p></div>
       <div class="hdr-actions"><button class="btn btn-ghost btn-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimer</button></div>
@@ -886,16 +895,17 @@ async function loadGBilan(){
         </div>
         <div style="display:flex;flex-direction:column;gap:0">
           ${[
-            ['Appels de fonds émis',totalDu,'',''],
-            ['Encaissements reçus',totalEncaisse,'color:var(--success)','+ '],
-            ['Impayés en cours',-totalImpayes,'color:var(--danger)','- '],
+            ['📋 Appels de fonds émis',totalDu,'color:var(--text)',''],
+            ['✅ Encaissements reçus',totalEncaisse,'color:var(--success)','+ '],
+            ['🔧 Dépenses travaux & entretien',totalTravaux,'color:var(--accent)','- '],
+            ['❌ Impayés en cours',totalImpayes,'color:var(--danger)','- '],
           ].map(([l,v,c,p])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
             <span style="font-size:13px;color:var(--text-2)">${l}</span>
             <strong style="font-size:14px;${c}">${p}${Math.abs(v).toLocaleString('fr-FR')} MAD</strong>
           </div>`).join('')}
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;background:var(--primary-pale);margin:0 -1.25rem;padding:12px 1.25rem;border-radius:0 0 var(--radius) var(--radius);margin-bottom:-1.25rem">
-            <strong style="font-size:14px;color:var(--primary)">Solde de caisse</strong>
-            <strong style="font-size:1.1rem;color:var(--primary)">${(totalEncaisse).toLocaleString('fr-FR')} MAD</strong>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:${solde>=0?'var(--primary-pale)':'var(--danger-pale)'};margin:0 -1.25rem;padding:14px 1.25rem;border-radius:0 0 var(--radius) var(--radius);margin-bottom:-1.25rem">
+            <strong style="font-size:14px;color:${solde>=0?'var(--primary)':'var(--danger)'}">💰 Solde de caisse</strong>
+            <strong style="font-size:1.2rem;color:${solde>=0?'var(--primary)':'var(--danger)'}">${solde.toLocaleString('fr-FR')} MAD</strong>
           </div>
         </div>
       </div>
@@ -913,6 +923,21 @@ async function loadGBilan(){
         </div>
       </div>
     </div>
+    ${totalTravaux>0?`<div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-hammer"></i> Détail des dépenses travaux & jardinage</div>
+      <div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Type</th><th>Localisation</th><th>Prestataire</th><th>Résolu le</th><th>Coût</th></tr></thead>
+        <tbody>${incidentsAvecCout.map(i=>`<tr>
+          <td><strong>${i.type}</strong></td>
+          <td>${i.localisation||'—'}</td>
+          <td>${i.prestataire||'—'}</td>
+          <td>${fmtDate(i.date_resolution||i.updated_at)}</td>
+          <td><strong style="color:var(--accent)">${parseFloat(i.cout).toLocaleString('fr-FR')} MAD</strong></td>
+        </tr>`).join('')}
+        <tr style="background:var(--surface2)"><td colspan="4" style="font-weight:700;text-align:right">Total dépenses</td>
+          <td><strong style="color:var(--accent);font-size:15px">${totalTravaux.toLocaleString('fr-FR')} MAD</strong></td></tr>
+        </tbody></table></div>
+    </div>`:''}
     <div class="card">
       <div class="card-hdr"><i class="fa-solid fa-table"></i> Détail par copropriétaire — ${actif?.periode||''}</div>
       <div style="overflow-x:auto"><table class="data-table">
@@ -1090,6 +1115,17 @@ async function loadANotifLog(){
 
 // ══════════════════════ JARDINAGE ══════════════════════════
 
+// Helpers jardinage date
+function extractJardDate(desc){
+  if(!desc)return '—';
+  const m=desc.match(/📅\s*([^|]+)\|/);
+  return m?m[1].trim():'—';
+}
+function extractJardDesc(desc){
+  if(!desc)return desc||'—';
+  const m=desc.match(/\|\s*(.+)$/);
+  return m?m[1].trim():desc;
+}
 async function loadRJardinage(){
   // Lire les interventions jardinage depuis les incidents de type Jardinage
   const all=await GET('/incidents'); if(!all)return;
@@ -1154,12 +1190,13 @@ async function loadGJardinage(){
         <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Ajouter</button></div>
       </div>
       ${jardins.length?`<div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Villa / Lot</th><th>Date</th><th>Type</th><th>Description</th><th>Prestataire</th><th>Statut</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Villa / Lot</th><th>Date planifiée</th><th>Type</th><th>Date saisie</th><th>Description</th><th>Prestataire</th><th>Statut</th><th>Actions</th></tr></thead>
         <tbody>${jardins.map(j=>`<tr>
           <td><strong>${j.localisation||'Commun'}</strong></td>
           <td>${fmtDate(j.created_at)}</td>
           <td><span style="background:#e8f8f0;color:#27ae60;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">🌿 Jardinage</span></td>
-          <td style="color:var(--text-2);font-size:12px">${j.description||'—'}</td>
+          <td style="font-weight:600;color:var(--text)">${extractJardDate(j.description)}</td>
+          <td style="color:var(--text-2);font-size:12px">${extractJardDesc(j.description)}</td>
           <td>${j.prestataire||'—'}</td>
           <td>${statusPill(j.statut)}</td>
           <td><div style="display:flex;gap:4px">
@@ -1172,19 +1209,27 @@ async function loadGJardinage(){
 }
 
 async function submitJardinage(){
+  const villa=document.getElementById('jard-villa').value.trim();
+  const date=document.getElementById('jard-date').value;
+  const desc=document.getElementById('jard-desc').value.trim();
+  const prest=document.getElementById('jard-prestataire').value.trim();
+  if(!villa)return showError('Villa/Lot requis');
+  if(!date)return showError('Date requise');
+  // Formater la description avec la date pour affichage
+  const dateLabel=new Date(date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
   const body={
     type:'Jardinage',
-    localisation:document.getElementById('jard-villa').value,
-    description:document.getElementById('jard-desc').value,
-    prestataire:document.getElementById('jard-prestataire').value,
+    localisation:villa,
+    description:`📅 ${dateLabel} | ${desc||'Intervention jardinage'}`,
+    prestataire:prest,
     urgence:'normal',
     statut:'ouvert',
   };
-  if(!body.localisation)return showError('Villa/Lot requis');
   try{
     await POST('/incidents',body);
-    showToast('✅ Intervention jardinage planifiée');
+    showToast('✅ Intervention jardinage planifiée pour le '+dateLabel);
     closeModal('modal-jardinage');
+    ['jard-villa','jard-date','jard-desc','jard-prestataire'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     loaded.delete('g-jardinage');loaded.delete('r-jardinage');
     loadGJardinage();
   }catch(e){showError(e.error||'Erreur');}
@@ -1338,6 +1383,18 @@ async function submitDeclarerPaiement(){
     if(state.currentPage==='r-dashboard')loadRDashboard();
   }catch{showError('Erreur déclaration');}
   btn.disabled=false;
+}
+
+function openNewIncident(){
+  // Reset le formulaire
+  ['inc-type','inc-loc','inc-desc','inc-urgence'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&el.tagName==='INPUT')el.value='';
+    if(el&&el.tagName==='TEXTAREA')el.value='';
+  });
+  const urgEl=document.getElementById('inc-urgence');
+  if(urgEl)urgEl.value='normal';
+  openModal('modal-incident');
 }
 
 async function submitIncident(){
