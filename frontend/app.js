@@ -150,6 +150,9 @@ async function loadPage(id){
       case 'a-residences':   await loadAResidences(); break;
       case 'a-notifications-log':await loadANotifLog(); break;
       case 'a-agenda':       await loadGAgenda(true); break;
+      case 'r-jardinage':    await loadRJardinage(); break;
+      case 'g-jardinage':    await loadGJardinage(); break;
+      case 'g-bilan':        await loadGBilan(); break;
     }
   }catch(e){
     console.error('Page load error',id,e);
@@ -172,7 +175,7 @@ async function loadRDashboard(){
       <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Appartement ${u.lot||'—'}</p></div>
       <div class="hdr-actions"><button class="btn btn-primary btn-sm" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Signaler</button></div>
     </div>
-    <div class="metrics-grid">
+    <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="metric ${pa&&pa.statut!=='paye'?'danger':''}">
         <div class="metric-icon"><i class="fa-solid fa-file-invoice"></i></div>
         <div class="metric-val">${pa?parseFloat(pa.montant||0).toLocaleString('fr-FR'):0} <span style="font-size:1rem;font-weight:400">MAD</span></div>
@@ -185,16 +188,13 @@ async function loadRDashboard(){
       </div>
       <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-wrench"></i></div>
         <div class="metric-val">${openInc}</div><div class="metric-label">Réclamations actives</div>
-      </div>
-      <div class="metric info"><div class="metric-icon"><i class="fa-solid fa-building"></i></div>
-        <div class="metric-val">${u.tantiemes||0}<span style="font-size:1rem">/1000</span></div>
-        <div class="metric-label">Tantièmes</div><div class="metric-sub">Lot ${u.lot||'—'}</div>
+        <div class="metric-sub">Lot ${u.lot||'—'}</div>
       </div>
     </div>
     ${pa&&pa.statut!=='paye'?`<div class="pay-banner">
-      <div><div style="font-size:11px;opacity:.7;margin-bottom:4px">APPEL DE FONDS</div><div class="amount">${parseFloat(pa.montant||0).toLocaleString('fr-FR')} MAD</div></div>
-      <div class="label">${pa.periode||''}<div class="due">Échéance le ${fmtDate(pa.echeance)}</div></div>
-      <button class="pay-banner-btn" onclick="openPayModalWithId(${pa.id},'${pa.periode}',${pa.montant})"><i class="fa-solid fa-credit-card"></i> Payer maintenant</button>
+      <div><div style="font-size:11px;opacity:.7;margin-bottom:4px">APPEL DE FONDS — ${pa.periode||''}</div><div class="amount">${parseFloat(pa.montant||0).toLocaleString('fr-FR')} MAD</div></div>
+      <div class="label">Résidence ${state.user.residence_nom||''}<div class="due">Échéance le ${fmtDate(pa.echeance)}</div></div>
+      <button class="pay-banner-btn" onclick="openDeclarerPaiement(${pa.id},'${pa.periode}',${pa.montant})"><i class="fa-solid fa-pen-to-square"></i> Déclarer mon paiement</button>
     </div>`:''}
     <div class="grid-2">
       <div class="card">
@@ -231,7 +231,7 @@ async function loadRFinances(){
       <div style="overflow-x:auto"><table class="data-table">
         <thead><tr><th>Période</th><th>Échéance</th><th>Montant</th><th>Paiement</th><th>Mode</th><th>Statut</th></tr></thead>
         <tbody>${charges.map(p=>`<tr><td><strong>${p.periode||''}</strong></td><td>${fmtDate(p.echeance)}</td><td><strong>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</strong></td><td>${fmtDate(p.date_paiement)}</td><td>${p.mode||'—'}</td><td>${statusPill(p.statut)}</td>
-          ${p.statut!=='paye'?`<td><button class="btn btn-primary btn-xs" onclick="openPayModalWithId(${p.id},'${p.periode}',${p.montant})"><i class="fa-solid fa-credit-card"></i> Payer</button></td>`:'<td></td>'}
+          ${p.statut!=='paye'?`<td><button class="btn btn-ghost btn-xs" onclick="openDeclarerPaiement(${p.id},'${p.periode}',${p.montant})"><i class="fa-solid fa-pen-to-square"></i> Déclarer</button></td>`:'<td><span class="pill pill-green">✓ Déclaré</span></td>'}
         </tr>`).join('')}</tbody>
       </table></div>
     </div>`);
@@ -268,23 +268,25 @@ async function loadRIncidents(){
 
 async function loadRDocuments(){
   const data=await GET('/documents'); if(!data)return;
-  const docIcon=d=>{const e=(d.nom||'').split('.').pop().toLowerCase();return e==='pdf'?'file-pdf':e==='doc'||e==='docx'?'file-word':e==='xls'||e==='xlsx'?'file-excel':e.match(/jpe?g|png|gif/)?'file-image':'file';}
+  const docIcon=d=>{const e=(d.nom||'').split('.').pop().toLowerCase();return e==='pdf'?'file-pdf':e==='doc'||e==='docx'?'file-word':e==='xls'||e==='xlsx'?'file-excel':['jpg','jpeg','png','gif'].includes(e)?'file-image':'file';};
+  const docColor=d=>{const e=(d.nom||'').split('.').pop().toLowerCase();return e==='pdf'?'#e74c3c':['doc','docx'].includes(e)?'#2980b9':['xls','xlsx'].includes(e)?'#27ae60':'var(--accent)';};
   const cats={ag:'Assemblées Générales',reglementation:'Réglementation',contrats:'Contrats',financier:'Financier',autre:'Autres'};
   const byCat={}; data.forEach(d=>{(byCat[d.categorie]=byCat[d.categorie]||[]).push(d);});
   setPageContent('r-documents',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Documents</h1><p>${data.length} document(s) disponibles</p></div></div>
-    ${data.length===0?`<div class="card"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>Aucun document disponible pour l'instant</p></div></div>`:''}
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Documents</h1><p>${data.length} document(s) mis à disposition par le syndic</p></div></div>
+    ${data.length===0?`<div class="card"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>Aucun document disponible pour l'instant</p><p style="font-size:12px;margin-top:4px;color:var(--text-3)">Le syndic n'a pas encore publié de documents.</p></div></div>`:''}
     ${Object.keys(cats).filter(c=>byCat[c]?.length).map(c=>`
     <div class="card">
-      <div class="card-hdr"><i class="fa-solid fa-folder-open"></i> ${cats[c]} <span class="pill pill-gray" style="margin-left:auto">${byCat[c].length}</span></div>
+      <div class="card-hdr"><i class="fa-solid fa-folder-open"></i> ${cats[c]} <span class="pill pill-blue" style="margin-left:auto">${byCat[c].length}</span></div>
       <div class="doc-grid">${byCat[c].map(d=>`
-        <div class="doc-card" title="${d.nom}" ${d.url?`onclick="window.open('${d.url}','_blank')"`:''}>
-          <div class="doc-icon"><i class="fa-solid fa-${docIcon(d)}" style="color:var(--accent)"></i></div>
+        <div class="doc-card" title="${d.nom}">
+          <div class="doc-icon"><i class="fa-solid fa-${docIcon(d)}" style="color:${docColor(d)};font-size:2rem"></i></div>
           <div class="doc-name">${d.nom}</div>
           <div class="doc-date">${fmtDate(d.created_at)}</div>
           ${d.taille_ko?`<div class="doc-size">${d.taille_ko} Ko</div>`:''}
-          ${d.url?`<a class="doc-dl btn btn-primary btn-xs" href="${d.url}" target="_blank" onclick="event.stopPropagation()"><i class="fa-solid fa-download"></i> Télécharger</a>`:
-          `<span class="pill pill-gray" style="font-size:10px">Pas de fichier</span>`}
+          ${d.url
+            ?`<a class="btn btn-primary btn-xs" href="${d.url}" target="_blank" rel="noopener" style="margin-top:4px"><i class="fa-solid fa-eye"></i> Ouvrir</a>`
+            :`<span class="pill pill-gray" style="font-size:10px;margin-top:4px">Non disponible</span>`}
         </div>`).join('')}
       </div>
     </div>`).join('')}`);
@@ -535,12 +537,13 @@ async function loadGTravaux(){
     ${resolus.length?`<div class="card">
       <div class="card-hdr"><i class="fa-solid fa-check-circle"></i> Résolus récemment</div>
       <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Type</th><th>Localisation</th><th>Résolu le</th><th>Prestataire</th><th>Coût final</th></tr></thead>
+        <thead><tr><th>Type</th><th>Localisation</th><th>Signalé par</th><th>Résolu le</th><th>Prestataire</th><th>Coût final</th></tr></thead>
         <tbody>${resolus.map(i=>`<tr>
           <td><strong>${i.type}</strong></td><td>${i.localisation||'—'}</td>
-          <td>${fmtDate(i.date_resolution)}</td>
-          <td>${i.prestataire||'—'}</td>
-          <td>${i.cout?parseFloat(i.cout).toLocaleString('fr-FR')+' MAD':'—'}</td>
+          <td style="font-size:12px">${i.prenom||''} ${i.nom||''} ${i.lot?'Lot '+i.lot:''}</td>
+          <td>${fmtDate(i.date_resolution||i.updated_at)}</td>
+          <td><strong style="color:var(--primary)">${i.prestataire||'—'}</strong></td>
+          <td><strong style="color:var(--text)">${i.cout?parseFloat(i.cout).toLocaleString('fr-FR')+' MAD':'Non renseigné'}</strong></td>
         </tr>`).join('')}</tbody>
       </table></div>
     </div>`:''}`);}
@@ -701,7 +704,9 @@ async function loadGDocuments(){
           <td>${fmtDate(d.created_at)}</td>
           <td>${d.taille_ko?d.taille_ko+' Ko':'—'}</td>
           <td><div style="display:flex;gap:4px">
-            ${d.url?`<a class="btn btn-ghost btn-xs" href="${d.url}" target="_blank"><i class="fa-solid fa-eye"></i> Voir</a>`:''}
+            ${d.url
+              ?`<a class="btn btn-primary btn-xs" href="${d.url}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> Ouvrir</a>`
+              :`<span class="pill pill-gray" style="font-size:10px">Pas de fichier</span>`}
             <button class="btn-icon btn-sm" style="color:var(--danger)" onclick="deleteDoc(${d.id},'${d.nom}')"><i class="fa-solid fa-trash"></i></button>
           </div></td></tr>`).join('')}
         </tbody></table></div>`:`<div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>Aucun document. Publiez le premier !</p></div>`}
@@ -750,17 +755,19 @@ async function loadGNotifications(){
 // ── Agenda ────────────────────────────────────────────────
 async function loadGAgenda(isAdmin=false){
   let rules=[], execs=[];
-  try{[rules,execs]=await Promise.all([GET('/agenda'),GET('/agenda/executions')]);}
-  catch(e){
+  try{[rules,execs]=await Promise.all([GET('/agenda').catch(()=>[]),GET('/agenda/executions').catch(()=>[])]);}
+  catch(e){ rules=[]; execs=[]; }
+  if(!rules && !execs){
     const pid=isAdmin?'a-agenda':'g-agenda';
-    setPageContent(pid,`<div class="page-hdr"><div class="page-hdr-left"><h1>Agenda automatique</h1></div></div>
+    setPageContent(pid,`<div class="page-hdr"><div class="page-hdr-left"><h1>Agenda automatique</h1></div>
+      <div class="hdr-actions"><button class="btn btn-primary" onclick="openAgendaModal()"><i class="fa-solid fa-plus"></i> Nouvelle règle</button></div></div>
       <div class="card" style="background:var(--warning-pale);border-color:rgba(176,107,16,.3)">
-        <div class="card-hdr"><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning)"></i> Module Agenda non disponible</div>
-        <p style="font-size:13px;color:var(--text-2)">Le fichier <code>backend/routes/agenda.js</code> n'est pas encore uploadé sur GitHub.<br>Uploadez-le pour activer cette fonctionnalité.</p>
-        <div style="margin-top:10px"><code style="background:var(--surface2);padding:8px 12px;border-radius:6px;display:block;font-size:12px">GitHub → backend/routes/agenda.js → Add file</code></div>
+        <div class="card-hdr"><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning)"></i> Module Agenda — routes/agenda.js manquant</div>
+        <p style="font-size:13px;color:var(--text-2)">Uploadez <strong>backend/routes/agenda.js</strong> sur GitHub pour activer cette fonctionnalité.</p>
       </div>`);
     return;
   }
+  if(!rules)rules=[]; if(!execs)execs=[];
   const pid=isAdmin?'a-agenda':'g-agenda';
   const typeLabels={appel_fonds:'Appel de fonds',rappel_paiement:'Rappel paiement',convocation_ag:'Convocation AG'};
   const canalIcon={email:'envelope',sms:'mobile-screen',les_deux:'envelope-open-text'};
@@ -840,6 +847,87 @@ async function deleteAgenda(id,nom){
   if(!confirm(`Supprimer "${nom}" ?`))return;
   try{await DEL('/agenda/'+id);showToast('✅ Supprimé');['g-agenda','a-agenda'].forEach(p=>loaded.delete(p));loadGAgenda(state.currentPage==='a-agenda');}
   catch{showError('Erreur');}
+}
+
+async function loadGBilan(){
+  const [dash, charges]=await Promise.all([GET('/dashboard/gestionnaire'), GET('/charges')]);
+  if(!dash)return;
+  const actif=charges?.find(c=>c.statut==='actif');
+  let paiements=[];
+  if(actif){try{paiements=await GET('/charges/'+actif.id+'/paiements')||[];}catch{}}
+  const totalBudget=parseFloat(dash.budgetAnnuel||0);
+  const totalEncaisse=paiements.filter(p=>p.statut==='paye').reduce((s,p)=>s+parseFloat(p.montant||0),0);
+  const totalImpayes=parseFloat(dash.totalImpayes||0);
+  const totalDu=paiements.reduce((s,p)=>s+parseFloat(p.montant||0),0);
+  const tauxRecouv=totalDu>0?Math.round((totalEncaisse/totalDu)*100):0;
+  const paye=paiements.filter(p=>p.statut==='paye');
+  const nonPaye=paiements.filter(p=>p.statut!=='paye');
+  setPageContent('g-bilan',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Bilan financier</h1><p>${actif?'Appel de fonds : '+actif.periode:'Vue consolidée'}</p></div>
+      <div class="hdr-actions"><button class="btn btn-ghost btn-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimer</button></div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric"><div class="metric-icon"><i class="fa-solid fa-piggy-bank"></i></div>
+        <div class="metric-val">${totalBudget.toLocaleString('fr-FR')} <span style="font-size:1rem">MAD</span></div>
+        <div class="metric-label">Budget annuel</div></div>
+      <div class="metric"><div class="metric-icon"><i class="fa-solid fa-arrow-down-to-bracket"></i></div>
+        <div class="metric-val" style="color:var(--success)">${totalEncaisse.toLocaleString('fr-FR')} <span style="font-size:1rem">MAD</span></div>
+        <div class="metric-label">Encaissé ${actif?actif.periode:''}</div></div>
+      <div class="metric danger"><div class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="metric-val">${totalImpayes.toLocaleString('fr-FR')} <span style="font-size:1rem">MAD</span></div>
+        <div class="metric-label">Impayés</div></div>
+      <div class="metric ${tauxRecouv>=80?'':'accent'}"><div class="metric-icon"><i class="fa-solid fa-percent"></i></div>
+        <div class="metric-val">${tauxRecouv}<span style="font-size:1.2rem">%</span></div>
+        <div class="metric-label">Taux recouvrement</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-hdr"><i class="fa-solid fa-scale-balanced"></i> Bilan de caisse — ${actif?.periode||'Global'}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          ${[
+            ['Appels de fonds émis',totalDu,'',''],
+            ['Encaissements reçus',totalEncaisse,'color:var(--success)','+ '],
+            ['Impayés en cours',-totalImpayes,'color:var(--danger)','- '],
+          ].map(([l,v,c,p])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px;color:var(--text-2)">${l}</span>
+            <strong style="font-size:14px;${c}">${p}${Math.abs(v).toLocaleString('fr-FR')} MAD</strong>
+          </div>`).join('')}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;background:var(--primary-pale);margin:0 -1.25rem;padding:12px 1.25rem;border-radius:0 0 var(--radius) var(--radius);margin-bottom:-1.25rem">
+            <strong style="font-size:14px;color:var(--primary)">Solde de caisse</strong>
+            <strong style="font-size:1.1rem;color:var(--primary)">${(totalEncaisse).toLocaleString('fr-FR')} MAD</strong>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><i class="fa-solid fa-chart-bar"></i> Répartition paiements</div>
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--success)">Payés (${paye.length})</span><strong>${paye.length}</strong></div>
+          <div style="height:12px;background:var(--border);border-radius:6px;overflow:hidden"><div style="height:100%;width:${tauxRecouv}%;background:var(--success);border-radius:6px;transition:width .8s"></div></div>
+        </div>
+        <div class="chart-bar-wrap" style="margin-top:1rem">
+          ${paiements.slice(0,6).map(p=>`<div class="chart-bar-row">
+            <div class="chart-bar-label">${p.prenom||''} ${p.nom||''}</div>
+            <div class="chart-bar-track"><div class="chart-bar-fill ${p.statut==='paye'?'':'danger'}" style="width:${p.statut==='paye'?100:0}%"><span>${p.statut==='paye'?'Payé':'Non payé'}</span></div></div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-table"></i> Détail par copropriétaire — ${actif?.periode||''}</div>
+      <div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Copropriétaire</th><th>Lot</th><th>Montant dû</th><th>Date paiement</th><th>Mode</th><th>Référence</th><th>Statut</th></tr></thead>
+        <tbody>${paiements.map(p=>`<tr>
+          <td><strong>${p.prenom} ${p.nom}</strong></td>
+          <td>${p.lot||'—'}</td>
+          <td>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</td>
+          <td>${fmtDate(p.date_paiement)}</td>
+          <td>${p.mode||'—'}</td>
+          <td style="font-size:12px;color:var(--text-3)">${p.reference||'—'}</td>
+          <td>${statusPill(p.statut)}</td>
+        </tr>`).join('')}
+        </tbody></table></div>
+    </div>`);
 }
 
 async function loadGSettings(){
@@ -999,6 +1087,109 @@ async function loadANotifLog(){
       </tbody></table></div></div>`);
 }
 
+
+// ══════════════════════ JARDINAGE ══════════════════════════
+
+async function loadRJardinage(){
+  // Lire les interventions jardinage depuis les incidents de type Jardinage
+  const all=await GET('/incidents'); if(!all)return;
+  const now=new Date();
+  const jardins=all.filter(i=>i.type==='Jardinage'||i.type==='jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const aVenir=jardins.filter(i=>i.statut!=='resolu'&&i.statut!=='ferme');
+  const passes=jardins.filter(i=>i.statut==='resolu').slice(0,5);
+  const typeIcon={tonte:'scissors',taille:'leaf',arrosage:'droplet',nettoyage:'broom',plantation:'seedling',traitement:'spray-can-sparkles'};
+  setPageContent('r-jardinage',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Planning Jardinage</h1><p>Espaces verts de la résidence</p></div></div>
+    <div class="card" style="background:linear-gradient(135deg,#1a7a52 0%,#27ae60 100%);border:none;color:#fff">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <div style="font-size:3rem">🌿</div>
+        <div><div style="font-size:1.2rem;font-weight:700">Espaces verts — ${state.user.residence_nom||'Résidence'}</div>
+        <div style="opacity:.8;font-size:13px;margin-top:4px">${aVenir.length} intervention(s) planifiée(s) · Prestataire : ${aVenir[0]?.prestataire||'Voir avec le syndic'}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-calendar-days" style="color:#27ae60"></i> Interventions planifiées</div>
+      ${aVenir.length?`<div style="display:flex;flex-direction:column;gap:8px">
+        ${aVenir.map(j=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border-left:4px solid #27ae60">
+          <div style="width:42px;height:42px;border-radius:9px;background:#e8f8f0;color:#27ae60;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🌿</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${j.localisation||'Espaces communs'}</div>
+            <div style="font-size:12px;color:var(--text-2);margin-top:2px">${j.description||j.type}</div>
+            ${j.prestataire?`<div style="font-size:11px;color:#27ae60;margin-top:2px"><i class="fa-solid fa-user-gear"></i> ${j.prestataire}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${fmtDate(j.created_at)}</div>
+            <span class="pill" style="background:#e8f8f0;color:#27ae60;margin-top:4px">${j.statut==='en_cours'?'En cours':'Planifié'}</span>
+          </div>
+        </div>`).join('')}
+      </div>`:`<div class="empty-state"><i class="fa-solid fa-leaf" style="color:#27ae60"></i><p>Aucune intervention planifiée</p></div>`}
+    </div>
+    ${passes.length?`<div class="card"><div class="card-hdr"><i class="fa-solid fa-clock-rotate-left"></i> Interventions passées</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${passes.map(j=>`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:6px;opacity:.7">
+          <span style="font-size:1.2rem">✅</span>
+          <div style="flex:1;font-size:13px;color:var(--text-2)">${j.localisation||'Espaces communs'} — ${j.description||''}</div>
+          <div style="font-size:11px;color:var(--text-3)">${fmtDate(j.date_resolution)}</div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}`);
+}
+
+async function loadGJardinage(){
+  const all=await GET('/incidents'); if(!all)return;
+  const jardins=all.filter(i=>i.type==='Jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  setPageContent('g-jardinage',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Planning Jardinage</h1><p>${jardins.length} intervention(s) configurée(s)</p></div>
+      <div class="hdr-actions"><button class="btn btn-primary" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Planifier une intervention</button></div>
+    </div>
+    <div class="card" style="background:linear-gradient(135deg,#1a7a52 0%,#27ae60 100%);border:none;color:#fff;padding:1.25rem">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <div style="font-size:2.5rem">🌿</div>
+        <div><div style="font-size:1.1rem;font-weight:700">Gestion espaces verts</div>
+        <div style="opacity:.8;font-size:13px">Planifiez les interventions par villa/lot et par date</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-calendar-days" style="color:#27ae60"></i> Interventions planifiées
+        <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Ajouter</button></div>
+      </div>
+      ${jardins.length?`<div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Villa / Lot</th><th>Date</th><th>Type</th><th>Description</th><th>Prestataire</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>${jardins.map(j=>`<tr>
+          <td><strong>${j.localisation||'Commun'}</strong></td>
+          <td>${fmtDate(j.created_at)}</td>
+          <td><span style="background:#e8f8f0;color:#27ae60;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">🌿 Jardinage</span></td>
+          <td style="color:var(--text-2);font-size:12px">${j.description||'—'}</td>
+          <td>${j.prestataire||'—'}</td>
+          <td>${statusPill(j.statut)}</td>
+          <td><div style="display:flex;gap:4px">
+            <button class="btn-icon btn-sm" onclick='openEditIntervention(${JSON.stringify(j).replace(/`/g,"'")})'><i class="fa-solid fa-edit"></i></button>
+            ${j.statut!=='resolu'?`<button class="btn btn-primary btn-xs" onclick="resolveIncident(${j.id})"><i class="fa-solid fa-check"></i></button>`:''}
+          </div></td>
+        </tr>`).join('')}</tbody>
+      </table></div>`:`<div class="empty-state"><i class="fa-solid fa-leaf" style="color:#27ae60"></i><p>Aucune intervention planifiée</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Planifier la première</button></div>`}
+    </div>`);
+}
+
+async function submitJardinage(){
+  const body={
+    type:'Jardinage',
+    localisation:document.getElementById('jard-villa').value,
+    description:document.getElementById('jard-desc').value,
+    prestataire:document.getElementById('jard-prestataire').value,
+    urgence:'normal',
+    statut:'ouvert',
+  };
+  if(!body.localisation)return showError('Villa/Lot requis');
+  try{
+    await POST('/incidents',body);
+    showToast('✅ Intervention jardinage planifiée');
+    closeModal('modal-jardinage');
+    loaded.delete('g-jardinage');loaded.delete('r-jardinage');
+    loadGJardinage();
+  }catch(e){showError(e.error||'Erreur');}
+}
+
 // ── Admin Actions ─────────────────────────────────────────
 function openUserModal(user){
   document.getElementById('modal-user-title').innerHTML=`<i class="fa-solid fa-user-${user?'edit':'plus'}" style="color:var(--primary)"></i> ${user?'Modifier':'Nouvel'} utilisateur`;
@@ -1121,21 +1312,31 @@ async function submitManualNotif(){
 }
 
 // ── Paiements ─────────────────────────────────────────────
-function openPayModalWithId(id,periode,montant){
-  document.getElementById('modal-paiement-info').innerHTML=`<strong>${periode}</strong> — ${parseFloat(montant).toLocaleString('fr-FR')} MAD · Lot ${state.user.lot||'—'}`;
-  document.getElementById('pay-paiement-id').value=id; openModal('modal-paiement');
+function openDeclarerPaiement(id,periode,montant){
+  document.getElementById('decl-paiement-id').value=id||'';
+  document.getElementById('decl-periode').textContent=periode||'';
+  document.getElementById('decl-montant').textContent=parseFloat(montant||0).toLocaleString('fr-FR')+' MAD';
+  document.getElementById('decl-lot').textContent='Lot '+( state.user.lot||'—');
+  document.getElementById('decl-type').value='virement';
+  document.getElementById('decl-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('decl-ref').value='';
+  openModal('modal-declarer-paiement');
 }
-async function submitPaiement(){
-  const btn=document.getElementById('pay-submit-btn');
-  const pId=document.getElementById('pay-paiement-id').value;
-  btn.disabled=true;
+async function submitDeclarerPaiement(){
+  const pId=document.getElementById('decl-paiement-id').value;
+  const mode=document.getElementById('decl-type').value;
+  const date=document.getElementById('decl-date').value;
+  const ref=document.getElementById('decl-ref').value.trim();
+  if(!date)return showError('Date de règlement requise');
+  const btn=document.getElementById('decl-submit');btn.disabled=true;
   try{
-    if(pId)await POST('/charges/paiements/'+pId+'/payer',{mode:'carte'});
-    showToast('✅ Paiement confirmé !');closeModal('modal-paiement');
+    if(pId)await POST('/charges/paiements/'+pId+'/payer',{mode,date_paiement:date,reference:ref});
+    showToast('✅ Paiement déclaré — en attente de confirmation du syndic');
+    closeModal('modal-declarer-paiement');
     ['r-finances','r-dashboard'].forEach(p=>loaded.delete(p));
     if(state.currentPage==='r-finances')loadRFinances();
     if(state.currentPage==='r-dashboard')loadRDashboard();
-  }catch{showError('Erreur paiement');}
+  }catch{showError('Erreur déclaration');}
   btn.disabled=false;
 }
 
