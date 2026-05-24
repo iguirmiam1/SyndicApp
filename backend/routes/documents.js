@@ -18,7 +18,7 @@ router.get('/', auth, async (req, res) => {
   try {
     const { rows } = await query(sql, params);
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+  } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
 // POST /api/documents — avec upload fichier
@@ -29,18 +29,18 @@ router.post('/', auth.gestionnaire, upload.single('fichier'), async (req, res) =
     let taille_ko = null;
 
     if (req.file) {
-      url = getFileUrl(req.file);
+      url = getFileUrl(req.file, req);
       taille_ko = Math.round((req.file.size || 0) / 1024);
     }
 
     const { rows } = await query(
       `INSERT INTO documents (residence_id,nom,categorie,url,taille_ko,uploaded_by)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [req.user.residence_id, nom, categorie, url, taille_ko, req.user.id]
+      [req.user.residence_id, nom, categorie || 'autre', url, taille_ko, req.user.id]
     );
 
     // Notifier les résidents si demandé
-    if (notifier_residents === 'true' || notifier_residents === true) {
+    if ((notifier_residents === 'true' || notifier_residents === true) && url) {
       const { rows: residents } = await query(
         `SELECT email,prenom,nom FROM utilisateurs
          WHERE residence_id=$1 AND role='resident' AND notif_email=true`,
@@ -48,13 +48,16 @@ router.post('/', auth.gestionnaire, upload.single('fichier'), async (req, res) =
       );
       if (residents.length) {
         sendBulk(residents, (data) => templates.nouveauDocument({
-          ...data, nomDoc: nom, categorie, appUrl: APP_URL
+          ...data, nomDoc: nom, categorie: categorie || 'autre', appUrl: APP_URL
         }), {}, APP_URL).catch(console.error);
       }
     }
 
     res.status(201).json(rows[0]);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Erreur serveur' }); }
+  } catch(e) {
+    console.error('Upload error:', e);
+    res.status(500).json({ error: 'Erreur serveur: ' + e.message });
+  }
 });
 
 // DELETE /api/documents/:id
@@ -64,14 +67,20 @@ router.delete('/:id', auth.gestionnaire, async (req, res) => {
       `SELECT url FROM documents WHERE id=$1 AND residence_id=$2`,
       [req.params.id, req.user.residence_id]
     );
+    // Supprimer sur Cloudinary si applicable
     if (doc?.url && doc.url.includes('cloudinary')) {
-      const { cloudinary } = require('../services/upload');
-      const publicId = doc.url.split('/').pop().split('.')[0];
-      cloudinary.uploader.destroy(publicId).catch(() => {});
+      try {
+        const { cloudinary } = require('../services/upload');
+        if (cloudinary) {
+          const publicId = doc.url.split('/').slice(-1)[0].replace(/\.[^.]+$/, '');
+          await cloudinary.uploader.destroy(publicId);
+        }
+      } catch(e) { console.warn('Cloudinary delete failed:', e.message); }
     }
-    await query(`DELETE FROM documents WHERE id=$1 AND residence_id=$2`, [req.params.id, req.user.residence_id]);
+    await query(`DELETE FROM documents WHERE id=$1 AND residence_id=$2`,
+      [req.params.id, req.user.residence_id]);
     res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+  } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
 module.exports = router;
