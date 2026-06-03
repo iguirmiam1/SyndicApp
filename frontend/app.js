@@ -32,7 +32,7 @@ function showToast(msg, type='success') {
 function showError(msg){showToast(msg,'error');}
 
 // ── UTILS ─────────────────────────────────────────────────
-function statusPill(s){const m={declare:['violet','Déclaré — à valider'],paye:['green','✓ Payé'],en_attente:['gray','En attente'],retard:['orange','⏱ Retard'],impaye:['red','✗ Impayé'],ouvert:['orange','Ouvert'],en_cours:['yellow','En cours'],resolu:['green','✓ Résolu'],ferme:['gray','Fermé'],planifie:['blue','Planifié'],termine:['green','Terminé'],success:['green','OK'],failed:['red','Échec']};const[c,l]=m[s]||['gray',s];return`<span class="pill pill-${c}">${l}</span>`;}
+function statusPill(s){const m={declare:['violet','⏳ A valider'],declare:['violet','Déclaré — à valider'],paye:['green','✓ Payé'],en_attente:['gray','En attente'],retard:['orange','⏱ Retard'],impaye:['red','✗ Impayé'],ouvert:['orange','Ouvert'],en_cours:['yellow','En cours'],resolu:['green','✓ Résolu'],ferme:['gray','Fermé'],planifie:['blue','Planifié'],termine:['green','Terminé'],success:['green','OK'],failed:['red','Échec']};const[c,l]=m[s]||['gray',s];return`<span class="pill pill-${c}">${l}</span>`;}
 function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});}
 function fmtDateTime(d){if(!d)return'—';return new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}
 function ini(u){return((u.prenom||'?')[0]+(u.nom||'?')[0]).toUpperCase();}
@@ -241,7 +241,11 @@ async function loadRFinances(){
       <div style="overflow-x:auto"><table class="data-table">
         <thead><tr><th>Période</th><th>Échéance</th><th>Montant</th><th>Paiement</th><th>Mode</th><th>Statut</th></tr></thead>
         <tbody>${charges.map(p=>`<tr><td><strong>${p.periode||''}</strong></td><td>${fmtDate(p.echeance)}</td><td><strong>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</strong></td><td>${fmtDate(p.date_paiement)}</td><td>${p.mode||'—'}</td><td>${statusPill(p.statut)}</td>
-          ${p.statut!=='paye'?`<td><button class="btn btn-ghost btn-xs" onclick="openDeclarerPaiement(${p.id},'${p.periode}',${p.montant})"><i class="fa-solid fa-pen-to-square"></i> Déclarer</button></td>`:p.statut==='paye'?'<td><span class="pill pill-green">✓ Validé</span></td>':p.statut==='declare'?'<td><span class="pill pill-violet" style="background:#f3effe;color:#7c3aed">⏳ En attente de validation</span></td>':'<td></td>'}
+          ${p.statut==='paye'
+        ?'<td><span class="pill pill-green">✅ Validé</span></td>'
+        :p.statut==='declare'
+        ?'<td><span style="background:#f3effe;color:#7c3aed;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">⏳ En attente de validation</span></td>'
+        :`<td><button class="btn btn-ghost btn-xs" onclick="openDeclarerPaiement(${p.id},'${p.periode}',${p.montant})"><i class="fa-solid fa-pen-to-square"></i> Déclarer</button></td>`}`:p.statut==='paye'?'<td><span class="pill pill-green">✓ Validé</span></td>':p.statut==='declare'?'<td><span class="pill pill-violet" style="background:#f3effe;color:#7c3aed">⏳ En attente de validation</span></td>':'<td></td>'}
         </tr>`).join('')}</tbody>
       </table></div>
     </div>`);
@@ -270,6 +274,7 @@ async function loadRIncidents(){
             <div class="incident-title">${urgIcon[i.urgence]||''} ${i.type}${i.localisation?' — '+i.localisation:''}</div>
             <div class="incident-sub">Signalé le ${fmtDate(i.created_at)}</div>
             ${i.prestataire?`<div class="incident-sub" style="color:var(--primary)">↳ Prestataire : ${i.prestataire}</div>`:''}
+          ${i.commentaire_syndic?`<div style="background:var(--primary-pale);border-left:3px solid var(--primary);padding:6px 10px;border-radius:0 6px 6px 0;margin-top:5px;font-size:12px"><i class='fa-solid fa-comment' style='color:var(--primary)'></i> <b style='color:var(--primary)'>Syndic :</b> ${i.commentaire_syndic}</div>`:''}
           ${i.commentaire_syndic?`<div style="background:var(--primary-pale);border-left:3px solid var(--primary);padding:6px 10px;border-radius:0 6px 6px 0;margin-top:6px;font-size:12px;color:var(--primary)"><i class='fa-solid fa-comment'></i> <strong>Syndic :</strong> ${i.commentaire_syndic}</div>`:''}
             <div class="progress-bar" style="margin-top:6px"><div class="progress-fill ${i.statut==='ouvert'?'orange':''}" style="width:${i.statut==='ouvert'?20:60}%"></div></div>
           </div>${statusPill(i.statut)}
@@ -609,9 +614,9 @@ async function loadDeclarationsPending(){
           <td>${fmtDate(p.date_paiement)}</td>
           <td style="font-size:12px;color:var(--text-3)">${p.reference||'—'}</td>
           <td><div style="display:flex;gap:5px">
-            <button class="btn btn-primary btn-sm" onclick="validerPaiement(${p.id},'${p.prenom} ${p.nom}')">
+            <button class="btn btn-primary btn-sm" onclick="validerPaiement(${p.id},'${p.prenom} ${p.nom}',${p.montant},'${p.periode}')">
               <i class="fa-solid fa-check"></i> Valider</button>
-            <button class="btn btn-danger btn-sm" onclick="rejeterPaiement(${p.id},'${p.prenom} ${p.nom}')">
+            <button class="btn btn-danger btn-sm" onclick="rejeterPaiement(${p.id},'${p.prenom} ${p.nom}',${p.montant},'${p.periode}')">
               <i class="fa-solid fa-xmark"></i> Rejeter</button>
           </div></td>
         </tr>`).join('')}
@@ -622,26 +627,125 @@ async function loadDeclarationsPending(){
   if(page) page.insertBefore(block, page.children[1]||null);
 }
 
-async function validerPaiement(id, nom){
-  const commentaire=prompt(`Commentaire pour ${nom} (optionnel) :`)||'';
+function validerPaiement(id, nom, montant, periode){
+  document.getElementById('valider-paiement-id').value = id;
+  document.getElementById('valider-paiement-info').innerHTML =
+    `<i class="fa-solid fa-user"></i> <strong>${nom}</strong> — ${parseFloat(montant||0).toLocaleString('fr-FR')} MAD · ${periode||''}`;
+  document.getElementById('valider-commentaire').value = '';
+  openModal('modal-valider-paiement');
+}
+
+async function submitValiderPaiement(){
+  const id = document.getElementById('valider-paiement-id').value;
+  const commentaire = document.getElementById('valider-commentaire').value.trim();
+  const btn = document.getElementById('valider-submit-btn');
+  btn.disabled = true;
   try{
-    await POST('/charges/paiements/'+id+'/valider',{commentaire});
-    showToast('Paiement de '+nom+' validé');
+    await POST('/charges/paiements/'+id+'/valider', { commentaire: commentaire||'' });
+    showToast('✅ Paiement validé — résident notifié par email');
+    closeModal('modal-valider-paiement');
+    loaded.delete('g-comptabilite'); loadGCompta();
+  }catch(e){ showError(e.error||'Erreur'); }
+  btn.disabled = false;
+}
+
+function rejeterPaiement(id, nom, montant, periode){
+  document.getElementById('rejeter-paiement-id').value = id;
+  document.getElementById('rejeter-paiement-info').innerHTML =
+    `<i class="fa-solid fa-user"></i> <strong>${nom}</strong> — ${parseFloat(montant||0).toLocaleString('fr-FR')} MAD · ${periode||''}`;
+  document.getElementById('rejeter-motif').value = '';
+  openModal('modal-rejeter-paiement');
+}
+
+async function submitRejeterPaiement(){
+  const id = document.getElementById('rejeter-paiement-id').value;
+  const motif = document.getElementById('rejeter-motif').value.trim();
+  if(!motif){ showError('Le motif du rejet est obligatoire'); return; }
+  const btn = document.getElementById('rejeter-submit-btn');
+  btn.disabled = true;
+  try{
+    await POST('/charges/paiements/'+id+'/rejeter', { motif });
+    showToast('⚠️ Déclaration rejetée — résident notifié', 'warn');
+    closeModal('modal-rejeter-paiement');
+    loaded.delete('g-comptabilite'); loadGCompta();
+  }catch(e){ showError(e.error||'Erreur'); }
+  btn.disabled = false;
+}
+
+// ── Déclarations en attente ─────────────────────────────────────
+async function checkDeclarationsPending(){
+  try{
+    const decl = await GET('/charges/declarations/pending');
+    if(!decl?.length) return;
+    const b=document.getElementById('badge-impayes');
+    if(b){ b.textContent=decl.length; b.style.display=''; }
+    renderDeclarationsPending(decl);
+  }catch(e){ console.warn('declarations/pending:', e.message); }
+}
+
+function renderDeclarationsPending(decl){
+  const existing = document.getElementById('decl-pending-block');
+  if(existing) existing.remove();
+  const page = document.getElementById('page-g-comptabilite');
+  if(!page) return;
+  const div = document.createElement('div');
+  div.id = 'decl-pending-block';
+  div.innerHTML = `
+    <div class="card" style="border:2px solid var(--violet);margin-bottom:1rem">
+      <div class="card-hdr" style="color:var(--violet)">
+        <i class="fa-solid fa-clock" style="color:var(--violet)"></i>
+        Paiements déclarés — en attente de validation (${decl.length})
+        <div class="card-hdr-right"><span style="background:var(--violet-pale);color:var(--violet);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">ACTION REQUISE</span></div>
+      </div>
+      <div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Copropriétaire</th><th>Lot</th><th>Période</th><th>Montant</th><th>Mode déclaré</th><th>Date</th><th>Référence</th><th>Actions</th></tr></thead>
+        <tbody>${decl.map(p=>`<tr>
+          <td><strong>${p.prenom} ${p.nom}</strong></td>
+          <td>${p.lot||'—'}</td>
+          <td><strong>${p.periode||'—'}</strong></td>
+          <td><strong>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</strong></td>
+          <td><span class="pill pill-blue">${p.mode||'virement'}</span></td>
+          <td>${fmtDate(p.date_paiement)}</td>
+          <td style="font-size:12px;color:var(--text-3)">${p.reference||'—'}</td>
+          <td>
+            <div style="display:flex;gap:5px">
+              <button class="btn btn-primary btn-sm" onclick="validerPaiement(${p.id},'${p.prenom} ${p.nom}')">
+                <i class="fa-solid fa-check"></i> Valider</button>
+              <button class="btn btn-danger btn-sm" onclick="rejeterPaiement(${p.id},'${p.prenom} ${p.nom}')">
+                <i class="fa-solid fa-xmark"></i> Rejeter</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+        </tbody></table></div>
+    </div>`;
+  // Insérer après le premier enfant (page-hdr)
+  const hdr = page.querySelector('.page-hdr');
+  if(hdr) hdr.insertAdjacentElement('afterend', div);
+  else page.insertBefore(div, page.firstChild);
+}
+
+async function validerPaiement(id, nom){
+  const commentaire = prompt(`Commentaire pour ${nom} (optionnel, appuyez sur OK pour valider directement) :`);
+  if(commentaire === null) return; // annulé
+  try{
+    await POST('/charges/paiements/'+id+'/valider', {commentaire});
+    showToast('✅ Paiement de '+nom+' validé — résident notifié par email');
     loaded.delete('g-comptabilite');
-    loadGCompta();
-  }catch(e){showError(e.error||'Erreur');}
+    await loadGCompta();
+  }catch(e){ showError(e.error||'Erreur validation'); }
 }
 
 async function rejeterPaiement(id, nom){
-  const motif=prompt('Motif du rejet (obligatoire) :');
-  if(!motif)return;
+  const motif = prompt(`Motif du rejet pour ${nom} (obligatoire) :`);
+  if(!motif) return showError('Motif requis');
   try{
-    await POST('/charges/paiements/'+id+'/rejeter',{motif});
-    showToast('Déclaration de '+nom+' rejetée — le résident a été notifié','warn');
+    await POST('/charges/paiements/'+id+'/rejeter', {motif});
+    showToast('Déclaration de '+nom+' rejetée — résident notifié', 'warn');
     loaded.delete('g-comptabilite');
-    loadGCompta();
-  }catch(e){showError(e.error||'Erreur');}
+    await loadGCompta();
+  }catch(e){ showError(e.error||'Erreur rejet'); }
 }
+
 
 async function reloadComptaFor(appelId){
   const paiements=await GET('/charges/'+appelId+'/paiements'); if(!paiements)return;
@@ -717,6 +821,7 @@ async function loadGTravaux(){
           <td>${statusPill(i.statut)}</td>
           <td><div style="display:flex;gap:4px">
             <button class="btn btn-ghost btn-xs" onclick='openEditIntervention(${JSON.stringify(i).replace(/'/g,"\\'")})'><i class="fa-solid fa-edit"></i></button>
+            <button class="btn btn-ghost btn-xs" onclick='openStatutModal(${JSON.stringify(i)})' title="Modifier statut"><i class="fa-solid fa-edit"></i> Statut</button>
             <button class="btn btn-primary btn-xs" onclick="openResolveModal(${i.id},'${i.type}')"><i class="fa-solid fa-check"></i> Résoudre</button>
           </div></td>
         </tr>`).join('')}</tbody>
@@ -771,34 +876,104 @@ async function submitIntervention(){
   }catch(e){showError(e.error||'Erreur');}
 }
 
-function openResolveModal(id,type){
-  const msg='Commentaire pour le résident (optionnel) :\n(Laisser vide pour résoudre sans commentaire)';
-  const commentaire=prompt(msg);
-  resolveIncidentWithComment(id, commentaire===null?undefined:commentaire);
-}
-async function resolveIncidentWithComment(id, commentaire){
-  try{
-    const body={statut:'resolu',date_resolution:new Date().toISOString().split('T')[0]};
-    if(commentaire)body.commentaire_syndic=commentaire;
-    await PUT('/incidents/'+id,body);
-    showToast(commentaire?'Résolue — résident notifié':'Intervention résolue');
-    loaded.delete('g-travaux');loadGTravaux();
-  }catch(e){showError('Erreur');}
-}
-async function resolveIncident(id){ openResolveModal(id,''); }
+// ── Résolution incident avec commentaire syndic ──────────────────────────────
 
-async function loadGAG(){
-  const ags=await GET('/ag'); if(!ags)return;
-  const ag=ags[0];
-  setPageContent('g-ag',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Tenue des AG</h1><p>${ags.length} AG(s)</p></div>
-      <div class="hdr-actions">
-        ${ag?`<button class="btn btn-ghost btn-sm" onclick="notifyAG(${ag.id},'${fmtDate(ag.date_ag)}')"><i class="fa-solid fa-envelope"></i> Envoyer convocations</button>`:''}
-        <button class="btn btn-primary" onclick="openModal('modal-ag-create')"><i class="fa-solid fa-plus"></i> Convoquer</button>
-      </div>
-    </div>
-    ${ag?await renderGAGDetail(ag):`<div class="card"><div class="empty-state"><i class="fa-solid fa-users"></i><p>Aucune AG. Créez la première !</p></div></div>`}`);
+// ── Résolution incident avec commentaire syndic ─────────────────────────────
+function openResolveModal(id, type){
+  openModal('modal-resolve-incident');
+  document.getElementById('resolve-incident-id').value = id;
+  const el = document.getElementById('resolve-incident-type');
+  if(el) el.textContent = type || 'Intervention';
+  document.getElementById('resolve-commentaire').value = '';
 }
+
+async function submitResolveIncident(){
+  const id = document.getElementById('resolve-incident-id').value;
+  const commentaire = document.getElementById('resolve-commentaire').value.trim();
+  const btn = document.getElementById('resolve-submit-btn');
+  btn.disabled = true;
+  try{
+    const body = { statut:'resolu', date_resolution:new Date().toISOString().split('T')[0] };
+    if(commentaire) body.commentaire_syndic = commentaire;
+    await PUT('/incidents/'+id, body);
+    showToast(commentaire ? '✅ Résolue — résident notifié par email' : '✅ Résolue');
+    closeModal('modal-resolve-incident');
+    loaded.delete('g-travaux'); loadGTravaux();
+  }catch(e){ showError(e.error||'Erreur'); }
+  btn.disabled = false;
+}
+
+// ── Modifier statut depuis le tableau travaux ────────────────────────────────
+function openStatutModal(i){
+  openModal('modal-statut-incident');
+  document.getElementById('statut-incident-id').value = i.id;
+  const el = document.getElementById('statut-incident-type');
+  if(el) el.textContent = i.type + (i.localisation ? ' — '+i.localisation : '');
+  document.getElementById('statut-select').value = i.statut || 'ouvert';
+  document.getElementById('statut-prestataire').value = i.prestataire || '';
+  document.getElementById('statut-cout').value = i.cout || '';
+  document.getElementById('statut-commentaire').value = '';
+}
+
+async function submitStatutIncident(){
+  const id = document.getElementById('statut-incident-id').value;
+  const statut = document.getElementById('statut-select').value;
+  const prestataire = document.getElementById('statut-prestataire').value.trim();
+  const cout = document.getElementById('statut-cout').value;
+  const commentaire = document.getElementById('statut-commentaire').value.trim();
+  const btn = document.getElementById('statut-submit-btn');
+  btn.disabled = true;
+  try{
+    const body = { statut };
+    if(prestataire) body.prestataire = prestataire;
+    if(cout) body.cout = parseFloat(cout);
+    if(commentaire) body.commentaire_syndic = commentaire;
+    if(statut==='resolu') body.date_resolution = new Date().toISOString().split('T')[0];
+    await PUT('/incidents/'+id, body);
+    showToast(commentaire ? '✅ Mis à jour — résident notifié' : '✅ Mis à jour');
+    closeModal('modal-statut-incident');
+    loaded.delete('g-travaux'); loadGTravaux();
+  }catch(e){ showError(e.error||'Erreur'); }
+  btn.disabled = false;
+}
+
+async function resolveIncident(id){ openResolveModal(id, ''); }
+
+// ── Modifier statut incident (depuis liste) ───────────────────────────────────
+function openStatutModal(i){
+  openModal('modal-statut-incident');
+  document.getElementById('statut-incident-id').value = i.id;
+  document.getElementById('statut-incident-type').textContent = i.type + (i.localisation ? ' — '+i.localisation : '');
+  document.getElementById('statut-select').value = i.statut || 'ouvert';
+  document.getElementById('statut-prestataire').value = i.prestataire || '';
+  document.getElementById('statut-cout').value = i.cout || '';
+  document.getElementById('statut-commentaire').value = '';
+}
+
+async function submitStatutIncident(){
+  const id = document.getElementById('statut-incident-id').value;
+  const statut = document.getElementById('statut-select').value;
+  const prestataire = document.getElementById('statut-prestataire').value.trim();
+  const cout = document.getElementById('statut-cout').value;
+  const commentaire = document.getElementById('statut-commentaire').value.trim();
+  const btn = document.getElementById('statut-submit-btn');
+  btn.disabled = true;
+  try{
+    const body = { statut };
+    if(prestataire) body.prestataire = prestataire;
+    if(cout) body.cout = parseFloat(cout);
+    if(commentaire) body.commentaire_syndic = commentaire;
+    if(statut === 'resolu') body.date_resolution = new Date().toISOString().split('T')[0];
+    await PUT('/incidents/'+id, body);
+    const notifie = commentaire || statut !== document.getElementById('statut-select').defaultValue;
+    showToast(notifie ? '✅ Mis à jour — résident notifié' : '✅ Mis à jour');
+    closeModal('modal-statut-incident');
+    loaded.delete('g-travaux'); loadGTravaux();
+  }catch(e){ showError(e.error||'Erreur'); }
+  btn.disabled = false;
+}
+
+async function resolveIncident(id){ openResolveModal(id,""); }
 
 async function renderGAGDetail(ag){
   const [presences,votes]=await Promise.all([GET('/ag/'+ag.id+'/presences'),GET('/ag/'+ag.id+'/votes')]);
