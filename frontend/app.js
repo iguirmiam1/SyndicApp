@@ -1008,6 +1008,52 @@ async function togglePresence(agId,residentId,currentMode,el){
   }catch{showError('Erreur');}
 }
 
+async function loadGAG(){
+  const ags=await GET('/ag'); if(!ags)return;
+  const ag=ags[0];
+  setPageContent('g-ag',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Tenue des AG</h1><p>${ags.length} AG(s)</p></div>
+      <div class="hdr-actions">
+        ${ag?`<button class="btn btn-ghost btn-sm" onclick="notifyAG(${ag.id},'${fmtDate(ag.date_ag)}')"><i class="fa-solid fa-envelope"></i> Envoyer convocations</button>`:''}
+        <button class="btn btn-primary" onclick="openModal('modal-ag-create')"><i class="fa-solid fa-plus"></i> Convoquer</button>
+      </div>
+    </div>
+    ${ag?await renderGAGDetail(ag):`<div class="card"><div class="empty-state"><i class="fa-solid fa-users"></i><p>Aucune AG. Créez la première !</p></div></div>`}`);
+}
+
+async function renderGAGDetail(ag){
+  const [presences,votes]=await Promise.all([GET('/ag/'+ag.id+'/presences'),GET('/ag/'+ag.id+'/votes')]);
+  const resolutions=ag.ordre_du_jour||[]; const totaux={};
+  (votes?.totaux||[]).forEach(v=>{totaux[v.resolution_num]=v;});
+  const nbP=(presences||[]).filter(p=>p.mode==='present').length;
+  return`
+    <div class="metrics-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="metric"><div class="metric-icon"><i class="fa-solid fa-envelope"></i></div><div class="metric-val">${(presences||[]).length}</div><div class="metric-label">Convoqués</div></div>
+      <div class="metric"><div class="metric-icon"><i class="fa-solid fa-user-check"></i></div><div class="metric-val">${nbP}</div><div class="metric-label">Présents</div></div>
+      <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-mail-bulk"></i></div><div class="metric-val">${(presences||[]).filter(p=>p.mode==='correspondance').length}</div><div class="metric-label">Correspondance</div></div>
+      <div class="metric danger"><div class="metric-icon"><i class="fa-solid fa-user-xmark"></i></div><div class="metric-val">${(presences||[]).filter(p=>p.mode==='absent').length}</div><div class="metric-label">Absents</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-hdr"><i class="fa-solid fa-user-check"></i> Présences — ${fmtDate(ag.date_ag)}</div>
+        <div class="presence-grid">${(presences||[]).map(p=>`<div class="pres-dot pres-${p.mode==='present'?'yes':p.mode==='correspondance'?'mail':'no'}" title="${p.prenom} ${p.nom}" onclick="togglePresence(${ag.id},${p.resident_id},'${p.mode}',this)">${ini(p)}</div>`).join('')}</div>
+      </div>
+      <div class="card"><div class="card-hdr"><i class="fa-solid fa-vote-yea"></i> Résolutions</div>
+        <div>${resolutions.map(r=>{const t=totaux[r.num]||{pour:0,contre:0,abstention:0};return`<div class="vote-item"><div><div class="vote-q">${r.num}. ${r.titre}</div><div class="vote-sub">Pour: ${t.pour} · Contre: ${t.contre} · Abs: ${t.abstention}</div></div><span class="pill ${+t.pour>+t.contre?'pill-green':'pill-orange'}">Live</span></div>`;}).join('')}
+        ${!resolutions.length?`<div class="empty-state"><i class="fa-solid fa-vote-yea"></i><p>Pas encore de résolutions</p></div>`:''}
+        </div>
+      </div>
+    </div>`;
+}
+
+async function togglePresence(agId,residentId,currentMode,el){
+  const modes=['absent','present','correspondance'];
+  const next=modes[(modes.indexOf(currentMode)+1)%modes.length];
+  try{await PUT('/ag/'+agId+'/presences/'+residentId,{mode:next});
+    el.className='pres-dot pres-'+(next==='present'?'yes':next==='correspondance'?'mail':'no');
+    el.setAttribute('onclick',`togglePresence(${agId},${residentId},'${next}',this)`);
+  }catch{showError('Erreur');}
+}
+
 async function loadGResidents(){
   const data=await GET('/residents'); if(!data)return;
   setPageContent('g-residents',`
