@@ -17,7 +17,7 @@
   --danger:#c0392b;--danger-pale:#fdf1f0;
   --info:#1a6fa8;--info-pale:#e8f3fb;
   --success:#1a7a52;--warning:#b06b10;--warning-pale:#fef8ec;
-  --radius:12px;--radius-sm:8px;--sidebar-w:242px;--header-h:64px;
+  --radius:12px;--radius-sm:8px;--sidebar-w:248px;--header-h:64px;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);
   --shadow-md:0 4px 16px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);
   --font:'Plus Jakarta Sans',sans-serif;--font-display:'Fraunces',serif;
@@ -72,13 +72,34 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 /* ── LAYOUT ── */
 #layout{display:flex;padding-top:var(--header-h);min-height:100vh}
-#sidebar{position:fixed;top:var(--header-h);left:0;width:var(--sidebar-w);height:calc(100vh - var(--header-h));background:var(--surface);border-right:1px solid var(--border);z-index:100;transition:transform .3s ease;display:flex;flex-direction:column;overflow:hidden}#sidebar>div[id^="nav-"]{display:none;flex:1;flex-direction:column;overflow:hidden}#sidebar>div[id^="nav-"].active-nav{display:flex}.nav-scroll{flex:1;overflow-y:auto;padding:.75rem 0 .5rem}
+#sidebar{
+  position:fixed;top:var(--header-h);left:0;
+  width:var(--sidebar-w);height:calc(100vh - var(--header-h));
+  background:var(--surface);border-right:1px solid var(--border);
+  z-index:100;transition:transform .3s ease;
+  display:flex;flex-direction:column;overflow:hidden
+}
+#sidebar>div[id^="nav-"]{
+  display:none;flex-direction:column;flex:1;
+  width:100%;overflow:hidden;min-width:0
+}
+#sidebar>div[id^="nav-"].active-nav{
+  display:flex;flex-direction:column;flex:1;width:100%;overflow:hidden
+}
+.nav-scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:.5rem 0;width:100%;min-width:0
+}
+#sidebar-logout{
+  padding:.75rem 1rem 1rem;border-top:1px solid var(--border);
+  background:var(--surface);flex-shrink:0;width:100%
+}
 #sidebar.closed{transform:translateX(-100%)}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;backdrop-filter:blur(2px)}
 .sidebar-overlay.show{display:block}
 .nav-section{margin-bottom:1.25rem}
-.nav-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:2px;margin-top:4px}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 1.25rem;cursor:pointer;font-size:13.5px;color:var(--text-2);transition:all .15s;border-right:2px solid transparent;border-left:2px solid transparent;user-select:none}
+.nav-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:4px;margin-top:12px;white-space:nowrap;overflow:hidden}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 1.25rem;cursor:pointer;font-size:13px;color:var(--text-2);transition:all .15s;border-right:3px solid transparent;border-left:3px solid transparent;user-select:none;white-space:nowrap;overflow:hidden;width:100%;box-sizing:border-box}
 .nav-item:hover{background:var(--surface2);color:var(--text)}
 .nav-item.active{background:var(--primary-pale);color:var(--primary);font-weight:600;border-right-color:var(--primary)}
 .nav-item.active-violet{background:var(--violet-pale);color:var(--violet);font-weight:600;border-right-color:var(--violet)}
@@ -318,9 +339,18 @@ textarea.form-control{resize:vertical;min-height:75px}
     <button class="login-btn" id="login-submit" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
     <div class="demo-creds">
       <strong>Comptes de démonstration</strong>
-      <div class="demo-row"><span class="demo-role">Admin</span><span class="demo-cred" onclick="fillLogin('iguirmia.mustapha@gmail.com','Admin2026!')">Admin2026!</span></div>
-      <div class="demo-row"><span class="demo-role">Gestionnaire</span><span class="demo-cred" onclick="fillLogin('contact@servicepro-solutions.com','Syndic2026!')">Syndic2026!</span></div>
-      <div class="demo-row"><span class="demo-role">Résident</span><span class="demo-cred" onclick="fillLogin('iguirmia.mustapha@servicepro-solutions.com','Resident2026!')">Resident2026!</span></div>
+      <div class="demo-row">
+        <span class="demo-role">Admin</span>
+        <span class="demo-cred" onclick="fillLogin('iguirmia.mustapha@gmail.com','Admin2026!')" title="iguirmia.mustapha@gmail.com">Admin2026!</span>
+      </div>
+      <div class="demo-row">
+        <span class="demo-role">Gestionnaire</span>
+        <span class="demo-cred" onclick="fillLogin('iguirmiamustapha.new@gmail.com','Syndic2026!')" title="iguirmiamustapha.new@gmail.com">Syndic2026!</span>
+      </div>
+      <div class="demo-row">
+        <span class="demo-role">Résident</span>
+        <span class="demo-cred" onclick="fillLogin('awatif.chakib15@gmail.com','Resident2026!')" title="awatif.chakib15@gmail.com">Resident2026!</span>
+      </div>
     </div>
   </div>
 </div>
