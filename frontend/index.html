@@ -337,7 +337,7 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="login-field"><label>Adresse email</label><input type="email" id="login-email" placeholder="votre@email.com" autocomplete="email"></div>
     <div class="login-field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="login-btn" id="login-submit" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
-   
+
   </div>
 </div>
 
@@ -820,6 +820,141 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-jardinage')">Annuler</button><button class="btn btn-primary" onclick="submitJardinage()" style="background:#27ae60"><i class="fa-solid fa-leaf"></i> Planifier</button></div>
   </div>
 </div>
+
+<!-- ═══ Modal : Résoudre intervention (avec commentaire) ═══ -->
+<div class="modal-overlay" id="modal-resolve-incident">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-circle-check" style="color:var(--success,#1a7a52)"></i> Résoudre l'intervention</h3>
+      <button class="close-modal" onclick="closeModal('modal-resolve-incident')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="resolve-incident-id">
+      <div style="background:var(--primary-pale);border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--primary)">
+        <i class="fa-solid fa-hammer"></i> <strong id="resolve-incident-type">Intervention</strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Commentaire pour le résident <span style="color:var(--text-3);font-weight:400">(recommandé)</span></label>
+        <textarea class="form-control" id="resolve-commentaire" rows="3"
+          placeholder="Ex: Intervention réalisée par la société X le 03/06/2026. Fuite réparée, tests effectués."></textarea>
+        <div style="font-size:11px;color:var(--text-3);margin-top:4px">
+          <i class="fa-solid fa-bell"></i> Le résident recevra un email et WhatsApp avec ce commentaire.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-resolve-incident')">Annuler</button>
+      <button class="btn btn-primary" id="resolve-submit-btn" onclick="submitResolveIncident()" style="background:var(--success,#1a7a52)">
+        <i class="fa-solid fa-check"></i> Marquer comme résolu
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal : Modifier statut incident ═══ -->
+<div class="modal-overlay" id="modal-statut-incident">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-pen-to-square" style="color:var(--primary)"></i> Modifier le statut</h3>
+      <button class="close-modal" onclick="closeModal('modal-statut-incident')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="statut-incident-id">
+      <div style="background:var(--surface2);border-radius:8px;padding:8px 12px;margin-bottom:1rem;font-size:13px;color:var(--text-2)">
+        <i class="fa-solid fa-wrench" style="color:var(--primary)"></i> <span id="statut-incident-type"></span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nouveau statut</label>
+          <select class="form-control" id="statut-select">
+            <option value="ouvert">Ouvert</option>
+            <option value="en_cours">En cours de traitement</option>
+            <option value="resolu">Résolu</option>
+            <option value="ferme">Fermé</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prestataire</label>
+          <input class="form-control" id="statut-prestataire" placeholder="Nom prestataire...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Coût intervention (MAD)</label>
+        <input class="form-control" id="statut-cout" type="number" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message pour le résident <span style="color:var(--text-3);font-weight:400">(déclenche une notification)</span></label>
+        <textarea class="form-control" id="statut-commentaire" rows="3"
+          placeholder="Ex: Votre réclamation est prise en charge. Intervention prévue le 10/06/2026."></textarea>
+        <div style="font-size:11px;color:var(--text-3);margin-top:4px">
+          <i class="fa-solid fa-bell"></i> Si rempli, le résident reçoit un email + WhatsApp.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-statut-incident')">Annuler</button>
+      <button class="btn btn-primary" id="statut-submit-btn" onclick="submitStatutIncident()">
+        <i class="fa-solid fa-floppy-disk"></i> Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal : Valider paiement déclaré ═══ -->
+<div class="modal-overlay" id="modal-valider-paiement">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-check-circle" style="color:var(--success,#1a7a52)"></i> Valider le paiement</h3>
+      <button class="close-modal" onclick="closeModal('modal-valider-paiement')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="valider-paiement-id">
+      <div id="valider-paiement-info" style="background:var(--primary-pale);border-radius:8px;padding:12px;margin-bottom:1rem;font-size:13px;color:var(--primary)"></div>
+      <div class="form-group">
+        <label class="form-label">Commentaire pour le résident <span style="color:var(--text-3);font-weight:400">(optionnel)</span></label>
+        <input class="form-control" id="valider-commentaire" placeholder="Ex: Virement reçu, merci.">
+      </div>
+      <div style="background:#e6f4ef;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--success,#1a7a52)">
+        <i class="fa-solid fa-envelope"></i> Le résident sera notifié par email de la confirmation.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-valider-paiement')">Annuler</button>
+      <button class="btn btn-primary" id="valider-submit-btn" onclick="submitValiderPaiement()" style="background:var(--success,#1a7a52)">
+        <i class="fa-solid fa-check"></i> Confirmer le paiement
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal : Rejeter paiement déclaré ═══ -->
+<div class="modal-overlay" id="modal-rejeter-paiement">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-xmark-circle" style="color:var(--danger)"></i> Rejeter la déclaration</h3>
+      <button class="close-modal" onclick="closeModal('modal-rejeter-paiement')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rejeter-paiement-id">
+      <div id="rejeter-paiement-info" style="background:var(--danger-pale);border-radius:8px;padding:12px;margin-bottom:1rem;font-size:13px;color:var(--danger)"></div>
+      <div class="form-group">
+        <label class="form-label">Motif du rejet <span style="color:var(--danger)">*</span></label>
+        <textarea class="form-control" id="rejeter-motif" rows="3"
+          placeholder="Ex: Montant incorrect — le montant attendu est 1500 MAD. Merci de corriger et re-soumettre."></textarea>
+      </div>
+      <div style="background:var(--warning-pale);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--warning)">
+        <i class="fa-solid fa-bell"></i> Le résident sera notifié du rejet avec le motif.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-rejeter-paiement')">Annuler</button>
+      <button class="btn btn-danger" id="rejeter-submit-btn" onclick="submitRejeterPaiement()">
+        <i class="fa-solid fa-xmark"></i> Rejeter la déclaration
+      </button>
+    </div>
+  </div>
+</div>
+
 
 <button class="fab" id="fab-btn" onclick="fabAction()"><i class="fa-solid fa-plus"></i></button>
 <div class="toast" id="toast"><i class="fa-solid fa-circle-check" id="toast-icon"></i><span id="toast-msg"></span></div>
