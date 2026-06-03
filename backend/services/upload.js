@@ -1,36 +1,53 @@
+// ── Upload service v3 : Google Drive + fallback disque ───────────────────────
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const path = require('path');
+const fs = require('fs');
 
-// ── Config Cloudinary ─────────────────────────────────────────────────────────
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
+// Cloudinary (optionnel, priorité 2)
+let cloudinary = null;
+let CloudinaryStorage = null;
 const isCloudinaryConfigured = () =>
-  !!(process.env.CLOUDINARY_CLOUD_NAME &&
-     process.env.CLOUDINARY_API_KEY &&
-     process.env.CLOUDINARY_API_SECRET);
+  !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY);
 
-// ── Storage Cloudinary (v1 API) ───────────────────────────────────────────────
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'syndicpro',
-    resource_type: 'auto',
-    allowed_formats: ['pdf','doc','docx','xls','xlsx','jpg','jpeg','png'],
-  },
-});
+// Google Drive (priorité 1)
+// Chargement sécurisé de gdrive
+let gdrive = { isConfigured: () => false, uploadToGDrive: async () => null };
+try { gdrive = require('./gdrive'); }
+catch(e) { console.warn('gdrive.js non trouvé — Google Drive désactivé'); }
 
-// ── Fallback stockage mémoire si Cloudinary non configuré ────────────────────
-const memoryStorage = multer.memoryStorage();
+// Multer : mémoire si Drive ou Cloudinary, sinon disque
+const UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/uploads';
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-// ── Middleware multer ─────────────────────────────────────────────────────────
+const getStorage = () => {
+  if (gdrive.isConfigured()) {
+    return multer.memoryStorage(); // On upload en mémoire puis vers Drive
+  }
+  if (isCloudinaryConfigured()) {
+    try {
+      cloudinary = require('cloudinary').v2;
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key:    process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+      });
+      const { CloudinaryStorage: CS } = require('multer-storage-cloudinary');
+      return new CS({ cloudinary, params: { folder: 'syndicpro', resource_type: 'auto' } });
+    } catch(e) { console.warn('Cloudinary indisponible:', e.message); }
+  }
+  // Fallback : disque local
+  return multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => {
+      const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+      cb(null, `${Date.now()}-${safe}`);
+    },
+  });
+};
+
 const upload = multer({
-  storage: isCloudinaryConfigured() ? cloudinaryStorage : memoryStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  storage: getStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
   fileFilter: (req, file, cb) => {
     const allowed = [
       'application/pdf',
@@ -38,16 +55,39 @@ const upload = multer({
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'image/jpeg', 'image/png', 'image/gif',
+      'image/jpeg','image/png','image/gif','image/webp',
     ];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Type non autorisé (PDF, Word, Excel, images uniquement)'));
+    allowed.includes(file.mimetype) ? cb(null, true)
+      : cb(new Error(`Type non autorisé: ${file.mimetype}`));
   },
 });
 
-const getFileUrl = (file) => {
-  if (file.path) return file.path; // Cloudinary
-  return null; // mémoire — pas de stockage persistant sans Cloudinary
+// ── Résoudre l'URL finale selon le moteur de stockage ────────────────────────
+const resolveUrl = async (file, req, residenceId) => {
+  if (!file) return { url: null, taille_ko: 0 };
+  const taille_ko = Math.round((file.size || 0) / 1024);
+
+  // 1. Google Drive
+  if (file.buffer && gdrive.isConfigured()) {
+    const result = await gdrive.uploadToGDrive(file, residenceId);
+    if (result) return { url: result.url, downloadUrl: result.downloadUrl, driveFileId: result.driveFileId, taille_ko };
+  }
+  // 2. Cloudinary (path commence par http)
+  if (file.path && file.path.startsWith('http')) {
+    return { url: file.path, taille_ko };
+  }
+  // 3. Disque local
+  if (file.filename) {
+    const base = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    return { url: `${base}/uploads/${file.filename}`, taille_ko };
+  }
+  return { url: null, taille_ko };
 };
 
-module.exports = { upload, getFileUrl, cloudinary };
+const getStorageLabel = () => {
+  if (gdrive.isConfigured()) return 'Google Drive';
+  if (isCloudinaryConfigured()) return 'Cloudinary';
+  return 'Stockage local (temporaire)';
+};
+
+module.exports = { upload, resolveUrl, cloudinary, getStorageLabel };
