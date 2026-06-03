@@ -56,8 +56,11 @@ router.get('/gestionnaire', auth.gestionnaire, async (req, res) => {
              JOIN appels_fonds a ON a.id=p.appel_id
              WHERE a.residence_id=$1 AND p.statut IN ('retard','impaye') AND a.statut='actif'
              ORDER BY jours_retard DESC`, [residence_id]),
-      query(`SELECT SUM(montant_base * 24) AS budget_total FROM appels_fonds
-             WHERE residence_id=$1 AND statut='actif'`, [residence_id]),
+      query(`SELECT
+               SUM(montant_base) AS budget_total,
+               COUNT(*) AS nb_appels
+             FROM appels_fonds
+             WHERE residence_id=$1`, [residence_id]),
     ]);
 
     const paiStats = {};
@@ -73,7 +76,7 @@ router.get('/gestionnaire', auth.gestionnaire, async (req, res) => {
       tauxRecouvrement: totalResidents ? Math.round(aJour / totalResidents * 100) : 0,
       totalImpayes: impayes.rows.reduce((s, r) => s + parseFloat(r.montant || 0), 0),
       nbImpayes: impayes.rows.length,
-      budgetAnnuel: parseFloat(budget.rows[0]?.budget_total || 245000),
+      budgetAnnuel: parseFloat(budget.rows[0]?.budget_total || 0),
       incidentsActifs: (incStats.ouvert || 0) + (incStats.en_cours || 0),
       paiStats,
       incStats,
