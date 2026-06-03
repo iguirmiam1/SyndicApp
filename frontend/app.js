@@ -242,10 +242,10 @@ async function loadRFinances(){
         <thead><tr><th>Période</th><th>Échéance</th><th>Montant</th><th>Paiement</th><th>Mode</th><th>Statut</th></tr></thead>
         <tbody>${charges.map(p=>`<tr><td><strong>${p.periode||''}</strong></td><td>${fmtDate(p.echeance)}</td><td><strong>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</strong></td><td>${fmtDate(p.date_paiement)}</td><td>${p.mode||'—'}</td><td>${statusPill(p.statut)}</td>
           ${p.statut==='paye'
-        ?'<td><span class="pill pill-green">✅ Validé</span></td>'
-        :p.statut==='declare'
-        ?'<td><span style="background:#f3effe;color:#7c3aed;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">⏳ En attente de validation</span></td>'
-        :`<td><button class="btn btn-ghost btn-xs" onclick="openDeclarerPaiement(${p.id},'${p.periode}',${p.montant})"><i class="fa-solid fa-pen-to-square"></i> Déclarer</button></td>`}`:p.statut==='paye'?'<td><span class="pill pill-green">✓ Validé</span></td>':p.statut==='declare'?'<td><span class="pill pill-violet" style="background:#f3effe;color:#7c3aed">⏳ En attente de validation</span></td>':'<td></td>'}
+            ?'<td><span class="pill pill-green">✅ Validé</span></td>'
+            :p.statut==='declare'
+            ?'<td><span style="background:#f3effe;color:#7c3aed;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">⏳ En attente</span></td>'
+            :`<td><button class="btn btn-ghost btn-xs" onclick="openDeclarerPaiement(${p.id},'${p.periode}',${p.montant})"><i class="fa-solid fa-pen-to-square"></i> Déclarer</button></td>`}
         </tr>`).join('')}</tbody>
       </table></div>
     </div>`);
