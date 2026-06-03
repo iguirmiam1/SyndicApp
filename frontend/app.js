@@ -81,12 +81,15 @@ async function initApp(){
   // Masquer tous les navs
   ['nav-resident','nav-gestionnaire','nav-admin'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el){ el.style.display='none'; el.classList.remove('active-nav'); }
+    if(el){ el.style.cssText='display:none'; el.classList.remove('active-nav'); }
   });
 
   const showNav = (id) => {
     const el=document.getElementById(id);
-    if(el){ el.style.display='flex'; el.classList.add('active-nav'); }
+    if(el){
+      el.style.cssText='display:flex;flex-direction:column;flex:1;width:100%;overflow:hidden;min-width:0';
+      el.classList.add('active-nav');
+    }
   };
 
   if(u.role==='admin'){
