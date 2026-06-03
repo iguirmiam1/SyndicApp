@@ -675,12 +675,12 @@ async function submitRejeterPaiement(){
 // ── Déclarations en attente ─────────────────────────────────────
 async function checkDeclarationsPending(){
   try{
-    const decl = await GET('/charges/declarations/pending');
-    if(!decl?.length) return;
+    const decl = await GET('/charges/declarations/pending').catch(()=>[]);
+    // Toujours afficher le bloc, même vide
     const b=document.getElementById('badge-impayes');
-    if(b){ b.textContent=decl.length; b.style.display=''; }
-    renderDeclarationsPending(decl);
-  }catch(e){ console.warn('declarations/pending:', e.message); }
+    if(b){ b.textContent=decl?.length||''; b.style.display=decl?.length?'':'none'; }
+    renderDeclarationsPending(decl||[]);
+  }catch(e){ console.warn('declarations/pending:', e.message); renderDeclarationsPending([]); }
 }
 
 function renderDeclarationsPending(decl){
@@ -690,35 +690,40 @@ function renderDeclarationsPending(decl){
   if(!page) return;
   const div = document.createElement('div');
   div.id = 'decl-pending-block';
-  div.innerHTML = `
-    <div class="card" style="border:2px solid var(--violet);margin-bottom:1rem">
-      <div class="card-hdr" style="color:var(--violet)">
-        <i class="fa-solid fa-clock" style="color:var(--violet)"></i>
-        Paiements déclarés — en attente de validation (${decl.length})
-        <div class="card-hdr-right"><span style="background:var(--violet-pale);color:var(--violet);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">ACTION REQUISE</span></div>
-      </div>
-      <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Copropriétaire</th><th>Lot</th><th>Période</th><th>Montant</th><th>Mode déclaré</th><th>Date</th><th>Référence</th><th>Actions</th></tr></thead>
-        <tbody>${decl.map(p=>`<tr>
-          <td><strong>${p.prenom} ${p.nom}</strong></td>
-          <td>${p.lot||'—'}</td>
-          <td><strong>${p.periode||'—'}</strong></td>
-          <td><strong>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</strong></td>
-          <td><span class="pill pill-blue">${p.mode||'virement'}</span></td>
-          <td>${fmtDate(p.date_paiement)}</td>
-          <td style="font-size:12px;color:var(--text-3)">${p.reference||'—'}</td>
-          <td>
-            <div style="display:flex;gap:5px">
-              <button class="btn btn-primary btn-sm" onclick="validerPaiement(${p.id},'${p.prenom} ${p.nom}')">
-                <i class="fa-solid fa-check"></i> Valider</button>
-              <button class="btn btn-danger btn-sm" onclick="rejeterPaiement(${p.id},'${p.prenom} ${p.nom}')">
-                <i class="fa-solid fa-xmark"></i> Rejeter</button>
-            </div>
-          </td>
-        </tr>`).join('')}
-        </tbody></table></div>
-    </div>`;
-  // Insérer après le premier enfant (page-hdr)
+  div.style.marginBottom = '1rem';
+
+  const hasPending = decl && decl.length > 0;
+  div.innerHTML = `<div class="card" style="border:2px solid ${hasPending?'var(--violet)':'var(--border)'};background:${hasPending?'white':'var(--surface2)'}">
+    <div class="card-hdr" style="color:${hasPending?'var(--violet)':'var(--text-3)'}">
+      <i class="fa-solid fa-${hasPending?'clock':'circle-check'}" style="color:${hasPending?'var(--violet)':'var(--text-3)'}"></i>
+      Paiements déclarés par les résidents${hasPending?' ('+decl.length+' à valider)':''}
+      ${hasPending?`<div class="card-hdr-right"><span style="background:var(--violet-pale);color:var(--violet);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;animation:pulse 2s infinite">⚡ ACTION REQUISE</span></div>`:''}
+    </div>
+    ${hasPending ? `
+    <div style="overflow-x:auto"><table class="data-table">
+      <thead><tr><th>Copropriétaire</th><th>Lot</th><th>Période</th><th>Montant</th><th>Mode</th><th>Date déclaration</th><th>Référence</th><th>Validation</th></tr></thead>
+      <tbody>${decl.map(p=>`<tr style="background:var(--violet-pale)">
+        <td><strong>${p.prenom} ${p.nom}</strong></td>
+        <td>${p.lot||'—'}</td>
+        <td><strong>${p.periode||'—'}</strong></td>
+        <td><strong>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</strong></td>
+        <td><span class="pill pill-blue">${p.mode||'virement'}</span></td>
+        <td>${fmtDate(p.date_paiement)}</td>
+        <td style="font-size:12px">${p.reference||'—'}</td>
+        <td><div style="display:flex;gap:5px">
+          <button class="btn btn-primary btn-sm" onclick="validerPaiement(${p.id},'${p.prenom} ${p.nom}',${p.montant},'${p.periode}')">
+            <i class="fa-solid fa-check"></i> Valider</button>
+          <button class="btn btn-danger btn-sm" onclick="rejeterPaiement(${p.id},'${p.prenom} ${p.nom}',${p.montant},'${p.periode}')">
+            <i class="fa-solid fa-xmark"></i> Rejeter</button>
+        </div></td>
+      </tr>`).join('')}
+      </tbody></table></div>` :
+    `<div style="padding:.75rem;font-size:13px;color:var(--text-3);display:flex;align-items:center;gap:8px">
+      <i class="fa-solid fa-circle-check" style="color:var(--text-3)"></i>
+      Aucun paiement déclaré en attente — Les résidents peuvent déclarer leurs paiements depuis leur espace.
+    </div>`}
+  </div>`;
+
   const hdr = page.querySelector('.page-hdr');
   if(hdr) hdr.insertAdjacentElement('afterend', div);
   else page.insertBefore(div, page.firstChild);
