@@ -3,7 +3,10 @@ const auth = require('../middleware/auth');
 const { query } = require('../db');
 const { upload, resolveUrl, getStorageLabel } = require('../services/upload');
 const { sendBulk, templates } = require('../services/email');
-const { deleteFromGDrive } = require('../services/gdrive');
+// Chargement sécurisé de gdrive (optionnel)
+let deleteFromGDrive = async () => {};
+try { deleteFromGDrive = require('../services/gdrive').deleteFromGDrive; }
+catch(e) { console.warn('gdrive.js non trouvé — suppression Drive désactivée'); }
 
 const APP_URL = process.env.APP_URL || 'https://syndicapp.onrender.com';
 
