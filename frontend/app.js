@@ -32,7 +32,7 @@ function showToast(msg, type='success') {
 function showError(msg){showToast(msg,'error');}
 
 // ── UTILS ─────────────────────────────────────────────────
-function statusPill(s){const m={paye:['green','✓ Payé'],en_attente:['gray','En attente'],retard:['orange','⏱ Retard'],impaye:['red','✗ Impayé'],ouvert:['orange','Ouvert'],en_cours:['yellow','En cours'],resolu:['green','✓ Résolu'],ferme:['gray','Fermé'],planifie:['blue','Planifié'],termine:['green','Terminé'],success:['green','OK'],failed:['red','Échec']};const[c,l]=m[s]||['gray',s];return`<span class="pill pill-${c}">${l}</span>`;}
+function statusPill(s){const m={declare:['violet','Déclaré — à valider'],paye:['green','✓ Payé'],en_attente:['gray','En attente'],retard:['orange','⏱ Retard'],impaye:['red','✗ Impayé'],ouvert:['orange','Ouvert'],en_cours:['yellow','En cours'],resolu:['green','✓ Résolu'],ferme:['gray','Fermé'],planifie:['blue','Planifié'],termine:['green','Terminé'],success:['green','OK'],failed:['red','Échec']};const[c,l]=m[s]||['gray',s];return`<span class="pill pill-${c}">${l}</span>`;}
 function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});}
 function fmtDateTime(d){if(!d)return'—';return new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}
 function ini(u){return((u.prenom||'?')[0]+(u.nom||'?')[0]).toUpperCase();}
@@ -182,7 +182,7 @@ async function loadRDashboard(){
   if(b){b.textContent=openInc||'';b.style.display=openInc?'':'none';}
   setPageContent('r-dashboard',`
     <div class="page-hdr">
-      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Villa ${u.lot||'—'}</p></div>
+      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Appartement ${u.lot||'—'}</p></div>
       <div class="hdr-actions"><button class="btn btn-primary btn-sm" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Signaler</button></div>
     </div>
     <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -241,7 +241,7 @@ async function loadRFinances(){
       <div style="overflow-x:auto"><table class="data-table">
         <thead><tr><th>Période</th><th>Échéance</th><th>Montant</th><th>Paiement</th><th>Mode</th><th>Statut</th></tr></thead>
         <tbody>${charges.map(p=>`<tr><td><strong>${p.periode||''}</strong></td><td>${fmtDate(p.echeance)}</td><td><strong>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</strong></td><td>${fmtDate(p.date_paiement)}</td><td>${p.mode||'—'}</td><td>${statusPill(p.statut)}</td>
-          ${p.statut!=='paye'?`<td><button class="btn btn-ghost btn-xs" onclick="openDeclarerPaiement(${p.id},'${p.periode}',${p.montant})"><i class="fa-solid fa-pen-to-square"></i> Déclarer</button></td>`:'<td><span class="pill pill-green">✓ Déclaré</span></td>'}
+          ${p.statut!=='paye'?`<td><button class="btn btn-ghost btn-xs" onclick="openDeclarerPaiement(${p.id},'${p.periode}',${p.montant})"><i class="fa-solid fa-pen-to-square"></i> Déclarer</button></td>`:p.statut==='paye'?'<td><span class="pill pill-green">✓ Validé</span></td>':p.statut==='declare'?'<td><span class="pill pill-violet" style="background:#f3effe;color:#7c3aed">⏳ En attente de validation</span></td>':'<td></td>'}
         </tr>`).join('')}</tbody>
       </table></div>
     </div>`);
@@ -270,6 +270,7 @@ async function loadRIncidents(){
             <div class="incident-title">${urgIcon[i.urgence]||''} ${i.type}${i.localisation?' — '+i.localisation:''}</div>
             <div class="incident-sub">Signalé le ${fmtDate(i.created_at)}</div>
             ${i.prestataire?`<div class="incident-sub" style="color:var(--primary)">↳ Prestataire : ${i.prestataire}</div>`:''}
+          ${i.commentaire_syndic?`<div style="background:var(--primary-pale);border-left:3px solid var(--primary);padding:6px 10px;border-radius:0 6px 6px 0;margin-top:6px;font-size:12px;color:var(--primary)"><i class='fa-solid fa-comment'></i> <strong>Syndic :</strong> ${i.commentaire_syndic}</div>`:''}
             <div class="progress-bar" style="margin-top:6px"><div class="progress-fill ${i.statut==='ouvert'?'orange':''}" style="width:${i.statut==='ouvert'?20:60}%"></div></div>
           </div>${statusPill(i.statut)}
         </div>`).join('')}</div>`:`
@@ -575,6 +576,71 @@ async function loadGCompta(){
       <div id="compta-table"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     </div>`);
   if(actif)await reloadComptaFor(actif.id);
+  // Charger les déclarations en attente
+  await loadDeclarationsPending();
+}
+
+async function loadDeclarationsPending(){
+  const decl=await GET('/charges/declarations/pending').catch(()=>[]);
+  if(!decl?.length) return;
+  // Insérer le badge impayés
+  const b=document.getElementById('badge-impayes');
+  if(b){b.textContent=decl.length;b.style.display='';}
+  // Insérer le bloc dans la page comptabilité
+  const existing=document.getElementById('decl-pending-block');
+  if(existing) existing.remove();
+  const block=document.createElement('div');
+  block.id='decl-pending-block';
+  block.innerHTML=`
+    <div class="card" style="border-color:var(--violet);border-width:2px">
+      <div class="card-hdr" style="color:var(--violet)">
+        <i class="fa-solid fa-clock" style="color:var(--violet)"></i>
+        Déclarations en attente de validation (${decl.length})
+        <div class="card-hdr-right"><span class="pill pill-violet">Action requise</span></div>
+      </div>
+      <div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Copropriétaire</th><th>Lot</th><th>Période</th><th>Montant</th><th>Mode</th><th>Date décl.</th><th>Référence</th><th>Actions</th></tr></thead>
+        <tbody>${decl.map(p=>`<tr>
+          <td><strong>${p.prenom} ${p.nom}</strong></td>
+          <td>${p.lot||'—'}</td>
+          <td>${p.periode||'—'}</td>
+          <td><strong>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</strong></td>
+          <td>${p.mode||'—'}</td>
+          <td>${fmtDate(p.date_paiement)}</td>
+          <td style="font-size:12px;color:var(--text-3)">${p.reference||'—'}</td>
+          <td><div style="display:flex;gap:5px">
+            <button class="btn btn-primary btn-sm" onclick="validerPaiement(${p.id},'${p.prenom} ${p.nom}')">
+              <i class="fa-solid fa-check"></i> Valider</button>
+            <button class="btn btn-danger btn-sm" onclick="rejeterPaiement(${p.id},'${p.prenom} ${p.nom}')">
+              <i class="fa-solid fa-xmark"></i> Rejeter</button>
+          </div></td>
+        </tr>`).join('')}
+        </tbody></table></div>
+    </div>`;
+  // Insérer avant le tableau principal
+  const page=document.getElementById('page-g-comptabilite');
+  if(page) page.insertBefore(block, page.children[1]||null);
+}
+
+async function validerPaiement(id, nom){
+  const commentaire=prompt(`Commentaire pour ${nom} (optionnel) :`)||'';
+  try{
+    await POST('/charges/paiements/'+id+'/valider',{commentaire});
+    showToast('Paiement de '+nom+' validé');
+    loaded.delete('g-comptabilite');
+    loadGCompta();
+  }catch(e){showError(e.error||'Erreur');}
+}
+
+async function rejeterPaiement(id, nom){
+  const motif=prompt('Motif du rejet (obligatoire) :');
+  if(!motif)return;
+  try{
+    await POST('/charges/paiements/'+id+'/rejeter',{motif});
+    showToast('Déclaration de '+nom+' rejetée — le résident a été notifié','warn');
+    loaded.delete('g-comptabilite');
+    loadGCompta();
+  }catch(e){showError(e.error||'Erreur');}
 }
 
 async function reloadComptaFor(appelId){
@@ -651,7 +717,7 @@ async function loadGTravaux(){
           <td>${statusPill(i.statut)}</td>
           <td><div style="display:flex;gap:4px">
             <button class="btn btn-ghost btn-xs" onclick='openEditIntervention(${JSON.stringify(i).replace(/'/g,"\\'")})'><i class="fa-solid fa-edit"></i></button>
-            <button class="btn btn-primary btn-xs" onclick="resolveIncident(${i.id})"><i class="fa-solid fa-check"></i> Résoudre</button>
+            <button class="btn btn-primary btn-xs" onclick="openResolveModal(${i.id},'${i.type}')"><i class="fa-solid fa-check"></i> Résoudre</button>
           </div></td>
         </tr>`).join('')}</tbody>
       </table></div>`:`<div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>Aucune intervention en cours</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openModal('modal-intervention')"><i class="fa-solid fa-plus"></i> Créer la première</button></div>`}
@@ -705,13 +771,21 @@ async function submitIntervention(){
   }catch(e){showError(e.error||'Erreur');}
 }
 
-async function resolveIncident(id){
-  try{
-    await PUT('/incidents/'+id,{statut:'resolu',date_resolution:new Date().toISOString().split('T')[0]});
-    showToast(' Intervention résolue');
-    loaded.delete('g-travaux');loadGTravaux();
-  }catch{showError('Erreur');}
+function openResolveModal(id,type){
+  const msg='Commentaire pour le résident (optionnel) :\n(Laisser vide pour résoudre sans commentaire)';
+  const commentaire=prompt(msg);
+  resolveIncidentWithComment(id, commentaire===null?undefined:commentaire);
 }
+async function resolveIncidentWithComment(id, commentaire){
+  try{
+    const body={statut:'resolu',date_resolution:new Date().toISOString().split('T')[0]};
+    if(commentaire)body.commentaire_syndic=commentaire;
+    await PUT('/incidents/'+id,body);
+    showToast(commentaire?'Résolue — résident notifié':'Intervention résolue');
+    loaded.delete('g-travaux');loadGTravaux();
+  }catch(e){showError('Erreur');}
+}
+async function resolveIncident(id){ openResolveModal(id,''); }
 
 async function loadGAG(){
   const ags=await GET('/ag'); if(!ags)return;
@@ -868,7 +942,7 @@ async function loadGNotifications(){
     <div class="grid-2">
       <div class="card"><div class="card-hdr"><i class="fa-solid fa-paper-plane"></i> Envoi rapide</div>
         <div class="incident-list">
-          <div class="incident-card" onclick="notifyImpayes()"><div class="inc-icon inc-red"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="incident-body"><div class="incident-title">Relances impayés</div><div class="incident-sub">Email + SMS aux résidents en retard</div></div><i class="fa-solid fa-chevron-right" style="color:var(--text-3)"></i></div>
+          <div class="incident-card" onclick="notifyImpayes()"><div class="inc-icon inc-red"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="incident-body"><div class="incident-title">Relances impayés</div><div class="incident-sub">Email + WhatsApp aux résidents en retard</div></div><i class="fa-solid fa-chevron-right" style="color:var(--text-3)"></i></div>
           <div class="incident-card" onclick="openModal('modal-notif')"><div class="inc-icon inc-blue"><i class="fa-solid fa-file-invoice-dollar"></i></div><div class="incident-body"><div class="incident-title">Appel de fonds</div><div class="incident-sub">Notifier l'appel actif</div></div><i class="fa-solid fa-chevron-right" style="color:var(--text-3)"></i></div>
           <div class="incident-card" onclick="showPage('g-ag')"><div class="inc-icon inc-green"><i class="fa-solid fa-users"></i></div><div class="incident-body"><div class="incident-title">Convocations AG</div><div class="incident-sub">Depuis la page Tenue des AG</div></div><i class="fa-solid fa-chevron-right" style="color:var(--text-3)"></i></div>
           <div class="incident-card" onclick="showPage('g-agenda')"><div class="inc-icon inc-violet"><i class="fa-solid fa-calendar-check"></i></div><div class="incident-body"><div class="incident-title">Agenda automatique</div><div class="incident-sub">Configurer les envois récurrents</div></div><i class="fa-solid fa-chevron-right" style="color:var(--text-3)"></i></div>
@@ -905,7 +979,7 @@ async function loadGAgenda(isAdmin=false){
   if(!rules)rules=[]; if(!execs)execs=[];
   const pid=isAdmin?'a-agenda':'g-agenda';
   const typeLabels={appel_fonds:'Appel de fonds',rappel_paiement:'Rappel paiement',convocation_ag:'Convocation AG'};
-  const canalIcon={email:'envelope',sms:'mobile-screen',les_deux:'envelope-open-text'};
+  const canalIcon={email:'envelope',sms:'brands fa-whatsapp',les_deux:'envelope-open-text'};
   const decLabels={avant_echeance:'avant échéance',apres_echeance:'après échéance',avant_ag:'avant l\'AG'};
   setPageContent(pid,`
     <div class="page-hdr"><div class="page-hdr-left"><h1>Agenda automatique</h1><p>${(rules||[]).length} règle(s)</p></div>
@@ -1235,7 +1309,7 @@ async function loadANotifLog(){
     </div>
     <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="metric"><div class="metric-icon"><i class="fa-solid fa-envelope"></i></div><div class="metric-val">${(log||[]).filter(n=>n.type==='email').length}</div><div class="metric-label">Emails</div></div>
-      <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-mobile-screen"></i></div><div class="metric-val">${(log||[]).filter(n=>n.type==='sms').length}</div><div class="metric-label">SMS</div></div>
+      <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-brands fa-whatsapp"></i></div><div class="metric-val">${(log||[]).filter(n=>n.type==='whatsapp').length}</div><div class="metric-label">SMS</div></div>
       <div class="metric danger"><div class="metric-icon"><i class="fa-solid fa-circle-exclamation"></i></div><div class="metric-val">${(log||[]).filter(n=>n.status==='failed').length}</div><div class="metric-label">Échecs</div></div>
     </div>
     <div class="card"><div style="overflow-x:auto"><table class="data-table">
@@ -1445,7 +1519,7 @@ async function deleteType(kind,id,nom){
 // ── Notifications ─────────────────────────────────────────
 async function sendNotification(endpoint,body={}){
   try{const r=await POST('/notifications/'+endpoint,body);
-    if(r?.sent!==undefined)showToast(`📧 ${r.sent} email(s)${r.smsSent?' · '+r.smsSent+' SMS':''} envoyé(s)`);
+    if(r?.sent!==undefined)showToast(`📧 ${r.sent} email(s)${r.smsSent?' · '+r.smsSent+' WhatsApp':''} envoyé(s)`);
     else if(r?.success)showToast('📧 Notification envoyée !');
     else showToast('⚠️ Envoi échoué — vérifiez SMTP','warn');
     loaded.delete('g-notifications');loaded.delete('a-notifications-log');
