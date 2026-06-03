@@ -68,9 +68,9 @@ app.get('/api/reset-passwords', async (req, res) => {
   const bcrypt = require('bcryptjs'); const { query } = require('./db');
   try {
     for (const u of [
-      { email:'iguirmia.mustapha@gmail.com', password:'Admin2026!' },
-      { email:'contact@servicepro-solutions.com', password:'Syndic2026!' },
-      { email:'iguirmia.mustapha@servicepro-solutions.com', password:'Resident2026!' },
+      { email:'iguirmia.mustapha@gmail.com',      password:'Admin2026!'    },
+      { email:'iguirmiamustapha.new@gmail.com',    password:'Syndic2026!'   },
+      { email:'awatif.chakib15@gmail.com',         password:'Resident2026!' },
     ]) { const h = await bcrypt.hash(u.password,10); await query(`UPDATE utilisateurs SET password_hash=$1 WHERE email=$2`,[h,u.email]); }
     res.json({ success:true });
   } catch(e) { res.status(500).json({ error:e.message }); }
