@@ -182,7 +182,7 @@ async function loadRDashboard(){
   if(b){b.textContent=openInc||'';b.style.display=openInc?'':'none';}
   setPageContent('r-dashboard',`
     <div class="page-hdr">
-      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Appartement ${u.lot||'—'}</p></div>
+      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Villa ${u.lot||'—'}</p></div>
       <div class="hdr-actions"><button class="btn btn-primary btn-sm" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Signaler</button></div>
     </div>
     <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -1083,11 +1083,18 @@ async function loadGResidents(){
 }
 
 function openResidentModal(r=null){
+  // Fermer tout modal déjà ouvert
+  document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
   const isEdit=!!r;
   document.getElementById('modal-res-title').innerHTML=`<i class="fa-solid fa-user-${isEdit?'edit':'plus'}" style="color:var(--primary)"></i> ${isEdit?'Modifier':'Nouveau'} résident`;
   document.getElementById('res-id').value=r?.id||'';
   ['prenom','nom','email','tel','lot'].forEach(f=>document.getElementById('res-'+f).value=(r?.[f==='tel'?'telephone':f])||'');
-  document.getElementById('res-welcome-wrap').style.display=isEdit?'none':'';
+  const pwdField=document.getElementById('res-password');
+  if(pwdField)pwdField.value='';
+  const welcomeWrap=document.getElementById('res-welcome-wrap');
+  if(welcomeWrap)welcomeWrap.style.display=isEdit?'none':'';
+  const welcomeCheck=document.getElementById('res-welcome');
+  if(welcomeCheck)welcomeCheck.checked=true;
   openModal('modal-resident');
 }
 
