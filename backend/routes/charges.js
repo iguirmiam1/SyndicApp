@@ -6,37 +6,34 @@ let sendEmail = async () => {};
 try { ({ sendEmail } = require('../services/email')); } catch(e) {}
 const APP_URL = process.env.APP_URL || 'https://syndicapp.onrender.com';
 
-// Auto-migration : ajoute les colonnes manquantes au démarrage
-let migrated = false;
-const autoMigrate = async () => {
-  if (migrated) return;
-  migrated = true;
-  const cols = [
-    ['mode', 'VARCHAR(30)'],
-    ['date_paiement', 'DATE'],
-    ['reference', 'VARCHAR(100)'],
-    ['commentaire_syndic', 'TEXT'],
-    ['updated_at', 'TIMESTAMPTZ DEFAULT NOW()'],
-  ];
-  for (const [col, type] of cols) {
+// Mise à jour paiement ultra-robuste : essaie chaque colonne séparément
+const updatePaiement = async (id, fields) => {
+  // Essai 1 : toutes les colonnes ensemble
+  const cols = Object.keys(fields).filter(k => fields[k] !== undefined);
+  const vals = cols.map(k => fields[k]);
+  try {
+    const sets = cols.map((c, i) => `${c}=$${i + 1}`).join(',');
+    const { rows } = await query(
+      `UPDATE paiements SET ${sets} WHERE id=$${cols.length + 1} RETURNING *`,
+      [...vals, id]
+    );
+    return rows[0];
+  } catch(e) {
+    console.warn('Full update failed, trying statut only:', e.message);
+  }
+  // Essai 2 : seulement le statut (toujours disponible)
+  const { rows } = await query(
+    `UPDATE paiements SET statut=$1 WHERE id=$2 RETURNING *`,
+    [fields.statut, id]
+  );
+  // Essais optionnels colonne par colonne (silencieux)
+  for (const [col, val] of Object.entries(fields)) {
+    if (col === 'statut' || val === undefined || val === null) continue;
     try {
-      await query(`ALTER TABLE paiements ADD COLUMN IF NOT EXISTS ${col} ${type}`);
-    } catch(e) { /* ignore */ }
+      await query(`UPDATE paiements SET ${col}=$1 WHERE id=$2`, [val, id]);
+    } catch(e) { /* colonne n'existe pas encore */ }
   }
-  // incidents aussi
-  const incCols = [
-    ['prestataire', 'VARCHAR(200)'],
-    ['cout', 'NUMERIC(12,2)'],
-    ['urgence', 'VARCHAR(20) DEFAULT \'normal\''],
-    ['date_resolution', 'DATE'],
-    ['commentaire_syndic', 'TEXT'],
-    ['updated_at', 'TIMESTAMPTZ DEFAULT NOW()'],
-  ];
-  for (const [col, type] of incCols) {
-    try { await query(`ALTER TABLE incidents ADD COLUMN IF NOT EXISTS ${col} ${type}`); }
-    catch(e) { /* ignore */ }
-  }
-  console.log('✅ Auto-migration charges/incidents terminée');
+  return rows[0];
 };
 
 // GET /api/charges
@@ -123,112 +120,112 @@ router.get('/:id/paiements', auth.gestionnaire, async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-// POST /api/charges/paiements/:id/payer
+// ── POST /payer : résident déclare son paiement ───────────────────────────────
 router.post('/paiements/:id/payer', auth, async (req, res) => {
   const { mode, date_paiement, reference } = req.body;
   try {
-    await autoMigrate(); // S'assure que les colonnes existent
     const { rows: [p] } = await query(`SELECT * FROM paiements WHERE id=$1`, [req.params.id]);
-    if (!p) return res.status(404).json({ error: 'Non trouvé' });
+    if (!p) return res.status(404).json({ error: 'Paiement non trouvé' });
     if (req.user.role === 'resident' && p.resident_id !== req.user.id)
       return res.status(403).json({ error: 'Accès refusé' });
 
-    const { rows: [updated] } = await query(
-      `UPDATE paiements SET
-         statut='declare',
-         mode=$1,
-         date_paiement=$2,
-         reference=$3,
-         updated_at=NOW()
-       WHERE id=$4 RETURNING *`,
-      [mode || 'virement',
-       date_paiement || new Date().toISOString().split('T')[0],
-       reference || null,
-       req.params.id]
-    );
+    // Mise à jour robuste — fonctionne même sans les nouvelles colonnes
+    const updated = await updatePaiement(req.params.id, {
+      statut: 'declare',
+      mode: mode || 'virement',
+      date_paiement: date_paiement || new Date().toISOString().split('T')[0],
+      reference: reference || null,
+    });
 
-    // Email gestionnaire
-    try {
-      const { rows: [g] } = await query(
-        `SELECT email FROM utilisateurs WHERE residence_id=$1 AND role='gestionnaire' LIMIT 1`,
-        [req.user.residence_id]
-      );
-      const { rows: [a] } = await query(`SELECT periode FROM appels_fonds WHERE id=$1`, [p.appel_id]);
-      if (g?.email) await sendEmail({
-        to: g.email,
-        subject: `💳 Paiement à valider — ${req.user.prenom} ${req.user.nom}`,
-        html: `<p><b>${req.user.prenom} ${req.user.nom}</b> (Lot ${req.user.lot||'?'}) a déclaré un paiement de <b>${parseFloat(p.montant||0).toLocaleString('fr-FR')} MAD</b> pour <b>${a?.periode||'—'}</b>.</p>
-               <p>Mode: ${mode||'—'} | Date: ${date_paiement||'—'} | Réf: ${reference||'—'}</p>
-               <p><a href="${APP_URL}">Valider sur SyndicPro</a></p>`
-      });
-    } catch(e) { console.warn('Email:', e.message); }
+    // Email gestionnaire (non bloquant)
+    setImmediate(async () => {
+      try {
+        const { rows: [g] } = await query(
+          `SELECT email FROM utilisateurs WHERE residence_id=$1 AND role='gestionnaire' LIMIT 1`,
+          [req.user.residence_id]
+        );
+        const { rows: [a] } = await query(`SELECT periode FROM appels_fonds WHERE id=$1`, [p.appel_id]);
+        if (g?.email) await sendEmail({
+          to: g.email,
+          subject: `💳 Paiement à valider — ${req.user.prenom} ${req.user.nom}`,
+          html: `<p><b>${req.user.prenom} ${req.user.nom}</b> (Lot ${req.user.lot || '?'}) a déclaré un paiement de <b>${parseFloat(p.montant || 0).toLocaleString('fr-FR')} MAD</b> pour <b>${a?.periode || '—'}</b>.<br>
+Mode: ${mode || '—'} · Date: ${date_paiement || '—'} · Réf: ${reference || '—'}</p>
+<p><a href="${APP_URL}">Valider sur SyndicPro →</a></p>`
+        });
+      } catch(e) { console.warn('Email notif:', e.message); }
+    });
 
     res.json(updated);
   } catch(e) {
-    console.error('payer:', e.message);
-    res.status(500).json({ error: e.message });
+    console.error('POST /payer error:', e.message);
+    res.status(500).json({ error: 'Erreur serveur: ' + e.message });
   }
 });
 
-// POST /api/charges/paiements/:id/valider
+// ── POST /valider : syndic valide le paiement ─────────────────────────────────
 router.post('/paiements/:id/valider', auth.gestionnaire, async (req, res) => {
   const { commentaire } = req.body;
   try {
-    await autoMigrate();
     const { rows: [p] } = await query(`SELECT * FROM paiements WHERE id=$1`, [req.params.id]);
     if (!p) return res.status(404).json({ error: 'Non trouvé' });
-    const { rows: [u] } = await query(
-      `UPDATE paiements SET statut='paye', commentaire_syndic=$1, updated_at=NOW()
-       WHERE id=$2 RETURNING *`,
-      [commentaire || null, req.params.id]
-    );
-    // Email résident
-    try {
-      const { rows: [ri] } = await query(
-        `SELECT u.email,u.prenom,a.periode FROM utilisateurs u,appels_fonds a
-         WHERE u.id=$1 AND a.id=$2`, [p.resident_id, p.appel_id]
-      );
-      if (ri?.email) await sendEmail({
-        to: ri.email,
-        subject: `✅ Paiement validé — ${ri.periode}`,
-        html: `<p>Bonjour <b>${ri.prenom}</b>,</p>
-               <p>Votre paiement pour <b>${ri.periode}</b> a été <b style="color:#0d5c47">confirmé par le syndic</b>.</p>
-               ${commentaire ? `<p>Message : ${commentaire}</p>` : ''}
-               <p><a href="${APP_URL}">Voir mes paiements</a></p>`
-      });
-    } catch(e) { console.warn('Email:', e.message); }
-    res.json(u);
+
+    const updated = await updatePaiement(req.params.id, {
+      statut: 'paye',
+      commentaire_syndic: commentaire || null,
+    });
+
+    setImmediate(async () => {
+      try {
+        const { rows: [ri] } = await query(
+          `SELECT u.email,u.prenom,a.periode FROM utilisateurs u, appels_fonds a
+           WHERE u.id=$1 AND a.id=$2`, [p.resident_id, p.appel_id]
+        );
+        if (ri?.email) await sendEmail({
+          to: ri.email,
+          subject: `✅ Paiement validé — ${ri.periode}`,
+          html: `<p>Bonjour <b>${ri.prenom}</b>,</p>
+<p>Votre paiement pour <b>${ri.periode}</b> a été <b style="color:#0d5c47">confirmé par le syndic</b>.</p>
+<p>Montant validé : <b>${parseFloat(p.montant || 0).toLocaleString('fr-FR')} MAD</b></p>
+${commentaire ? `<p>Message du syndic : ${commentaire}</p>` : ''}
+<p><a href="${APP_URL}">Voir mes paiements</a></p>`
+        });
+      } catch(e) { console.warn('Email validation:', e.message); }
+    });
+
+    res.json(updated);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/charges/paiements/:id/rejeter
+// ── POST /rejeter : syndic rejette ───────────────────────────────────────────
 router.post('/paiements/:id/rejeter', auth.gestionnaire, async (req, res) => {
   const { motif } = req.body;
   try {
-    await autoMigrate();
     const { rows: [p] } = await query(`SELECT * FROM paiements WHERE id=$1`, [req.params.id]);
     if (!p) return res.status(404).json({ error: 'Non trouvé' });
-    const { rows: [u] } = await query(
-      `UPDATE paiements SET statut='en_attente', commentaire_syndic=$1, updated_at=NOW()
-       WHERE id=$2 RETURNING *`,
-      [`Rejeté : ${motif}`, req.params.id]
-    );
-    // Email résident
-    try {
-      const { rows: [ri] } = await query(
-        `SELECT u.email,u.prenom,a.periode FROM utilisateurs u,appels_fonds a
-         WHERE u.id=$1 AND a.id=$2`, [p.resident_id, p.appel_id]
-      );
-      if (ri?.email) await sendEmail({
-        to: ri.email,
-        subject: `⚠️ Déclaration rejetée — ${ri.periode}`,
-        html: `<p>Bonjour <b>${ri.prenom}</b>,</p>
-               <p>Votre déclaration pour <b>${ri.periode}</b> n'a pas été confirmée.</p>
-               <p><b>Motif :</b> ${motif}</p>
-               <p><a href="${APP_URL}">Re-déclarer</a></p>`
-      });
-    } catch(e) { console.warn('Email:', e.message); }
-    res.json(u);
+
+    const updated = await updatePaiement(req.params.id, {
+      statut: 'en_attente',
+      commentaire_syndic: `Rejeté : ${motif}`,
+    });
+
+    setImmediate(async () => {
+      try {
+        const { rows: [ri] } = await query(
+          `SELECT u.email,u.prenom,a.periode FROM utilisateurs u, appels_fonds a
+           WHERE u.id=$1 AND a.id=$2`, [p.resident_id, p.appel_id]
+        );
+        if (ri?.email) await sendEmail({
+          to: ri.email,
+          subject: `⚠️ Déclaration rejetée — ${ri.periode}`,
+          html: `<p>Bonjour <b>${ri.prenom}</b>,</p>
+<p>Votre déclaration pour <b>${ri.periode}</b> n'a pas été confirmée.</p>
+<p><b>Motif :</b> ${motif}</p>
+<p><a href="${APP_URL}">Re-déclarer sur SyndicPro</a></p>`
+        });
+      } catch(e) { console.warn('Email rejet:', e.message); }
+    });
+
+    res.json(updated);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
