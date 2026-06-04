@@ -96,18 +96,26 @@ async function initApp(){
     document.getElementById('user-av').style.background='var(--violet)';
     document.getElementById('user-role-top').textContent='Administrateur';
     showNav('nav-admin');
+    renderBottomNav('admin', 'a-dashboard');
     showPage('a-dashboard');
   } else if(u.role==='gestionnaire'){
     document.getElementById('user-av').style.background='var(--accent)';
     document.getElementById('user-role-top').textContent='Gestionnaire · Syndic';
     showNav('nav-gestionnaire');
+    renderBottomNav('gestionnaire', 'g-dashboard');
     showPage('g-dashboard');
   } else {
     document.getElementById('user-av').style.background='var(--info)';
     document.getElementById('user-role-top').textContent=`Copropriétaire · Lot ${u.lot||'—'}`;
     showNav('nav-resident');
+    renderBottomNav('resident', 'r-dashboard');
     showPage('r-dashboard');
   }
+
+  // PWA install prompt
+  initPWAInstall();
+  // Demander permission push notifications (Phase 4)
+  setTimeout(initPushNotifications, 3000);
 }
 
 // ── NAVIGATION ────────────────────────────────────────────
@@ -253,7 +261,7 @@ async function loadRFinances(){
 
 async function loadRIncidents(){
   const data=await GET('/incidents'); if(!data)return;
-  const typeIcon={Plomberie:'droplet','Électricité':'bolt','Parties communes':'building',Sécurité:'shield-halved',Nuisances:'volume-high',Autre:'wrench'};
+  const typeIcon={Plomberie:'droplet',Ascenseur:'elevator','Électricité':'bolt','Parties communes':'building',Sécurité:'shield-halved',Nuisances:'volume-high',Autre:'wrench'};
   const urgIcon={'normal':'','urgent':'','tres_urgent':''};
   const actifs=data.filter(i=>i.statut!=='resolu'&&i.statut!=='ferme');
   const resolus=data.filter(i=>i.statut==='resolu'||i.statut==='ferme');
@@ -1715,6 +1723,153 @@ document.getElementById('hamburger-btn').addEventListener('click',()=>{
   document.getElementById('sidebar-overlay').classList.toggle('show');
 });
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');}
+// ══════════════════════════════════════════════════════════════
+// PHASE 3 — PWA INSTALL PROMPT
+// ══════════════════════════════════════════════════════════════
+
+let _deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  // Montrer la bannière après 30s si non installé
+  if (!localStorage.getItem('pwa_dismissed')) {
+    setTimeout(showPWABanner, 30000);
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  hidePWABanner();
+  _deferredPrompt = null;
+  showToast('SyndicPro installé sur votre écran');
+});
+
+function initPWAInstall(){
+  const installBtn = document.getElementById('pwa-banner-install');
+  const closeBtn   = document.getElementById('pwa-banner-close');
+  if(installBtn) installBtn.addEventListener('click', installPWA);
+  if(closeBtn)   closeBtn.addEventListener('click', () => {
+    hidePWABanner();
+    localStorage.setItem('pwa_dismissed', Date.now());
+  });
+  // iOS Safari — pas de beforeinstallprompt
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  if(isIOS && !isStandalone && !localStorage.getItem('pwa_dismissed')) {
+    setTimeout(showIOSInstallHint, 5000);
+  }
+}
+
+async function installPWA(){
+  if(!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  const { outcome } = await _deferredPrompt.userChoice;
+  if(outcome === 'accepted') hidePWABanner();
+  _deferredPrompt = null;
+}
+
+function showPWABanner(){
+  const banner = document.getElementById('pwa-banner');
+  if(banner && _deferredPrompt) banner.classList.add('show');
+}
+
+function hidePWABanner(){
+  const banner = document.getElementById('pwa-banner');
+  if(banner) banner.classList.remove('show');
+}
+
+function showIOSInstallHint(){
+  if(localStorage.getItem('pwa_dismissed')) return;
+  showToast('iOS : Partager puis Ajouter écran accueil', 'info');
+}
+
+// ══════════════════════════════════════════════════════════════
+// PHASE 4 — PUSH NOTIFICATIONS WEB
+// ══════════════════════════════════════════════════════════════
+
+const VAPID_PUBLIC_KEY = window.VAPID_PUBLIC_KEY || '';
+
+async function initPushNotifications(){
+  if(!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  if(Notification.permission === 'granted') {
+    await subscribeToPush();
+  } else if(Notification.permission === 'default') {
+    // Demander seulement si l'utilisateur a interagi
+    document.addEventListener('click', askPushPermissionOnce, { once: true });
+  }
+}
+
+let _pushAsked = false;
+async function askPushPermissionOnce(){
+  if(_pushAsked || Notification.permission !== 'default') return;
+  _pushAsked = true;
+  // Petit délai pour ne pas être intrusif
+  await new Promise(r => setTimeout(r, 2000));
+  const perm = await Notification.requestPermission();
+  if(perm === 'granted') {
+    await subscribeToPush();
+    showToast('🔔 Notifications activées');
+  }
+}
+
+async function subscribeToPush(){
+  try {
+    if(!VAPID_PUBLIC_KEY) return; // Pas configuré
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    if(existing) { await sendSubscriptionToServer(existing); return; }
+
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    await sendSubscriptionToServer(subscription);
+  } catch(e) { console.warn('Push subscribe failed:', e.message); }
+}
+
+async function sendSubscriptionToServer(sub){
+  try {
+    await POST('/push/subscribe', { subscription: sub.toJSON() });
+  } catch(e) { console.warn('Push server save failed:', e.message); }
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+// Désactiver les notifications depuis le profil
+async function togglePushNotifications(enable){
+  if(enable) {
+    if(Notification.permission === 'denied') {
+      showError('Notifications bloquées — autorisez-les dans les paramètres du navigateur');
+      return;
+    }
+    await subscribeToPush();
+    showToast('🔔 Notifications push activées');
+  } else {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if(sub) { await sub.unsubscribe(); await DEL('/push/subscribe'); }
+      showToast('Notifications push désactivées');
+    } catch(e) { console.warn('Unsubscribe failed:', e.message); }
+  }
+}
+
+// Afficher le statut push dans le profil
+async function getPushStatus(){
+  if(!('Notification' in window)) return 'unsupported';
+  if(Notification.permission === 'denied') return 'denied';
+  const reg = await navigator.serviceWorker.ready.catch(() => null);
+  if(!reg) return 'unsupported';
+  const sub = await reg.pushManager.getSubscription();
+  return sub ? 'subscribed' : 'unsubscribed';
+}
+
+
 function openModal(id){document.getElementById(id)?.classList.add('show');}
 function closeModal(id){document.getElementById(id)?.classList.remove('show');}
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
@@ -1994,3 +2149,52 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 
 // ── Boot ──────────────────────────────────────────────────
 initApp();
+// ══════════════════════════════════════════════════════════════
+// BOTTOM NAVIGATION — Mobile
+// ══════════════════════════════════════════════════════════════
+
+const BOTTOM_NAV = {
+  resident: [
+    { page: 'r-dashboard',  icon: 'fa-house',       label: 'Accueil' },
+    { page: 'r-finances',   icon: 'fa-wallet',      label: 'Paiements', badge: 'nb-paiements-due' },
+    { page: 'r-incidents',  icon: 'fa-wrench',      label: 'Réclamations' },
+    { page: 'r-messagerie', icon: 'fa-comment',     label: 'Messages', badge: 'nb-messages' },
+    { page: 'r-jardinage',  icon: 'fa-leaf',        label: 'Jardinage' },
+  ],
+  gestionnaire: [
+    { page: 'g-dashboard',   icon: 'fa-gauge',      label: 'Tableau' },
+    { page: 'g-comptabilite',icon: 'fa-money-bill', label: 'Compta', badge: 'nb-declarations' },
+    { page: 'g-travaux',     icon: 'fa-hard-hat',   label: 'Travaux' },
+    { page: 'g-messagerie',  icon: 'fa-comments',   label: 'Messages' },
+    { page: 'g-residents',   icon: 'fa-people-roof',label: 'Résidents' },
+  ],
+  admin: [
+    { page: 'a-dashboard',   icon: 'fa-gauge',      label: 'Dashboard' },
+    { page: 'a-users',       icon: 'fa-users',      label: 'Utilisateurs' },
+    { page: 'g-comptabilite',icon: 'fa-money-bill', label: 'Compta' },
+    { page: 'g-travaux',     icon: 'fa-hard-hat',   label: 'Travaux' },
+    { page: 'g-documents',   icon: 'fa-folder',     label: 'Docs' },
+  ],
+};
+
+function renderBottomNav(role, currentPage){
+  const nav = document.getElementById('bottom-nav');
+  if(!nav) return;
+  const items = BOTTOM_NAV[role] || [];
+  nav.innerHTML = items.map(item => `
+    <button class="bn-item${currentPage===item.page?' active':''}"
+            onclick="showPage('${item.page}')"
+            aria-label="${item.label}"
+            aria-current="${currentPage===item.page?'page':'false'}">
+      <i class="fa-solid ${item.icon}" aria-hidden="true"></i>
+      <span>${item.label}</span>
+    </button>`).join('');
+}
+
+function updateBottomNavActive(page){
+  document.querySelectorAll('.bn-item').forEach(btn => {
+    const p = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+    btn.classList.toggle('active', p === page);
+    btn.setAttribute('aria-current', p === page ? 'page' : 'false');
+  });
+}
