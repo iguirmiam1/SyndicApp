@@ -182,7 +182,7 @@ async function loadRDashboard(){
   if(b){b.textContent=openInc||'';b.style.display=openInc?'':'none';}
   setPageContent('r-dashboard',`
     <div class="page-hdr">
-      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Villa ${u.lot||'—'}</p></div>
+      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · villa ${u.lot||'—'}</p></div>
       <div class="hdr-actions"><button class="btn btn-primary btn-sm" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Signaler</button></div>
     </div>
     <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -506,7 +506,6 @@ function renderRProfil(){
         </div>
         <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);font-size:13px;color:var(--text-2)">
           <div>Lot : <strong>${u.lot||'—'}</strong></div>
-          <div style="margin-top:4px">Tantièmes : <strong>${u.tantiemes||0}/1000</strong></div>
           <div style="margin-top:4px">Résidence : <strong>${state.user.residence_nom||'—'}</strong></div>
         </div>
       </div>
@@ -1070,7 +1069,7 @@ async function loadGResidents(){
         <thead><tr><th>Résident</th><th>Lot</th><th>Tantièmes</th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
         <tbody>${data.map(r=>`<tr>
           <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:6px;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${ini(r)}</div><strong>${r.prenom} ${r.nom}</strong></div></td>
-          <td>${r.lot||'—'}</td><td>${r.tantiemes||0}/1000</td>
+          <td>${r.lot||'—'}</td>
           <td style="font-size:12px;color:var(--info)">${r.email}</td>
           <td style="font-size:12px">${r.telephone||'—'}</td>
           <td>${statusPill(r.statut_charges||'en_attente')}</td>
@@ -1087,14 +1086,14 @@ function openResidentModal(r=null){
   const isEdit=!!r;
   document.getElementById('modal-res-title').innerHTML=`<i class="fa-solid fa-user-${isEdit?'edit':'plus'}" style="color:var(--primary)"></i> ${isEdit?'Modifier':'Nouveau'} résident`;
   document.getElementById('res-id').value=r?.id||'';
-  ['prenom','nom','email','tel','lot','tantiemes'].forEach(f=>document.getElementById('res-'+f).value=r?.(f==='tel'?'telephone':f)||'');
+  ['prenom','nom','email','tel','lot'].forEach(f=>document.getElementById('res-'+f).value=r?.(f==='tel'?'telephone':f)||'');
   document.getElementById('res-welcome-wrap').style.display=isEdit?'none':'';
   openModal('modal-resident');
 }
 
 async function submitResident(){
   const id=document.getElementById('res-id').value;
-  const body={prenom:document.getElementById('res-prenom').value,nom:document.getElementById('res-nom').value,email:document.getElementById('res-email').value,telephone:document.getElementById('res-tel').value,lot:document.getElementById('res-lot').value,tantiemes:parseInt(document.getElementById('res-tantiemes').value)||0};
+  const body={prenom:document.getElementById('res-prenom').value,nom:document.getElementById('res-nom').value,email:document.getElementById('res-email').value,telephone:document.getElementById('res-tel').value,lot:document.getElementById('res-lot').value};
   if(!body.prenom||!body.nom||!body.email)return showError('Champs requis manquants');
   try{
     if(id){await PUT('/residents/'+id,body);showToast(' Résident mis à jour');}
@@ -1604,308 +1603,122 @@ async function loadRJardinage(){
 }
 
 async function loadGJardinage(){
-  const all=await GET('/incidents'); if(!all)return;
+  const [all, residents] = await Promise.all([GET('/incidents'), GET('/residents')]);
+  if(!all)return;
   const jardins=all.filter(i=>i.type==='Jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const villas=(residents||[]).filter(r=>r.lot).map(r=>({lot:r.lot,prenom:r.prenom,nom:r.nom,id:r.id,email:r.email}));
+  window._jardinage_villas = villas;
+
   setPageContent('g-jardinage',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Planning Jardinage</h1><p>${jardins.length} intervention(s) configurée(s)</p></div>
-      <div class="hdr-actions"><button class="btn btn-primary" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Planifier une intervention</button></div>
+    <div class="page-hdr">
+      <div class="page-hdr-left"><h1>Planning Jardinage</h1><p>${jardins.length} intervention(s) planifiée(s)</p></div>
+      <div class="hdr-actions"><button class="btn btn-primary" onclick="openJardinageModal()" style="background:#27ae60"><i class="fa-solid fa-plus"></i> Planifier</button></div>
     </div>
     <div class="card" style="background:linear-gradient(135deg,#1a7a52 0%,#27ae60 100%);border:none;color:#fff;padding:1.25rem">
       <div style="display:flex;align-items:center;gap:1rem">
-        <div style="font-size:2.5rem"></div>
+        <div style="font-size:2.5rem">🌿</div>
         <div><div style="font-size:1.1rem;font-weight:700">Gestion espaces verts</div>
-        <div style="opacity:.8;font-size:13px">Planifiez les interventions par villa/lot et par date</div></div>
+        <div style="opacity:.8;font-size:13px">${villas.length} villa(s)/lot(s) · Cliquez sur une villa pour planifier directement</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr" style="color:#27ae60"><i class="fa-solid fa-house-tree"></i> Sélection rapide par villa
+        <div class="card-hdr-right"><button class="btn btn-sm" onclick="openJardinageModal('Commun')" style="background:#27ae60;color:#fff"><i class="fa-solid fa-tree"></i> Espaces communs</button></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${villas.map(v=>`
+        <div onclick="openJardinageModal('${v.lot}')" style="background:#e8f8f0;border:1px solid #b3dccb;border-radius:10px;padding:10px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px"
+          onmouseover="this.style.background='#d0f0e0'" onmouseout="this.style.background='#e8f8f0'">
+          <i class="fa-solid fa-house" style="color:#27ae60"></i>
+          <div><div style="font-weight:700;font-size:13px">${v.lot}</div>
+          <div style="font-size:11px;color:var(--text-3)">${v.prenom} ${v.nom}</div></div>
+        </div>`).join('')}
       </div>
     </div>
     <div class="card">
       <div class="card-hdr"><i class="fa-solid fa-calendar-days" style="color:#27ae60"></i> Interventions planifiées
-        <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Ajouter</button></div>
+        <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openJardinageModal()" style="background:#27ae60"><i class="fa-solid fa-plus"></i> Ajouter</button></div>
       </div>
       ${jardins.length?`<div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Villa / Lot</th><th>Date planifiée</th><th>Type</th><th>Date saisie</th><th>Description</th><th>Prestataire</th><th>Statut</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Villa / Lot</th><th>Date planifiée</th><th>Description</th><th>Prestataire</th><th>Statut</th><th>Actions</th></tr></thead>
         <tbody>${jardins.map(j=>`<tr>
-          <td><strong>${j.localisation||'Commun'}</strong></td>
-          <td>${fmtDate(j.created_at)}</td>
-          <td><span style="background:#e8f8f0;color:#27ae60;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600"> Jardinage</span></td>
-          <td style="font-weight:600;color:var(--text)">${extractJardDate(j.description)}</td>
-          <td style="color:var(--text-2);font-size:12px">${extractJardDesc(j.description)}</td>
+          <td><strong>${j.localisation||'—'}</strong></td>
+          <td style="font-weight:600;color:#27ae60">${extractJardDate(j.description)}</td>
+          <td>${extractJardDesc(j.description)}</td>
           <td>${j.prestataire||'—'}</td>
           <td>${statusPill(j.statut)}</td>
           <td><div style="display:flex;gap:4px">
             <button class="btn-icon btn-sm" onclick='openEditIntervention(${JSON.stringify(j).replace(/`/g,"'")})'><i class="fa-solid fa-edit"></i></button>
-            ${j.statut!=='resolu'?`<button class="btn btn-primary btn-xs" onclick="resolveIncident(${j.id})"><i class="fa-solid fa-check"></i></button>`:''}
+            ${j.statut!=='resolu'?`<button class="btn btn-primary btn-xs" onclick="openResolveModal(${j.id},'${j.type}')" style="background:#27ae60"><i class="fa-solid fa-check"></i></button>`:''}
           </div></td>
         </tr>`).join('')}</tbody>
-      </table></div>`:`<div class="empty-state"><i class="fa-solid fa-leaf" style="color:#27ae60"></i><p>Aucune intervention planifiée</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Planifier la première</button></div>`}
+      </table></div>`:`<div class="empty-state"><i class="fa-solid fa-leaf" style="color:#27ae60"></i><p>Aucune intervention planifiée — cliquez sur une villa ci-dessus</p></div>`}
     </div>`);
 }
 
+
+function openJardinageModal(villaPreset){
+  const villas = window._jardinage_villas || [];
+  const select = document.getElementById('jard-villa-select');
+  if(select){
+    select.innerHTML = [
+      '<option value="">-- Choisir une villa / un lot --</option>',
+      ...villas.map(v=>`<option value="${v.lot}">${v.lot} — ${v.prenom} ${v.nom}</option>`),
+      '<option value="Commun">Espaces communs (notif à tous les résidents)</option>'
+    ].join('');
+    if(villaPreset) select.value = villaPreset;
+  }
+  document.getElementById('jard-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('jard-desc').value = '';
+  document.getElementById('jard-prestataire').value = '';
+  const notifEl = document.getElementById('jard-notifier');
+  if(notifEl) notifEl.checked = true;
+  openModal('modal-jardinage');
+}
+
 async function submitJardinage(){
-  const villa=document.getElementById('jard-villa').value.trim();
-  const date=document.getElementById('jard-date').value;
-  const desc=document.getElementById('jard-desc').value.trim();
-  const prest=document.getElementById('jard-prestataire').value.trim();
-  if(!villa)return showError('Villa/Lot requis');
-  if(!date)return showError('Date requise');
-  // Formater la description avec la date pour affichage
-  const dateLabel=new Date(date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  const body={
-    type:'Jardinage',
-    localisation:villa,
-    description:` ${dateLabel} | ${desc||'Intervention jardinage'}`,
-    prestataire:prest,
-    urgence:'normal',
-    statut:'ouvert',
+  const select = document.getElementById('jard-villa-select');
+  const villa = select?.value?.trim();
+  const date = document.getElementById('jard-date').value;
+  const desc = document.getElementById('jard-desc').value.trim();
+  const prest = document.getElementById('jard-prestataire').value.trim();
+  const notifier = document.getElementById('jard-notifier')?.checked !== false;
+  if(!villa) return showError('Sélectionnez une villa/lot');
+  if(!date)  return showError('Date requise');
+
+  const dateLabel = new Date(date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const body = {
+    type: 'Jardinage',
+    localisation: villa,
+    description: `📅 ${dateLabel} | ${desc||'Intervention jardinage'}`,
+    prestataire: prest || null,
+    urgence: 'normal', statut: 'ouvert',
   };
   try{
-    await POST('/incidents',body);
-    showToast(' Intervention jardinage planifiée pour le '+dateLabel);
+    await POST('/incidents', body);
+
+    // Notifier les résidents concernés
+    if(notifier){
+      const villas = window._jardinage_villas || [];
+      const targets = villa === 'Commun' ? villas : villas.filter(v => v.lot === villa);
+      try{
+        const result = await POST('/notifications/jardinage', {
+          villa, date, dateLabel,
+          description: desc || 'Intervention jardinage',
+          prestataire: prest || null,
+          resident_ids: targets.map(v => v.id),
+        });
+        if(result?.sent > 0) showToast(`✅ Planifié · ${result.sent} résident(s) notifié(s) par email`);
+        else showToast(`✅ Intervention planifiée pour ${villa} le ${dateLabel}`);
+      }catch(e){
+        showToast(`✅ Planifié (notif: ${e.message||'non configuré'})`,'warn');
+      }
+    } else {
+      showToast(`✅ Intervention planifiée pour ${villa} le ${dateLabel}`);
+    }
+
     closeModal('modal-jardinage');
-    ['jard-villa','jard-date','jard-desc','jard-prestataire'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-    loaded.delete('g-jardinage');loaded.delete('r-jardinage');
+    loaded.delete('g-jardinage'); loaded.delete('r-jardinage');
     loadGJardinage();
-  }catch(e){showError(e.error||'Erreur');}
+  }catch(e){ showError(e.error||'Erreur création'); }
 }
-
-// ── Admin Actions ─────────────────────────────────────────
-function openUserModal(user){
-  document.getElementById('modal-user-title').innerHTML=`<i class="fa-solid fa-user-${user?'edit':'plus'}" style="color:var(--primary)"></i> ${user?'Modifier':'Nouvel'} utilisateur`;
-  document.getElementById('au-id').value=user?.id||'';
-  document.getElementById('au-prenom').value=user?.prenom||'';
-  document.getElementById('au-nom').value=user?.nom||'';
-  document.getElementById('au-email').value=user?.email||'';
-  document.getElementById('au-password').value='';
-  document.getElementById('au-role').value=user?.role||'resident';
-  document.getElementById('au-lot').value=user?.lot||'';
-  document.getElementById('au-tantiemes').value=user?.tantiemes||'';
-  document.getElementById('au-tel').value=user?.telephone||'';
-  openModal('modal-admin-user');
-}
-
-async function submitAdminUser(){
-  const id=document.getElementById('au-id').value;
-  const pwd=document.getElementById('au-password').value;
-  const body={prenom:document.getElementById('au-prenom').value,nom:document.getElementById('au-nom').value,email:document.getElementById('au-email').value,role:document.getElementById('au-role').value,lot:document.getElementById('au-lot').value,tantiemes:parseInt(document.getElementById('au-tantiemes').value)||0,telephone:document.getElementById('au-tel').value};
-  if(pwd)body.password=pwd;
-  if(!body.prenom||!body.nom||!body.email)return showError('Champs requis manquants');
-  try{
-    if(id)await PUT('/admin/users/'+id,body); else await POST('/admin/users',body);
-    showToast(' Utilisateur '+(id?'mis à jour':'créé'));
-    closeModal('modal-admin-user');['a-users','a-roles'].forEach(p=>loaded.delete(p));loadAUsers();
-  }catch(e){showError(e.error||'Erreur');}
-}
-
-async function deleteUser(id,nom){
-  if(!confirm(`Supprimer ${nom} ?`))return;
-  try{await DEL('/admin/users/'+id);showToast(' Supprimé');['a-users','a-roles'].forEach(p=>loaded.delete(p));loadAUsers();}
-  catch(e){showError(e.error||'Impossible de supprimer un admin');}
-}
-
-async function changeRole(id){
-  const v=document.getElementById('rs-'+id)?.value; if(!v)return;
-  try{await PUT('/admin/users/'+id+'/role',{role:v});showToast(' Rôle mis à jour');['a-users','a-roles'].forEach(p=>loaded.delete(p));loadARoles();}
-  catch{showError('Erreur');}
-}
-
-function openTypeModal(kind,item){
-  document.getElementById('t-id').value=item?.id||'';
-  document.getElementById('t-kind').value=kind;
-  document.getElementById('t-nom').value=item?.nom||'';
-  document.getElementById('t-desc').value=item?.description||'';
-  document.getElementById('t-actif').checked=item?.actif??true;
-  document.getElementById('modal-type-title').innerHTML=`<i class="fa-solid fa-tag" style="color:var(--primary)"></i> ${item?'Modifier':'Nouveau'} type`;
-  document.getElementById('t-cat-wrap').style.display=kind==='depenses'?'':'none';
-  document.getElementById('t-prio-wrap').style.display=kind==='reclamations'?'':'none';
-  document.getElementById('t-delai-wrap').style.display=kind==='reclamations'?'':'none';
-  if(kind==='depenses'&&item?.categorie)document.getElementById('t-cat').value=item.categorie;
-  if(kind==='reclamations'){
-    if(item?.priorite)document.getElementById('t-priorite').value=item.priorite;
-    document.getElementById('t-delai').value=item?.delai_traitement_jours||7;
-  }
-  openModal('modal-type');
-}
-
-async function submitType(){
-  const id=document.getElementById('t-id').value;
-  const kind=document.getElementById('t-kind').value;
-  const body={nom:document.getElementById('t-nom').value,description:document.getElementById('t-desc').value,actif:document.getElementById('t-actif').checked,categorie:document.getElementById('t-cat').value,priorite:document.getElementById('t-priorite').value,delai_traitement_jours:parseInt(document.getElementById('t-delai').value)||7};
-  if(!body.nom)return showError('Nom requis');
-  try{
-    if(id)await PUT('/admin/types-'+kind+'/'+id,body); else await POST('/admin/types-'+kind,body);
-    showToast(' '+(id?'Mis à jour':'Créé'));closeModal('modal-type');loaded.delete('a-types-'+kind);loadATypes(kind);
-  }catch(e){showError(e.error||'Erreur');}
-}
-
-async function deleteType(kind,id,nom){
-  if(!confirm(`Supprimer "${nom}" ?`))return;
-  try{await DEL('/admin/types-'+kind+'/'+id);showToast(' Supprimé');loaded.delete('a-types-'+kind);loadATypes(kind);}
-  catch{showError('Erreur');}
-}
-
-// ── Notifications ─────────────────────────────────────────
-async function sendNotification(endpoint,body={}){
-  try{const r=await POST('/notifications/'+endpoint,body);
-    if(r?.sent!==undefined)showToast(`📧 ${r.sent} email(s)${r.smsSent?' · '+r.smsSent+' WhatsApp':''} envoyé(s)`);
-    else if(r?.success)showToast('📧 Notification envoyée !');
-    else showToast('⚠️ Envoi échoué — vérifiez SMTP','warn');
-    loaded.delete('g-notifications');loaded.delete('a-notifications-log');
-    return r;
-  }catch(e){showError(e.error||'Erreur envoi');}
-}
-
-async function testEmail(){
-  const email=prompt('Email de test :'); if(!email)return;
-  await sendNotification('test',{email});
-}
-async function notifyAppelFonds(id,periode){
-  if(!confirm(`Envoyer les notifications pour l'appel "${periode}" ?`))return;
-  await sendNotification('appel-fonds/'+id);
-}
-async function notifyAG(id,dateAG){
-  if(!confirm(`Envoyer les convocations pour l'AG du ${dateAG} ?`))return;
-  await sendNotification('convocation-ag/'+id);
-}
-async function notifyImpayes(){
-  if(!confirm('Envoyer les rappels email+SMS aux résidents en impayé ?'))return;
-  await sendNotification('rappel-impayes');
-}
-async function sendBienvenueEmail(userId){
-  try{await POST('/notifications/bienvenue/'+userId,{});showToast('📧 Email bienvenue envoyé');}
-  catch{showError('Email non configuré — ajoutez SMTP_USER dans Render');}
-}
-
-async function submitManualNotif(){
-  const type=document.getElementById('notif-type-manual').value;
-  const email=document.getElementById('notif-email-manual').value;
-  closeModal('modal-notif');
-  if(type==='test')await sendNotification('test',{email});
-  else if(type==='rappel-impayes')await notifyImpayes();
-  else if(type==='appel-fonds'){
-    const charges=await GET('/charges');
-    const actif=charges?.find(c=>c.statut==='actif');
-    if(actif)await notifyAppelFonds(actif.id,actif.periode);
-    else showError('Aucun appel de fonds actif trouvé');
-  }
-}
-
-// ── Paiements ─────────────────────────────────────────────
-function openDeclarerPaiement(id,periode,montant){
-  document.getElementById('decl-paiement-id').value=id||'';
-  document.getElementById('decl-periode').textContent=periode||'';
-  document.getElementById('decl-montant').textContent=parseFloat(montant||0).toLocaleString('fr-FR')+' MAD';
-  document.getElementById('decl-lot').textContent='Lot '+( state.user.lot||'—');
-  document.getElementById('decl-type').value='virement';
-  document.getElementById('decl-date').value=new Date().toISOString().split('T')[0];
-  document.getElementById('decl-ref').value='';
-  openModal('modal-declarer-paiement');
-}
-async function submitDeclarerPaiement(){
-  const pId=document.getElementById('decl-paiement-id').value;
-  const mode=document.getElementById('decl-type').value;
-  const date=document.getElementById('decl-date').value;
-  const ref=document.getElementById('decl-ref').value.trim();
-  if(!date)return showError('Date de règlement requise');
-  const btn=document.getElementById('decl-submit');btn.disabled=true;
-  try{
-    if(pId)await POST('/charges/paiements/'+pId+'/payer',{mode,date_paiement:date,reference:ref});
-    showToast(' Paiement déclaré — en attente de confirmation du syndic');
-    closeModal('modal-declarer-paiement');
-    ['r-finances','r-dashboard'].forEach(p=>loaded.delete(p));
-    if(state.currentPage==='r-finances')loadRFinances();
-    if(state.currentPage==='r-dashboard')loadRDashboard();
-  }catch{showError('Erreur déclaration');}
-  btn.disabled=false;
-}
-
-function openNewIncident(){
-  // Reset le formulaire
-  ['inc-type','inc-loc','inc-desc','inc-urgence'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el&&el.tagName==='INPUT')el.value='';
-    if(el&&el.tagName==='TEXTAREA')el.value='';
-  });
-  const urgEl=document.getElementById('inc-urgence');
-  if(urgEl)urgEl.value='normal';
-  openModal('modal-incident');
-}
-
-async function submitIncident(){
-  const body={type:document.getElementById('inc-type').value,localisation:document.getElementById('inc-loc').value,description:document.getElementById('inc-desc').value.trim(),urgence:document.getElementById('inc-urgence').value};
-  if(!body.description)return showError('Description requise');
-  try{await POST('/incidents',body);showToast(' Réclamation envoyée !');closeModal('modal-incident');
-    ['r-incidents','g-travaux'].forEach(p=>loaded.delete(p));
-    if(state.currentPage==='r-incidents')loadRIncidents();
-    if(state.currentPage==='g-travaux')loadGTravaux();
-  }catch{showError('Erreur');}
-}
-
-async function submitAppelFonds(){
-  const periode=document.getElementById('af-periode').value;
-  const montant_base=document.getElementById('af-montant').value;
-  const echeance=document.getElementById('af-echeance').value;
-  const notifier=document.getElementById('af-notifier').checked;
-  if(!periode||!montant_base||!echeance)return showError('Champs requis');
-  try{const af=await POST('/charges',{periode,montant_base,echeance,description:document.getElementById('af-desc').value});
-    showToast(' Appel de fonds émis');closeModal('modal-appel-fonds');
-    if(notifier&&af?.id)sendNotification('appel-fonds/'+af.id).catch(()=>{});
-    loaded.delete('g-comptabilite');
-    if(state.currentPage==='g-comptabilite')loadGCompta();
-  }catch(e){showError(e.error||'Erreur');}
-}
-
-async function submitAG(){
-  const date=document.getElementById('ag-date').value;
-  const heure=document.getElementById('ag-heure').value;
-  const lieu=document.getElementById('ag-lieu').value;
-  const notifier=document.getElementById('ag-notifier').checked;
-  if(!date||!lieu)return showError('Date et lieu requis');
-  try{const ag=await POST('/ag',{date_ag:date+'T'+heure+':00',lieu,type:document.getElementById('ag-type').value});
-    showToast(' AG convoquée');closeModal('modal-ag-create');
-    if(notifier&&ag?.id)sendNotification('convocation-ag/'+ag.id).catch(()=>{});
-    ['g-ag','r-ag'].forEach(p=>loaded.delete(p));
-    if(state.currentPage==='g-ag')loadGAG();
-  }catch{showError('Erreur');}
-}
-
-// ── Upload document ───────────────────────────────────────
-function updateZoneLabel(){
-  const f=document.getElementById('udoc-fichier')?.files[0];
-  const l=document.getElementById('upload-zone-label');
-  if(l)l.textContent=f?` ${f.name} (${Math.round(f.size/1024)} Ko)`:'Cliquer ou glisser-déposer';
-}
-
-async function submitUploadDoc(){
-  const nom=document.getElementById('udoc-nom').value.trim();
-  const categorie=document.getElementById('udoc-categorie').value;
-  const notifier=document.getElementById('udoc-notifier').checked;
-  const fichier=document.getElementById('udoc-fichier').files[0];
-  if(!nom)return showError('Nom du document requis');
-  const btn=document.getElementById('udoc-submit');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Envoi…';
-  try{
-    const fd=new FormData();
-    fd.append('nom',nom);fd.append('categorie',categorie);fd.append('notifier_residents',notifier.toString());
-    if(fichier)fd.append('fichier',fichier);
-    const headers={};if(state.token)headers['Authorization']='Bearer '+state.token;
-    const res=await fetch(API+'/documents',{method:'POST',headers,body:fd});
-    if(!res.ok){const e=await res.json();throw e;}
-    showToast(' Document publié'+(notifier?' · Résidents notifiés':''));closeModal('modal-upload-doc');
-    ['r-documents','g-documents'].forEach(p=>loaded.delete(p));
-    if(state.currentPage==='g-documents')loadGDocuments();
-    document.getElementById('udoc-nom').value='';document.getElementById('udoc-fichier').value='';updateZoneLabel();
-  }catch(e){showError(e.error||'Erreur upload');}
-  finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-cloud-arrow-up"></i> Publier';}
-}
-
-// ── Sidebar / Modals ──────────────────────────────────────
-document.getElementById('hamburger-btn').addEventListener('click',()=>{
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('show');
-});
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');}
-function openModal(id){document.getElementById(id)?.classList.add('show');}
-function closeModal(id){document.getElementById(id)?.classList.remove('show');}
-document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));});
-
-// ── Boot ──────────────────────────────────────────────────
-initApp();
