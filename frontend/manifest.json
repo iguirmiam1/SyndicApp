@@ -1,0 +1,77 @@
+{
+  "name": "SyndicPro — Gestion Copropriété",
+  "short_name": "SyndicPro",
+  "description": "Gestion intelligente de copropriété — paiements, réclamations, jardinage, messagerie",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0d5c47",
+  "background_color": "#f5f4ee",
+  "lang": "fr",
+  "dir": "ltr",
+  "scope": "/",
+  "categories": ["productivity", "utilities", "finance"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tableau de bord résident"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Vue gestionnaire"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mes paiements",
+      "short_name": "Paiements",
+      "description": "Voir mes charges et paiements",
+      "url": "/?page=r-finances",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nouvelle réclamation",
+      "short_name": "Réclamation",
+      "description": "Signaler un problème",
+      "url": "/?page=r-incidents",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
