@@ -554,7 +554,7 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group"><label class="form-label">Période</label><input class="form-control" id="af-periode" placeholder="Ex: Q3 2026"></div>
-        <div class="form-group"><label class="form-label">Montant/tantième (MAD)</label><input class="form-control" id="af-montant" type="number" placeholder="10"></div>
+        <div class="form-group"><label class="form-label">Montant (MAD)</label><input class="form-control" id="af-montant" type="number" placeholder="10"></div>
       </div>
       <div class="form-group"><label class="form-label">Échéance</label><input class="form-control" id="af-echeance" type="date"></div>
       <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="af-desc" style="min-height:65px" placeholder="Objet de cet appel de fonds…"></textarea></div>
@@ -573,7 +573,15 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="form-row"><div class="form-group"><label class="form-label">Prénom</label><input class="form-control" id="res-prenom"></div><div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="res-nom"></div></div>
       <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="res-email" type="email"></div>
       <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="res-tel"></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Lot</label><input class="form-control" id="res-lot"></div><div class="form-group"><label class="form-label">Tantièmes</label><input class="form-control" id="res-tantiemes" type="number"></div></div>
+      <div class="form-group"><label class="form-label">Lot / Villa</label><input class="form-control" id="res-lot" placeholder="Ex: V10, Apt 24, Lot B3..."></div>t">
+  <div class="modal">
+    <div class="modal-hdr"><h3 id="modal-res-title"><i class="fa-solid fa-user-plus" style="color:var(--primary)"></i> Nouveau résident</h3><button class="close-modal" onclick="closeModal('modal-resident')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="res-id">
+      <div class="form-row"><div class="form-group"><label class="form-label">Prénom</label><input class="form-control" id="res-prenom"></div><div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="res-nom"></div></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="res-email" type="email"></div>
+      <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="res-tel"></div>
+      <div class="form-group"><label class="form-label">Lot / Villa</label><input class="form-control" id="res-lot" placeholder="Ex: V10, Apt 24, Lot B3..."></div>
       <div class="switch-wrap" id="res-welcome-wrap"><label class="switch"><input type="checkbox" id="res-welcome" checked><span class="slider-sw"></span></label><span class="switch-label">Envoyer email de bienvenue</span></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-resident')">Annuler</button><button class="btn btn-primary" onclick="submitResident()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button></div>
@@ -702,7 +710,7 @@ textarea.form-control{resize:vertical;min-height:75px}
         <div class="form-group"><label class="form-label">Lot</label><input class="form-control" id="au-lot" placeholder="Ex: 4B"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Tantièmes</label><input class="form-control" id="au-tantiemes" type="number"></div>
+        
         <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="au-tel"></div>
       </div>
     </div>
