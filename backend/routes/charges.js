@@ -8,6 +8,18 @@ const APP_URL = process.env.APP_URL || 'https://syndicapp.onrender.com';
 
 // Vérifier et ajouter les colonnes manquantes
 const ensureSchema = async () => {
+  // Supprimer les contraintes CHECK qui bloquent les nouveaux statuts/modes
+  const dropConstraints = [
+    `ALTER TABLE paiements DROP CONSTRAINT IF EXISTS paiements_mode_check`,
+    `ALTER TABLE paiements DROP CONSTRAINT IF EXISTS paiements_statut_check`,
+    `ALTER TABLE paiements DROP CONSTRAINT IF EXISTS check_mode`,
+    `ALTER TABLE paiements DROP CONSTRAINT IF EXISTS check_statut`,
+  ];
+  for (const sql of dropConstraints) {
+    try { await query(sql); console.log('✅ Contrainte supprimée:', sql.substring(30,70)); }
+    catch(e) { /* ignore si n'existe pas */ }
+  }
+
   const fixes = [
     `ALTER TABLE paiements   ADD COLUMN IF NOT EXISTS mode               VARCHAR(30)`,
     `ALTER TABLE paiements   ADD COLUMN IF NOT EXISTS date_paiement      DATE`,
