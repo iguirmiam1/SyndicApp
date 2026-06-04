@@ -2,7 +2,16 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0d5c47" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a3d2e" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Jasmine Park">
+  <meta name="description" content="Gestion intelligente de copropriété — Jasmine Park">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.png">
 <title>Jasmine Park — Gestion de Copropriété</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -321,7 +330,94 @@ textarea.form-control{resize:vertical;min-height:75px}
   .hdr-actions .btn:not(.btn-icon):not(.btn-sm){display:none}
 }
 @media(max-width:480px){.metrics-grid{grid-template-columns:1fr}}
-</style>
+
+  /* ══ Bottom Navigation ══ */
+  #bottom-nav{
+    display:none;position:fixed;bottom:0;left:0;right:0;
+    height:60px;background:var(--surface);
+    border-top:1px solid var(--border);
+    z-index:150;flex-shrink:0;
+    box-shadow:0 -2px 12px rgba(0,0,0,.08)
+  }
+  .bn-item{
+    flex:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;
+    border:none;background:none;cursor:pointer;
+    font-size:10px;color:var(--text-3);
+    padding:.25rem .5rem;transition:color .15s;
+    -webkit-tap-highlight-color:transparent;
+    position:relative
+  }
+  .bn-item.active{color:var(--primary)}
+  .bn-item.active i{transform:scale(1.1)}
+  .bn-item i{font-size:22px;transition:transform .15s}
+  .bn-item span{font-size:9px;font-weight:500;line-height:1}
+  .bn-badge{
+    position:absolute;top:4px;left:calc(50% + 6px);
+    background:var(--danger);color:#fff;
+    font-size:9px;font-weight:700;
+    border-radius:10px;min-width:16px;height:16px;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 3px
+  }
+
+  /* ══ PWA Install Banner ══ */
+  #pwa-banner{
+    display:none;position:fixed;bottom:68px;left:.75rem;right:.75rem;
+    background:var(--primary);color:#fff;
+    border-radius:14px;padding:.875rem 1rem;
+    box-shadow:0 4px 20px rgba(13,92,71,.35);
+    z-index:160;align-items:center;gap:.75rem
+  }
+  #pwa-banner.show{display:flex}
+  #pwa-banner-icon{font-size:1.5rem;flex-shrink:0}
+  #pwa-banner-text{flex:1;font-size:13px;font-weight:500}
+  #pwa-banner-text small{display:block;font-weight:400;opacity:.85;font-size:12px;margin-top:1px}
+  #pwa-banner-install{
+    background:#fff;color:var(--primary);border:none;
+    border-radius:8px;padding:.4rem .875rem;
+    font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0
+  }
+  #pwa-banner-close{
+    background:none;border:none;color:rgba(255,255,255,.7);
+    font-size:1.1rem;cursor:pointer;padding:.25rem;
+    flex-shrink:0;line-height:1
+  }
+
+  /* ══ Pull to refresh indicator ══ */
+  #ptr-indicator{
+    display:none;position:fixed;top:68px;left:50%;
+    transform:translateX(-50%);
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:20px;padding:.3rem .75rem;
+    font-size:12px;color:var(--text-3);
+    box-shadow:0 2px 8px rgba(0,0,0,.1);z-index:200;
+    align-items:center;gap:.4rem
+  }
+
+  /* ══ Touch scroll amélioré ══ */
+  .msg-wrapper,.nav-scroll,.modal{-webkit-overflow-scrolling:touch}
+  * { -webkit-tap-highlight-color:transparent }
+  button,a,[onclick]{cursor:pointer;user-select:none}
+
+  /* ══ Offline banner ══ */
+  #offline-banner{
+    display:none;position:fixed;top:var(--header-h);left:0;right:0;
+    background:#333;color:#fff;text-align:center;
+    font-size:13px;padding:.4rem;z-index:300
+  }
+  #offline-banner.show{display:block}
+  body.offline #offline-banner{display:block}
+  
+  @media(display-mode:standalone){
+    .topbar{padding-top:env(safe-area-inset-top,0px)}
+    body{overscroll-behavior:none}
+  }
+  .data-table tbody tr{display:flex}
+  @media(max-width:768px){
+    .data-table tbody tr{flex-direction:column}
+  }
+  </style>
 </head>
 <body>
 
@@ -337,7 +433,7 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="login-field"><label>Adresse email</label><input type="email" id="login-email" placeholder="votre@email.com" autocomplete="email"></div>
     <div class="login-field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="login-btn" id="login-submit" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
-   
+    
   </div>
 </div>
 
@@ -503,7 +599,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <div class="modal">
     <div class="modal-hdr"><h3><i class="fa-solid fa-wrench" style="color:var(--primary);mr:6px"></i> Signaler une réclamation</h3><button class="close-modal" onclick="closeModal('modal-incident')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
+      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Ascenseur</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
       <div class="form-group"><label class="form-label">Localisation précise</label><input class="form-control" id="inc-loc" placeholder="Ex: Couloir 3e étage, parking B2…"></div>
       <div class="form-group"><label class="form-label">Description détaillée</label><textarea class="form-control" id="inc-desc" placeholder="Décrivez l'incident avec le maximum de détails…"></textarea></div>
       <div class="form-row">
@@ -759,7 +855,7 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="form-row">
         <div class="form-group"><label class="form-label">Type d'intervention</label>
           <select class="form-control" id="intv-type">
-            <option>Plomberie</option><option>Électricité</option>
+            <option>Plomberie</option><option>Ascenseur</option><option>Électricité</option>
             <option>Parties communes</option><option>Sécurité</option><option>Peinture</option>
             <option>Jardinage</option><option>Toiture</option><option>Nuisances</option><option>Autre</option>
           </select>
@@ -977,8 +1073,59 @@ textarea.form-control{resize:vertical;min-height:75px}
 </div>
 
 
+  <!-- ══ Bottom Navigation Mobile ══ -->
+  <nav id="bottom-nav" role="navigation" aria-label="Navigation principale"></nav>
+
+  <!-- ══ PWA Install Banner ══ -->
+  <div id="pwa-banner" role="complementary" aria-label="Installer l'application">
+    <span id="pwa-banner-icon">🏠</span>
+    <div id="pwa-banner-text">Installer Jasmine Park
+      <small>Accès rapide depuis votre écran d'accueil</small>
+    </div>
+    <button id="pwa-banner-install">Installer</button>
+    <button id="pwa-banner-close" aria-label="Fermer">✕</button>
+  </div>
+
+  <!-- ══ Offline Banner ══ -->
+  <div id="offline-banner">📶 Connexion perdue — certaines fonctionnalités sont limitées</div>
+
+
 <button class="fab" id="fab-btn" onclick="fabAction()"><i class="fa-solid fa-plus"></i></button>
 <div class="toast" id="toast"><i class="fa-solid fa-circle-check" id="toast-icon"></i><span id="toast-msg"></span></div>
 <script src="app.js"></script>
+
+<script>
+  /* ══ Service Worker Registration ══ */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => {
+          console.log('SW registered:', reg.scope);
+          reg.addEventListener('updatefound', () => {
+            const worker = reg.installing;
+            worker.addEventListener('statechange', () => {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                showToast('Mise à jour disponible — rechargez la page', 'info');
+              }
+            });
+          });
+        })
+        .catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+
+  /* ══ Offline/Online detection ══ */
+  window.addEventListener('offline', () => {
+    document.getElementById('offline-banner').classList.add('show');
+    document.body.classList.add('offline');
+  });
+  window.addEventListener('online', () => {
+    document.getElementById('offline-banner').classList.remove('show');
+    document.body.classList.remove('offline');
+    showToast && showToast('Connexion rétablie');
+  });
+  if (!navigator.onLine) document.body.classList.add('offline');
+</script>
+
 </body>
 </html>
