@@ -337,7 +337,6 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="login-field"><label>Adresse email</label><input type="email" id="login-email" placeholder="votre@email.com" autocomplete="email"></div>
     <div class="login-field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="login-btn" id="login-submit" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
-    
   </div>
 </div>
 
@@ -792,8 +791,10 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="modal-hdr"><h3><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Planifier une intervention jardinage</h3><button class="close-modal" onclick="closeModal('modal-jardinage')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Villa / Lot / Zone</label>
-          <input class="form-control" id="jard-villa" placeholder="Ex: Villa 12, Lot A3, Commun…">
+        <div class="form-group"><label class="form-label">Villa / Lot concerné(e)</label>
+          <select class="form-control" id="jard-villa-select">
+            <option value="">-- Choisir --</option>
+          </select>
         </div>
         <div class="form-group"><label class="form-label">Date de l'intervention</label>
           <input class="form-control" id="jard-date" type="date">
@@ -802,7 +803,7 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="form-group"><label class="form-label">Type d'intervention</label>
         <select class="form-control" id="jard-type-select" onchange="document.getElementById('jard-desc').value=this.options[this.selectedIndex].text">
           <option value="tonte">🌿 Tonte de pelouse</option>
-          <option value="taille">✂️ Taille haies / arbustes</option>
+          <option value="taille">✂️ Taille des haies / arbustes</option>
           <option value="arrosage">💧 Arrosage / irrigation</option>
           <option value="nettoyage">🧹 Nettoyage espaces verts</option>
           <option value="plantation">🌱 Plantation</option>
@@ -810,11 +811,15 @@ textarea.form-control{resize:vertical;min-height:75px}
           <option value="autre">Autre</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Description détaillée</label>
-        <textarea class="form-control" id="jard-desc" placeholder="Précisez l'intervention…" style="min-height:65px">Tonte de pelouse</textarea>
+      <div class="form-group"><label class="form-label">Description</label>
+        <textarea class="form-control" id="jard-desc" placeholder="Précisez l'intervention…" style="min-height:60px">Tonte de pelouse</textarea>
       </div>
       <div class="form-group"><label class="form-label">Prestataire / Jardinier</label>
         <input class="form-control" id="jard-prestataire" placeholder="Nom du prestataire ou jardinier">
+      </div>
+      <div class="switch-wrap" style="margin-top:4px">
+        <label class="switch"><input type="checkbox" id="jard-notifier" checked><span class="slider-sw"></span></label>
+        <span class="switch-label" style="color:#27ae60"><i class="fa-solid fa-bell"></i> Notifier le(s) résident(s) concerné(s) par email</span>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-jardinage')">Annuler</button><button class="btn btn-primary" onclick="submitJardinage()" style="background:#27ae60"><i class="fa-solid fa-leaf"></i> Planifier</button></div>
