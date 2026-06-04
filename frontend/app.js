@@ -1066,7 +1066,7 @@ async function loadGResidents(){
     </div>
     <div class="card">
       <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Résident</th><th>Lot</th><th>Tantièmes</th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Résident</th><th>Lot</th><th></th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
         <tbody>${data.map(r=>`<tr>
           <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:6px;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${ini(r)}</div><strong>${r.prenom} ${r.nom}</strong></div></td>
           <td>${r.lot||'—'}</td>
@@ -1086,7 +1086,7 @@ function openResidentModal(r=null){
   const isEdit=!!r;
   document.getElementById('modal-res-title').innerHTML=`<i class="fa-solid fa-user-${isEdit?'edit':'plus'}" style="color:var(--primary)"></i> ${isEdit?'Modifier':'Nouveau'} résident`;
   document.getElementById('res-id').value=r?.id||'';
-  ['prenom','nom','email','tel','lot'].forEach(f=>document.getElementById('res-'+f).value=r?.(f==='tel'?'telephone':f)||'');
+  ['prenom','nom','email','tel','lot'].forEach(f=>document.getElementById('res-'+f).value=(r?.[f==='tel'?'telephone':f])||'');
   document.getElementById('res-welcome-wrap').style.display=isEdit?'none':'';
   openModal('modal-resident');
 }
@@ -1099,7 +1099,11 @@ async function submitResident(){
     if(id){await PUT('/residents/'+id,body);showToast(' Résident mis à jour');}
     else{const r=await POST('/residents',body);showToast(' Résident créé');if(document.getElementById('res-welcome').checked&&r?.id)sendBienvenueEmail(r.id);}
     closeModal('modal-resident');loaded.delete('g-residents');loadGResidents();
-  }catch(e){showError(e.error||'Erreur');}
+  }catch(e){
+    if(e.error?.includes('409')||e.error?.includes('déjà')||e.error?.includes('unique'))
+      showError('Email déjà utilisé — ce résident existe peut-être déjà.');
+    else showError(e.error||'Erreur création résident');
+  }
 }
 
 async function deleteResident(id,nom){
@@ -1109,6 +1113,11 @@ async function deleteResident(id,nom){
 }
 
 // ── Documents Gestionnaire ────────────────────────────────
+
+async function sendBienvenueEmail(userId){
+  try{await POST('/notifications/bienvenue/'+userId,{});showToast('Email bienvenue envoyé');}
+  catch{showError('Email non configuré — ajoutez SMTP_USER dans Render');}
+}
 async function loadGDocuments(){
   const data=await GET('/documents'); if(!data)return;
   const cats={ag:'Assemblées Générales',reglementation:'Réglementation',contrats:'Contrats',financier:'Financier',autre:'Autres'};
