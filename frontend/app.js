@@ -182,7 +182,7 @@ async function loadRDashboard(){
   if(b){b.textContent=openInc||'';b.style.display=openInc?'':'none';}
   setPageContent('r-dashboard',`
     <div class="page-hdr">
-      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Villa ${u.lot||'—'}</p></div>
+      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Appartement ${u.lot||'—'}</p></div>
       <div class="hdr-actions"><button class="btn btn-primary btn-sm" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Signaler</button></div>
     </div>
     <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -1474,6 +1474,247 @@ async function loadAUsers(){
     </div>`);
 }
 
+function openUserModal(user){
+  document.getElementById('modal-user-title').innerHTML=`<i class="fa-solid fa-user-${user?'edit':'plus'}" style="color:var(--primary)"></i> ${user?'Modifier':'Nouvel'} utilisateur`;
+  document.getElementById('au-id').value=user?.id||'';
+  document.getElementById('au-prenom').value=user?.prenom||'';
+  document.getElementById('au-nom').value=user?.nom||'';
+  document.getElementById('au-email').value=user?.email||'';
+  document.getElementById('au-password').value='';
+  document.getElementById('au-role').value=user?.role||'resident';
+  document.getElementById('au-lot').value=user?.lot||'';
+  
+  document.getElementById('au-tel').value=user?.telephone||'';
+  openModal('modal-admin-user');
+}
+
+async function submitAdminUser(){
+  const id=document.getElementById('au-id').value;
+  const pwd=document.getElementById('au-password').value;
+  const body={prenom:document.getElementById('au-prenom').value,nom:document.getElementById('au-nom').value,email:document.getElementById('au-email').value,role:document.getElementById('au-role').value,lot:document.getElementById('au-lot').value,telephone:document.getElementById('au-tel').value};
+  if(pwd)body.password=pwd;
+  if(!body.prenom||!body.nom||!body.email)return showError('Champs requis manquants');
+  try{
+    if(id)await PUT('/admin/users/'+id,body); else await POST('/admin/users',body);
+    showToast(' Utilisateur '+(id?'mis à jour':'créé'));
+    closeModal('modal-admin-user');['a-users','a-roles'].forEach(p=>loaded.delete(p));loadAUsers();
+  }catch(e){showError(e.error||'Erreur');}
+}
+
+async function deleteUser(id,nom){
+  if(!confirm(`Supprimer ${nom} ?`))return;
+  try{await DEL('/admin/users/'+id);showToast(' Supprimé');['a-users','a-roles'].forEach(p=>loaded.delete(p));loadAUsers();}
+  catch(e){showError(e.error||'Impossible de supprimer un admin');}
+}
+
+async function changeRole(id){
+  const v=document.getElementById('rs-'+id)?.value; if(!v)return;
+  try{await PUT('/admin/users/'+id+'/role',{role:v});showToast(' Rôle mis à jour');['a-users','a-roles'].forEach(p=>loaded.delete(p));loadARoles();}
+  catch{showError('Erreur');}
+}
+
+function openTypeModal(kind,item){
+  document.getElementById('t-id').value=item?.id||'';
+  document.getElementById('t-kind').value=kind;
+  document.getElementById('t-nom').value=item?.nom||'';
+  document.getElementById('t-desc').value=item?.description||'';
+  document.getElementById('t-actif').checked=item?.actif??true;
+  document.getElementById('modal-type-title').innerHTML=`<i class="fa-solid fa-tag" style="color:var(--primary)"></i> ${item?'Modifier':'Nouveau'} type`;
+  document.getElementById('t-cat-wrap').style.display=kind==='depenses'?'':'none';
+  document.getElementById('t-prio-wrap').style.display=kind==='reclamations'?'':'none';
+  document.getElementById('t-delai-wrap').style.display=kind==='reclamations'?'':'none';
+  if(kind==='depenses'&&item?.categorie)document.getElementById('t-cat').value=item.categorie;
+  if(kind==='reclamations'){
+    if(item?.priorite)document.getElementById('t-priorite').value=item.priorite;
+    document.getElementById('t-delai').value=item?.delai_traitement_jours||7;
+  }
+  openModal('modal-type');
+}
+
+async function submitType(){
+  const id=document.getElementById('t-id').value;
+  const kind=document.getElementById('t-kind').value;
+  const body={nom:document.getElementById('t-nom').value,description:document.getElementById('t-desc').value,actif:document.getElementById('t-actif').checked,categorie:document.getElementById('t-cat').value,priorite:document.getElementById('t-priorite').value,delai_traitement_jours:parseInt(document.getElementById('t-delai').value)||7};
+  if(!body.nom)return showError('Nom requis');
+  try{
+    if(id)await PUT('/admin/types-'+kind+'/'+id,body); else await POST('/admin/types-'+kind,body);
+    showToast(' '+(id?'Mis à jour':'Créé'));closeModal('modal-type');loaded.delete('a-types-'+kind);loadATypes(kind);
+  }catch(e){showError(e.error||'Erreur');}
+}
+
+async function deleteType(kind,id,nom){
+  if(!confirm(`Supprimer "${nom}" ?`))return;
+  try{await DEL('/admin/types-'+kind+'/'+id);showToast(' Supprimé');loaded.delete('a-types-'+kind);loadATypes(kind);}
+  catch{showError('Erreur');}
+}
+
+// ── Notifications ─────────────────────────────────────────
+async function sendNotification(endpoint,body={}){
+  try{const r=await POST('/notifications/'+endpoint,body);
+    if(r?.sent!==undefined)showToast(`📧 ${r.sent} email(s)${r.smsSent?' · '+r.smsSent+' WhatsApp':''} envoyé(s)`);
+    else if(r?.success)showToast('📧 Notification envoyée !');
+    else showToast('⚠️ Envoi échoué — vérifiez SMTP','warn');
+    loaded.delete('g-notifications');loaded.delete('a-notifications-log');
+    return r;
+  }catch(e){showError(e.error||'Erreur envoi');}
+}
+
+async function testEmail(){
+  const email=prompt('Email de test :'); if(!email)return;
+  await sendNotification('test',{email});
+}
+async function notifyAppelFonds(id,periode){
+  if(!confirm(`Envoyer les notifications pour l'appel "${periode}" ?`))return;
+  await sendNotification('appel-fonds/'+id);
+}
+async function notifyAG(id,dateAG){
+  if(!confirm(`Envoyer les convocations pour l'AG du ${dateAG} ?`))return;
+  await sendNotification('convocation-ag/'+id);
+}
+async function notifyImpayes(){
+  if(!confirm('Envoyer les rappels email+SMS aux résidents en impayé ?'))return;
+  await sendNotification('rappel-impayes');
+}
+async function sendBienvenueEmail(userId){
+  try{await POST('/notifications/bienvenue/'+userId,{});showToast('📧 Email bienvenue envoyé');}
+  catch{showError('Email non configuré — ajoutez SMTP_USER dans Render');}
+}
+
+async function submitManualNotif(){
+  const type=document.getElementById('notif-type-manual').value;
+  const email=document.getElementById('notif-email-manual').value;
+  closeModal('modal-notif');
+  if(type==='test')await sendNotification('test',{email});
+  else if(type==='rappel-impayes')await notifyImpayes();
+  else if(type==='appel-fonds'){
+    const charges=await GET('/charges');
+    const actif=charges?.find(c=>c.statut==='actif');
+    if(actif)await notifyAppelFonds(actif.id,actif.periode);
+    else showError('Aucun appel de fonds actif trouvé');
+  }
+}
+
+// ── Paiements ─────────────────────────────────────────────
+function openDeclarerPaiement(id,periode,montant){
+  document.getElementById('decl-paiement-id').value=id||'';
+  document.getElementById('decl-periode').textContent=periode||'';
+  document.getElementById('decl-montant').textContent=parseFloat(montant||0).toLocaleString('fr-FR')+' MAD';
+  document.getElementById('decl-lot').textContent='Lot '+( state.user.lot||'—');
+  document.getElementById('decl-type').value='virement';
+  document.getElementById('decl-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('decl-ref').value='';
+  openModal('modal-declarer-paiement');
+}
+async function submitDeclarerPaiement(){
+  const pId=document.getElementById('decl-paiement-id').value;
+  const mode=document.getElementById('decl-type').value;
+  const date=document.getElementById('decl-date').value;
+  const ref=document.getElementById('decl-ref').value.trim();
+  if(!date)return showError('Date de règlement requise');
+  const btn=document.getElementById('decl-submit');btn.disabled=true;
+  try{
+    if(pId)await POST('/charges/paiements/'+pId+'/payer',{mode,date_paiement:date,reference:ref});
+    showToast(' Paiement déclaré — en attente de confirmation du syndic');
+    closeModal('modal-declarer-paiement');
+    ['r-finances','r-dashboard'].forEach(p=>loaded.delete(p));
+    if(state.currentPage==='r-finances')loadRFinances();
+    if(state.currentPage==='r-dashboard')loadRDashboard();
+  }catch{showError('Erreur déclaration');}
+  btn.disabled=false;
+}
+
+function openNewIncident(){
+  // Reset le formulaire
+  ['inc-type','inc-loc','inc-desc','inc-urgence'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&el.tagName==='INPUT')el.value='';
+    if(el&&el.tagName==='TEXTAREA')el.value='';
+  });
+  const urgEl=document.getElementById('inc-urgence');
+  if(urgEl)urgEl.value='normal';
+  openModal('modal-incident');
+}
+
+async function submitIncident(){
+  const body={type:document.getElementById('inc-type').value,localisation:document.getElementById('inc-loc').value,description:document.getElementById('inc-desc').value.trim(),urgence:document.getElementById('inc-urgence').value};
+  if(!body.description)return showError('Description requise');
+  try{await POST('/incidents',body);showToast(' Réclamation envoyée !');closeModal('modal-incident');
+    ['r-incidents','g-travaux'].forEach(p=>loaded.delete(p));
+    if(state.currentPage==='r-incidents')loadRIncidents();
+    if(state.currentPage==='g-travaux')loadGTravaux();
+  }catch{showError('Erreur');}
+}
+
+async function submitAppelFonds(){
+  const periode=document.getElementById('af-periode').value;
+  const montant_base=document.getElementById('af-montant').value;
+  const echeance=document.getElementById('af-echeance').value;
+  const notifier=document.getElementById('af-notifier').checked;
+  if(!periode||!montant_base||!echeance)return showError('Champs requis');
+  try{const af=await POST('/charges',{periode,montant_base,echeance,description:document.getElementById('af-desc').value});
+    showToast(' Appel de fonds émis');closeModal('modal-appel-fonds');
+    if(notifier&&af?.id)sendNotification('appel-fonds/'+af.id).catch(()=>{});
+    loaded.delete('g-comptabilite');
+    if(state.currentPage==='g-comptabilite')loadGCompta();
+  }catch(e){showError(e.error||'Erreur');}
+}
+
+async function submitAG(){
+  const date=document.getElementById('ag-date').value;
+  const heure=document.getElementById('ag-heure').value;
+  const lieu=document.getElementById('ag-lieu').value;
+  const notifier=document.getElementById('ag-notifier').checked;
+  if(!date||!lieu)return showError('Date et lieu requis');
+  try{const ag=await POST('/ag',{date_ag:date+'T'+heure+':00',lieu,type:document.getElementById('ag-type').value});
+    showToast(' AG convoquée');closeModal('modal-ag-create');
+    if(notifier&&ag?.id)sendNotification('convocation-ag/'+ag.id).catch(()=>{});
+    ['g-ag','r-ag'].forEach(p=>loaded.delete(p));
+    if(state.currentPage==='g-ag')loadGAG();
+  }catch{showError('Erreur');}
+}
+
+// ── Upload document ───────────────────────────────────────
+function updateZoneLabel(){
+  const f=document.getElementById('udoc-fichier')?.files[0];
+  const l=document.getElementById('upload-zone-label');
+  if(l)l.textContent=f?` ${f.name} (${Math.round(f.size/1024)} Ko)`:'Cliquer ou glisser-déposer';
+}
+
+async function submitUploadDoc(){
+  const nom=document.getElementById('udoc-nom').value.trim();
+  const categorie=document.getElementById('udoc-categorie').value;
+  const notifier=document.getElementById('udoc-notifier').checked;
+  const fichier=document.getElementById('udoc-fichier').files[0];
+  if(!nom)return showError('Nom du document requis');
+  const btn=document.getElementById('udoc-submit');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Envoi…';
+  try{
+    const fd=new FormData();
+    fd.append('nom',nom);fd.append('categorie',categorie);fd.append('notifier_residents',notifier.toString());
+    if(fichier)fd.append('fichier',fichier);
+    const headers={};if(state.token)headers['Authorization']='Bearer '+state.token;
+    const res=await fetch(API+'/documents',{method:'POST',headers,body:fd});
+    if(!res.ok){const e=await res.json();throw e;}
+    showToast(' Document publié'+(notifier?' · Résidents notifiés':''));closeModal('modal-upload-doc');
+    ['r-documents','g-documents'].forEach(p=>loaded.delete(p));
+    if(state.currentPage==='g-documents')loadGDocuments();
+    document.getElementById('udoc-nom').value='';document.getElementById('udoc-fichier').value='';updateZoneLabel();
+  }catch(e){showError(e.error||'Erreur upload');}
+  finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-cloud-arrow-up"></i> Publier';}
+}
+
+// ── Sidebar / Modals ──────────────────────────────────────
+document.getElementById('hamburger-btn').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+});
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');}
+function openModal(id){document.getElementById(id)?.classList.add('show');}
+function closeModal(id){document.getElementById(id)?.classList.remove('show');}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));});
+
+// ── Boot ──────────────────────────────────────────────────
+initApp();
 async function loadARoles(){
   const users=await GET('/admin/users'); if(!users)return;
   const rc={admin:'var(--violet)',gestionnaire:'var(--accent)',resident:'var(--info)'};
