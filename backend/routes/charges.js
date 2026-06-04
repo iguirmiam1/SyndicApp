@@ -57,25 +57,48 @@ router.post('/', auth.gestionnaire, async (req, res) => {
   if (!periode || !montant_base || !echeance)
     return res.status(400).json({ error: 'Champs requis' });
   try {
-    const { rows: [af] } = await query(
-      `INSERT INTO appels_fonds (residence_id,periode,montant_base,echeance,description,statut)
-       VALUES ($1,$2,$3,$4,$5,'actif') RETURNING *`,
-      [req.user.residence_id, periode, parseFloat(montant_base), echeance, description || '']
-    );
+    // Tenter avec description, fallback sans si la colonne n'existe pas
+    let af;
+    try {
+      const { rows } = await query(
+        `INSERT INTO appels_fonds (residence_id,periode,montant_base,echeance,description,statut)
+         VALUES ($1,$2,$3,$4,$5,'actif') RETURNING *`,
+        [req.user.residence_id, periode, parseFloat(montant_base), echeance, description || '']
+      );
+      af = rows[0];
+    } catch(e) {
+      // description n'existe peut-être pas dans la table
+      const { rows } = await query(
+        `INSERT INTO appels_fonds (residence_id,periode,montant_base,echeance,statut)
+         VALUES ($1,$2,$3,$4,'actif') RETURNING *`,
+        [req.user.residence_id, periode, parseFloat(montant_base), echeance]
+      );
+      af = rows[0];
+    }
     const { rows: residents } = await query(
       `SELECT id, tantiemes FROM utilisateurs WHERE residence_id=$1 AND role='resident'`,
       [req.user.residence_id]
     );
     for (const r of residents) {
       const m = parseFloat(montant_base) * (r.tantiemes || 0) / 1000 || parseFloat(montant_base);
-      await query(
-        `INSERT INTO paiements (appel_id,resident_id,montant,statut)
-         VALUES ($1,$2,$3,'en_attente') ON CONFLICT DO NOTHING`,
-        [af.id, r.id, m]
+      // Vérifier si le paiement existe déjà avant d'insérer
+      const { rows: existing } = await query(
+        `SELECT id FROM paiements WHERE appel_id=$1 AND resident_id=$2 LIMIT 1`,
+        [af.id, r.id]
       );
+      if (!existing.length) {
+        await query(
+          `INSERT INTO paiements (appel_id,resident_id,montant,statut)
+           VALUES ($1,$2,$3,'en_attente')`,
+          [af.id, r.id, m]
+        );
+      }
     }
     res.status(201).json(af);
-  } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
+  } catch(e) {
+    console.error('POST /charges error:', e.message);
+    res.status(500).json({ error: 'Erreur: ' + e.message });
+  }
 });
 
 // GET /api/charges/resident/moi
