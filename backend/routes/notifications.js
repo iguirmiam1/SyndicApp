@@ -2,7 +2,7 @@ const router = require('express').Router();
 const auth = require('../middleware/auth');
 const { query } = require('../db');
 const { sendEmail, sendBulk, templates } = require('../services/email');
-const { sendSMS, sendBulkSMS } = require('../services/sms');
+const { sendWhatsApp, sendBulkWhatsApp } = require('../services/whatsapp');
 
 const APP_URL = process.env.APP_URL || 'https://syndicapp.onrender.com';
 
@@ -65,7 +65,7 @@ router.post('/appel-fonds/:id', auth.gestionnaire, async (req, res) => {
     // SMS
     const smsTargets = paiements.filter(p => p.notif_sms && p.telephone);
     if (smsTargets.length) {
-      await sendBulkSMS(smsTargets, 'appelFonds', {
+      await sendBulkWhatsApp(smsTargets, 'appelFonds', {
         periode: first.periode,
         montant: parseFloat(first.montant_base),
         echeance: new Date(first.echeance).toLocaleDateString('fr-FR'),
@@ -102,7 +102,7 @@ router.post('/convocation-ag/:id', auth.gestionnaire, async (req, res) => {
 
     // SMS
     const smsTargets = residents.filter(r => r.notif_sms && r.telephone);
-    await sendBulkSMS(smsTargets, 'convocationAG', { dateAG, heureAG, lieu: ag.lieu });
+    await sendBulkWhatsApp(smsTargets, 'convocationAG', { dateAG, heureAG, lieu: ag.lieu });
 
     res.json({ sent: results.length, smsSent: smsTargets.length, results });
   } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
@@ -138,7 +138,7 @@ router.post('/rappel-impayes', auth.gestionnaire, async (req, res) => {
     // SMS
     const smsTargets = impayes.filter(p => p.notif_sms && p.telephone);
     for (const p of smsTargets) {
-      await sendBulkSMS([p], 'rappelPaiement', {
+      await sendBulkWhatsApp([p], 'rappelPaiement', {
         montant: parseFloat(p.montant).toLocaleString('fr-FR'),
         joursRetard: p.jours_retard || 0,
       });
@@ -174,5 +174,54 @@ async function logNotification(residenceId, type, event, recipientId, email, sub
     );
   } catch(e) { console.warn('Log notification failed:', e.message); }
 }
+
+
+// ── POST /api/notifications/jardinage ────────────────────────────────────────
+router.post('/jardinage', auth.gestionnaire, async (req, res) => {
+  const { villa, dateLabel, description, prestataire, resident_ids } = req.body;
+  if (!resident_ids?.length) return res.json({ sent: 0 });
+  let sent = 0;
+  try {
+    for (const residentId of resident_ids) {
+      const { rows: [resident] } = await query(
+        `SELECT email, prenom, nom, notif_email FROM utilisateurs WHERE id=$1`, [residentId]
+      );
+      if (!resident?.email || !resident.notif_email) continue;
+      try {
+        await sendEmail({
+          to: resident.email,
+          subject: `🌿 Intervention jardinage — ${villa} le ${dateLabel}`,
+          html: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px">
+            <div style="background:#1a7a52;color:#fff;padding:20px;border-radius:8px 8px 0 0">
+              <h2 style="margin:0">🌿 Intervention jardinage planifiée</h2>
+            </div>
+            <div style="background:#fff;border:1px solid #ddd;padding:20px;border-radius:0 0 8px 8px">
+              <p>Bonjour <strong>${resident.prenom}</strong>,</p>
+              <p>Une intervention jardinage est planifiée pour votre villa/lot :</p>
+              <table style="width:100%;border-collapse:collapse;margin:12px 0">
+                <tr><td style="padding:8px;background:#e8f8f0;font-weight:bold">Villa / Lot</td><td style="padding:8px">${villa}</td></tr>
+                <tr><td style="padding:8px;font-weight:bold">Date</td><td style="padding:8px"><strong>${dateLabel}</strong></td></tr>
+                <tr><td style="padding:8px;background:#e8f8f0;font-weight:bold">Type</td><td style="padding:8px">${description}</td></tr>
+                ${prestataire ? `<tr><td style="padding:8px;font-weight:bold">Prestataire</td><td style="padding:8px">${prestataire}</td></tr>` : ''}
+              </table>
+              <div style="background:#e8f8f0;border-left:4px solid #1a7a52;padding:12px;border-radius:0 6px 6px 0;font-size:13px;color:#1a7a52">
+                Merci de vous assurer que l'accès à votre espace vert est dégagé à cette date.
+              </div>
+              <div style="text-align:center;margin-top:20px">
+                <a href="${APP_URL}" style="background:#1a7a52;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold">Voir mon planning</a>
+              </div>
+            </div></body></html>`
+        });
+        await logNotification(req.user.residence_id, 'email', 'jardinage', residentId, resident.email,
+          `Jardinage ${villa} — ${dateLabel}`, 'sent');
+        sent++;
+      } catch(e) { console.warn('Email jardinage:', resident.email, e.message); }
+    }
+    res.json({ sent, villa, dateLabel });
+  } catch(e) {
+    console.error('Jardinage notif error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
 
 module.exports = router;
