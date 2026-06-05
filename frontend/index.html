@@ -346,7 +346,7 @@ textarea.form-control{resize:vertical;min-height:75px}
       margin-left:0!important;
       margin-top:calc(var(--header-h) + env(safe-area-inset-top,0px))!important;
       padding:1rem!important;
-      padding-bottom:72px!important;
+      padding-bottom:1rem!important;
     }
     #sidebar{
       transform:translateX(-100%);
@@ -365,7 +365,7 @@ textarea.form-control{resize:vertical;min-height:75px}
     }
     .sidebar-overlay.show{display:block!important}
     #bottom-nav{
-      display:flex!important;
+      display:none!important;
       position:fixed;
       bottom:0;left:0;right:0;
       background:var(--surface);
@@ -396,6 +396,7 @@ textarea.form-control{resize:vertical;min-height:75px}
     .data-table tbody td::before{display:none!important}
   }
 
+    #bottom-nav{display:none!important}
   </style>
 </head>
 <body>
@@ -1034,7 +1035,7 @@ textarea.form-control{resize:vertical;min-height:75px}
 
 
 <nav id="bottom-nav"></nav>
-<button class="fab" id="fab-btn" onclick="fabAction()"><i class="fa-solid fa-plus"></i></button>
+<button class="fab" style="display:none!important"><i class="fa-solid fa-plus"></i></button>
 <div class="toast" id="toast"><i class="fa-solid fa-circle-check" id="toast-icon"></i><span id="toast-msg"></span></div>
 <script src="app.js"></script>
 </body>
