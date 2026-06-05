@@ -1718,186 +1718,74 @@ async function submitUploadDoc(){
 }
 
 // ── Sidebar / Modals ──────────────────────────────────────
-// ── Hamburger mobile (robuste avec touch et click) ──────────────
-const _hamburger = document.getElementById('hamburger-btn');
-const _sidebar    = document.getElementById('sidebar');
-const _overlay    = document.getElementById('sidebar-overlay');
+// ── Hamburger + Sidebar Mobile ──────────────────────────────────
+(function initSidebar() {
+  const btn      = document.getElementById('hamburger-btn');
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('sidebar-overlay');
+  if (!btn || !sidebar) return;
 
-function openSidebar(){
-  _sidebar?.classList.add('open');
-  _overlay?.classList.add('show');
-  document.body.style.overflow='hidden'; // Empêche le scroll body
-}
+  function isMenuOpen() { return sidebar.classList.contains('open'); }
 
-function closeSidebar(){
-  _sidebar?.classList.remove('open');
-  _overlay?.classList.remove('show');
-  document.body.style.overflow='';
-}
+  function openMenu() {
+    sidebar.classList.add('open');
+    overlay && overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    btn.setAttribute('aria-expanded', 'true');
+    btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  }
 
-function toggleSidebar(){
-  if(_sidebar?.classList.contains('open')) closeSidebar();
-  else openSidebar();
-}
+  function closeMenu() {
+    sidebar.classList.remove('open');
+    overlay && overlay.classList.remove('show');
+    document.body.style.overflow = '';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+  }
 
-if(_hamburger){
-  // Utiliser touchstart pour réactivité immédiate sur mobile
-  _hamburger.addEventListener('touchstart', (e) => {
-    e.preventDefault(); // Empêche le délai 300ms
-    toggleSidebar();
-  }, { passive: false });
-  _hamburger.addEventListener('click', toggleSidebar);
-}
+  function toggleMenu(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    isMenuOpen() ? closeMenu() : openMenu();
+  }
 
-if(_overlay){
-  _overlay.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    closeSidebar();
-  }, { passive: false });
-  _overlay.addEventListener('click', closeSidebar);
-}
+  // Événements bouton — touch en priorité pour supprimer le délai 300ms
+  btn.addEventListener('pointerdown', toggleMenu, { passive: false });
 
-// Fermer sidebar sur navigation (mobile)
-document.addEventListener('keydown', (e) => {
-  if(e.key==='Escape') closeSidebar();
-});
+  // Fermer en cliquant sur l'overlay
+  if (overlay) overlay.addEventListener('pointerdown', (e) => { e.preventDefault(); closeMenu(); }, { passive: false });
 
-window.addEventListener('appinstalled', () => {
-  hidePWABanner();
-  _deferredPrompt = null;
-  showToast('SyndicPro installé sur votre écran');
-});
-
-function initPWAInstall(){
-  const installBtn = document.getElementById('pwa-banner-install');
-  const closeBtn   = document.getElementById('pwa-banner-close');
-  if(installBtn) installBtn.addEventListener('click', installPWA);
-  if(closeBtn)   closeBtn.addEventListener('click', () => {
-    hidePWABanner();
-    localStorage.setItem('pwa_dismissed', Date.now());
+  // Fermer quand on navigue (clic sur un item du menu)
+  sidebar.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('pointerdown', () => setTimeout(closeMenu, 150));
   });
-  // iOS Safari — pas de beforeinstallprompt
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.navigator.standalone === true;
-  if(isIOS && !isStandalone && !localStorage.getItem('pwa_dismissed')) {
-    setTimeout(showIOSInstallHint, 5000);
-  }
-}
 
-async function installPWA(){
-  if(!_deferredPrompt) return;
-  _deferredPrompt.prompt();
-  const { outcome } = await _deferredPrompt.userChoice;
-  if(outcome === 'accepted') hidePWABanner();
-  _deferredPrompt = null;
-}
+  // Swipe gauche pour fermer
+  let touchStartX = 0;
+  sidebar.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  sidebar.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (dx < -60) closeMenu();
+  }, { passive: true });
 
-function showPWABanner(){
-  const banner = document.getElementById('pwa-banner');
-  if(banner && _deferredPrompt) banner.classList.add('show');
-}
+  // Swipe droit pour ouvrir (depuis le bord gauche)
+  document.addEventListener('touchstart', e => {
+    if (e.touches[0].clientX < 20) touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const startedAtEdge = touchStartX < 20;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (startedAtEdge && dx > 60 && !isMenuOpen()) openMenu();
+    touchStartX = 0;
+  }, { passive: true });
 
-function hidePWABanner(){
-  const banner = document.getElementById('pwa-banner');
-  if(banner) banner.classList.remove('show');
-}
+  // Echap clavier
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
 
-function showIOSInstallHint(){
-  if(localStorage.getItem('pwa_dismissed')) return;
-  showToast('iOS : Partager puis Ajouter écran accueil', 'info');
-}
+  // Exposer closeSidebar globalement (utilisé ailleurs)
+  window.closeSidebar = closeMenu;
+  window.openSidebar  = openMenu;
+})();
 
-// ══════════════════════════════════════════════════════════════
-// PHASE 4 — PUSH NOTIFICATIONS WEB
-// ══════════════════════════════════════════════════════════════
-
-const VAPID_PUBLIC_KEY = window.VAPID_PUBLIC_KEY || '';
-
-async function initPushNotifications(){
-  if(!('Notification' in window) || !('serviceWorker' in navigator)) return;
-  if(Notification.permission === 'granted') {
-    await subscribeToPush();
-  } else if(Notification.permission === 'default') {
-    // Demander seulement si l'utilisateur a interagi
-    document.addEventListener('click', askPushPermissionOnce, { once: true });
-  }
-}
-
-let _pushAsked = false;
-async function askPushPermissionOnce(){
-  if(_pushAsked || Notification.permission !== 'default') return;
-  _pushAsked = true;
-  // Petit délai pour ne pas être intrusif
-  await new Promise(r => setTimeout(r, 2000));
-  const perm = await Notification.requestPermission();
-  if(perm === 'granted') {
-    await subscribeToPush();
-    showToast('🔔 Notifications activées');
-  }
-}
-
-async function subscribeToPush(){
-  try {
-    if(!VAPID_PUBLIC_KEY) return; // Pas configuré
-    const reg = await navigator.serviceWorker.ready;
-    const existing = await reg.pushManager.getSubscription();
-    if(existing) { await sendSubscriptionToServer(existing); return; }
-
-    const subscription = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    });
-    await sendSubscriptionToServer(subscription);
-  } catch(e) { console.warn('Push subscribe failed:', e.message); }
-}
-
-async function sendSubscriptionToServer(sub){
-  try {
-    await POST('/push/subscribe', { subscription: sub.toJSON() });
-  } catch(e) { console.warn('Push server save failed:', e.message); }
-}
-
-function urlBase64ToUint8Array(base64String){
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
-}
-
-// Désactiver les notifications depuis le profil
-async function togglePushNotifications(enable){
-  if(enable) {
-    if(Notification.permission === 'denied') {
-      showError('Notifications bloquées — autorisez-les dans les paramètres du navigateur');
-      return;
-    }
-    await subscribeToPush();
-    showToast('🔔 Notifications push activées');
-  } else {
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if(sub) { await sub.unsubscribe(); await DEL('/push/subscribe'); }
-      showToast('Notifications push désactivées');
-    } catch(e) { console.warn('Unsubscribe failed:', e.message); }
-  }
-}
-
-// Afficher le statut push dans le profil
-async function getPushStatus(){
-  if(!('Notification' in window)) return 'unsupported';
-  if(Notification.permission === 'denied') return 'denied';
-  const reg = await navigator.serviceWorker.ready.catch(() => null);
-  if(!reg) return 'unsupported';
-  const sub = await reg.pushManager.getSubscription();
-  return sub ? 'subscribed' : 'unsubscribed';
-}
-
-
-function openModal(id){document.getElementById(id)?.classList.add('show');}
-function closeModal(id){document.getElementById(id)?.classList.remove('show');}
-document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));});
 
 // ── Boot ──────────────────────────────────────────────────
 initApp();
@@ -2214,3 +2102,5 @@ function updateBottomNavActive(page){
     btn.setAttribute('aria-current', p === page ? 'page' : 'false');
   });
 }
+
+
