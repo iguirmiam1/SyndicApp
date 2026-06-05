@@ -333,7 +333,42 @@ textarea.form-control{resize:vertical;min-height:75px}
   .impaye-item{flex-wrap:wrap}
   .fab{display:flex}
   .hdr-actions .btn:not(.btn-icon):not(.btn-sm){display:none}
-}
+
+  /* ═══ Tableaux → Cards sur mobile ═══ */
+  .data-table thead { display: none !important; }
+  .data-table tbody tr {
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--white) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    margin-bottom: .625rem !important;
+    padding: .75rem !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05) !important;
+  }
+  .data-table tbody td {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: .5rem !important;
+    border: none !important;
+    padding: .2rem 0 !important;
+    font-size: 13px !important;
+  }
+  .data-table tbody td::before {
+    content: attr(data-label) !important;
+    min-width: 100px !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    color: var(--text-3) !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+    padding-top: 1px !important;
+    flex-shrink: 0 !important;
+  }
+  .data-table tbody td:not([data-label])::before { display: none !important; }
+  .data-table tbody td:empty { display: none !important; }
+  .data-table tr:hover td { background: none !important; }
+  }
 @media(max-width:480px){.metrics-grid{grid-template-columns:1fr}}
 
   /* ══ Bottom Navigation ══ */
@@ -418,9 +453,9 @@ textarea.form-control{resize:vertical;min-height:75px}
     .topbar{padding-top:env(safe-area-inset-top,0px)}
     body{overscroll-behavior:none}
   }
-  .data-table tbody tr{display:flex}
+  /* table mobile: voir @media */
   @media(max-width:768px){
-    .data-table tbody tr{flex-direction:column}
+    /* table mobile: voir @media */
   }
   
   @media(max-width:768px){
@@ -487,7 +522,7 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="login-field"><label>Adresse email</label><input type="email" id="login-email" placeholder="votre@email.com" autocomplete="email"></div>
     <div class="login-field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="login-btn" id="login-submit" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
-   
+    
   </div>
 </div>
 
@@ -653,7 +688,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <div class="modal">
     <div class="modal-hdr"><h3><i class="fa-solid fa-wrench" style="color:var(--primary);mr:6px"></i> Signaler une réclamation</h3><button class="close-modal" onclick="closeModal('modal-incident')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
+      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Ascenseur</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
       <div class="form-group"><label class="form-label">Localisation précise</label><input class="form-control" id="inc-loc" placeholder="Ex: Couloir 3e étage, parking B2…"></div>
       <div class="form-group"><label class="form-label">Description détaillée</label><textarea class="form-control" id="inc-desc" placeholder="Décrivez l'incident avec le maximum de détails…"></textarea></div>
       <div class="form-row">
@@ -909,7 +944,7 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="form-row">
         <div class="form-group"><label class="form-label">Type d'intervention</label>
           <select class="form-control" id="intv-type">
-            <option>Plomberie</option><option>Électricité</option>
+            <option>Plomberie</option><option>Ascenseur</option><option>Électricité</option>
             <option>Parties communes</option><option>Sécurité</option><option>Peinture</option>
             <option>Jardinage</option><option>Toiture</option><option>Nuisances</option><option>Autre</option>
           </select>
