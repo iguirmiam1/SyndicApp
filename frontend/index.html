@@ -12,7 +12,7 @@
   <meta name="description" content="Gestion intelligente de copropriété — SyndicPro">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.png">
-<title>Jasmine Park — Gestion de Copropriété</title>
+<title>SyndicPro — Gestion de Copropriété</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <style>
@@ -26,7 +26,7 @@
   --danger:#c0392b;--danger-pale:#fdf1f0;
   --info:#1a6fa8;--info-pale:#e8f3fb;
   --success:#1a7a52;--warning:#b06b10;--warning-pale:#fef8ec;
-  --radius:12px;--radius-sm:8px;--sidebar-w:248px;--header-h:64px;--header-safe:calc(64px + env(safe-area-inset-top, 0px));
+  --radius:12px;--radius-sm:8px;--sidebar-w:248px;--header-h:64px;--header-safe:calc(var(--header-h) + env(safe-area-inset-top, 16px));--header-safe:calc(64px + env(safe-area-inset-top, 0px));
   --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);
   --shadow-md:0 4px 16px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);
   --font:'Plus Jakarta Sans',sans-serif;--font-display:'Fraunces',serif;
@@ -430,7 +430,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   }
   
   @media(max-width:768px){
-    .topbar{padding:0 .75rem;padding-top:env(safe-area-inset-top,0px);gap:.5rem;min-height:calc(56px + env(safe-area-inset-top,0px))}
+    .topbar{padding:0 .75rem;padding-top:env(safe-area-inset-top,16px);gap:.5rem;min-height:calc(60px + env(safe-area-inset-top,16px))}
     :root{--header-h:calc(56px + env(safe-area-inset-top,0px))}
     #hamburger-btn{
   display:none;width:44px;height:44px;
@@ -473,6 +473,59 @@ textarea.form-control{resize:vertical;min-height:75px}
   #main{margin-left:var(--sidebar-w) !important}
   #bottom-nav{display:none !important}
 }
+  
+  /* Force safe-area sur topbar partout */
+  .topbar { padding-top: max(env(safe-area-inset-top, 0px), 14px) !important; }
+
+  /* ═══ Bottom nav amélioré ═══ */
+  @media(max-width:1024px){
+    #bottom-nav{
+      height:calc(58px + env(safe-area-inset-bottom,0px));
+      padding-bottom:env(safe-area-inset-bottom,0px);
+    }
+    .bn-item{ font-size:10px; padding-bottom:env(safe-area-inset-bottom,0px) }
+    .bn-item i{ font-size:20px }
+    .bn-item.active i{ transform:scale(1.15); transition:transform .2s }
+    #main{ padding-bottom:calc(64px + env(safe-area-inset-bottom,0px)) }
+
+    /* Metrics 2x2 */
+    .metrics-grid{
+      grid-template-columns:repeat(2,1fr) !important;
+      gap:.625rem !important
+    }
+    .metric{
+      border-radius:14px;
+      padding:.875rem .875rem .875rem
+    }
+    .metric-val{ font-size:1.75rem }
+
+    /* Page header compact */
+    .page-hdr h1{ font-size:1.3rem }
+    .page-hdr p{ font-size:.8rem }
+
+    /* Cards compactes */
+    .card{ border-radius:14px; padding:.875rem }
+    .card-hdr{ font-size:.85rem }
+
+    /* Boutons actions header */
+    .hdr-actions .btn span{ display:none }
+    .hdr-actions .btn i{ margin-right:0 }
+  }
+
+  /* ═══ Safe area topbar ═══ */
+  .topbar{
+    padding-top:max(env(safe-area-inset-top, 0px), 14px) !important;
+    min-height:calc(60px + max(env(safe-area-inset-top, 0px), 14px)) !important
+  }
+  #main,#sidebar{
+    top:calc(60px + max(env(safe-area-inset-top, 0px), 14px)) !important
+  }
+  @media(min-width:1025px) and (min-height:600px){
+    .topbar{ padding-top:0 !important; min-height:var(--header-h) !important }
+    #main{ top:auto !important; margin-top:var(--header-h) !important }
+    #sidebar{ top:var(--header-h) !important }
+  }
+
   </style>
 </head>
 <body>
@@ -482,7 +535,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <div class="login-card">
     <div class="login-logo">
       <div class="mark"><i class="fa-solid fa-building-columns"></i></div>
-      <h1>Jasmine<em>Park</em></h1>
+      <h1>Syndic<em>Pro</em></h1>
       <p>Gestion intelligente de copropriété</p>
     </div>
     <div class="login-error" id="login-error"><i class="fa-solid fa-circle-exclamation"></i><span id="login-error-msg"></span></div>
@@ -497,7 +550,7 @@ textarea.form-control{resize:vertical;min-height:75px}
 <div id="app">
   <header id="topbar">
     <button class="hamburger" id="hamburger-btn"><i class="fa-solid fa-bars"></i></button>
-    <a href="#" class="logo"><div class="logo-mark"><i class="fa-solid fa-building-columns"></i></div>Jasmine<em>Park</em></a>
+    <a href="#" class="logo"><div class="logo-mark"><i class="fa-solid fa-building-columns"></i></div>Syndic<em>Pro</em></a>
     <div class="role-switcher" id="role-switcher" style="display:none">
       <button class="role-btn" id="btn-resident" onclick="setRole('resident')"><i class="fa-solid fa-user"></i> Résident</button>
       <button class="role-btn" id="btn-gestionnaire" onclick="setRole('gestionnaire')"><i class="fa-solid fa-briefcase"></i> Syndic</button>
@@ -655,7 +708,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <div class="modal">
     <div class="modal-hdr"><h3><i class="fa-solid fa-wrench" style="color:var(--primary);mr:6px"></i> Signaler une réclamation</h3><button class="close-modal" onclick="closeModal('modal-incident')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
+      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Ascenseur</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
       <div class="form-group"><label class="form-label">Localisation précise</label><input class="form-control" id="inc-loc" placeholder="Ex: Couloir 3e étage, parking B2…"></div>
       <div class="form-group"><label class="form-label">Description détaillée</label><textarea class="form-control" id="inc-desc" placeholder="Décrivez l'incident avec le maximum de détails…"></textarea></div>
       <div class="form-row">
@@ -911,7 +964,7 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="form-row">
         <div class="form-group"><label class="form-label">Type d'intervention</label>
           <select class="form-control" id="intv-type">
-            <option>Plomberie</option><option>Électricité</option>
+            <option>Plomberie</option><option>Ascenseur</option><option>Électricité</option>
             <option>Parties communes</option><option>Sécurité</option><option>Peinture</option>
             <option>Jardinage</option><option>Toiture</option><option>Nuisances</option><option>Autre</option>
           </select>
