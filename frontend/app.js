@@ -261,7 +261,7 @@ async function loadRFinances(){
 
 async function loadRIncidents(){
   const data=await GET('/incidents'); if(!data)return;
-  const typeIcon={Plomberie:'droplet',Ascenseur:'elevator','Électricité':'bolt','Parties communes':'building',Sécurité:'shield-halved',Nuisances:'volume-high',Autre:'wrench'};
+  const typeIcon={Plomberie:'droplet','Électricité':'bolt','Parties communes':'building',Sécurité:'shield-halved',Nuisances:'volume-high',Autre:'wrench'};
   const urgIcon={'normal':'','urgent':'','tres_urgent':''};
   const actifs=data.filter(i=>i.statut!=='resolu'&&i.statut!=='ferme');
   const resolus=data.filter(i=>i.statut==='resolu'||i.statut==='ferme');
