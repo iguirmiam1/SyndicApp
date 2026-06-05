@@ -393,6 +393,123 @@ textarea.form-control{resize:vertical;min-height:75px}
 
     #bottom-nav{display:none!important}
     .modal-overlay.show{display:flex!important}
+  
+/* ══════════════════════════════════════════════
+   MODALS — FIX COMPLET MOBILE
+   ══════════════════════════════════════════════ */
+
+/* 1. Overlay : z-index très élevé, au-dessus de TOUT */
+.modal-overlay {
+  z-index: 1000 !important;
+  display: none;
+  position: fixed !important;
+  inset: 0 !important;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.show {
+  display: flex !important;
+}
+
+/* 2. Modal box : toujours visible et scrollable */
+.modal {
+  background: var(--white);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 540px;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1001 !important;
+}
+.modal-hdr {
+  flex-shrink: 0;
+  padding: .875rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: var(--white);
+  z-index: 2;
+}
+.modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.25rem;
+  flex: 1;
+}
+.modal-footer {
+  flex-shrink: 0;
+  padding: .875rem 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: .625rem;
+  justify-content: flex-end;
+  position: sticky;
+  bottom: 0;
+  background: var(--white);
+  z-index: 2;
+}
+
+/* 3. Sur mobile : modal en bottom-sheet */
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .modal-hdr h3 { font-size: 1rem !important; }
+  .modal-body { padding: 1rem !important; }
+  .modal-footer { padding: .75rem 1rem !important; }
+
+  /* Boutons full-width sur mobile */
+  .modal-footer .btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+
+  /* Inputs plus grands au toucher */
+  .modal .form-control {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+  .modal select.form-control { min-height: 44px !important; }
+  .modal textarea.form-control { min-height: 88px !important; }
+}
+
+/* 4. Topbar et hamburger sous les modals */
+.topbar { z-index: 300 !important; }
+#hamburger-btn { z-index: 301 !important; }
+#sidebar { z-index: 400 !important; }
+.sidebar-overlay { z-index: 399 !important; }
+
+/* 5. Tous les boutons : touch-friendly */
+button, [onclick], .btn, .nav-item, .close-modal {
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation !important;
+  cursor: pointer !important;
+}
+.btn { min-height: 40px !important; }
+.btn-primary, .btn-danger { min-height: 44px !important; }
+.close-modal {
+  width: 36px !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
   </style>
 </head>
 <body>
