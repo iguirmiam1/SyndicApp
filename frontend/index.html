@@ -8,11 +8,11 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SyndicPro">
-  <meta name="description" content="Gestion intelligente de copropriété — SyndicPro">
+  <meta name="apple-mobile-web-app-title" content="Syndic Jasmine Park">
+  <meta name="description" content="Gestion intelligente de copropriété — Syndic Jasmine Park">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.png">
-<title>Jasmine Park — Gestion de Copropriété</title>
+<title>Syndic Jasmine Park</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <style>
@@ -104,7 +104,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   background:var(--surface);flex-shrink:0;width:100%
 }
 #sidebar.closed{transform:translateX(-100%)}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;backdrop-filter:blur(3px);cursor:pointer}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:399;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .sidebar-overlay.show{display:block}
 .nav-section{margin-bottom:1.25rem}
 .nav-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:4px;margin-top:12px;white-space:nowrap;overflow:hidden}
@@ -506,6 +506,38 @@ textarea.form-control{resize:vertical;min-height:75px}
 /* Logout button sidebar */
 #sidebar-logout button.logout-btn,#sidebar-logout>button{background:#fee2e2!important;color:#dc2626!important;font-weight:700!important;border-radius:10px!important}
 
+  
+/* ═══ SIDEBAR OVERLAY AMÉLIORÉ ═══ */
+.sidebar-overlay.show {
+  display: block !important;
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* ═══ RÉSIDENTS - colonnes correctes desktop ═══ */
+@media(min-width:769px){
+  /* S'assurer que le tableau des résidents affiche bien les colonnes */
+  .data-table thead { display: table-header-group !important; }
+  .data-table tbody tr { display: table-row !important; }
+  .data-table tbody td { display: table-cell !important; }
+  .data-table tbody td::before { display: none !important; }
+}
+
+/* ═══ MOBILE : page principale décalée sous le header ═══ */
+@media(max-width:1024px),(max-height:599px) and (orientation:landscape){
+  /* Empêcher le contenu derrière le sidebar d'être visible */
+  #sidebar { z-index: 400 !important; }
+  #sidebar.open { box-shadow: 4px 0 40px rgba(0,0,0,.35) !important; }
+  .sidebar-overlay { z-index: 399 !important; }
+  #hamburger-btn { z-index: 500 !important; }
+  #bottom-nav { z-index: 150 !important; }
+  
+  /* Padding sécurisé pour la bottom nav */
+  #main {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -515,7 +547,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <div class="login-card">
     <div class="login-logo">
       <div class="mark"><i class="fa-solid fa-building-columns"></i></div>
-      <h1>Jasmine<em>Park</em></h1>
+      <h1>Syndic <em>Jasmine Park</em></h1>
       <p>Gestion intelligente de copropriété</p>
     </div>
     <div class="login-error" id="login-error"><i class="fa-solid fa-circle-exclamation"></i><span id="login-error-msg"></span></div>
@@ -530,7 +562,7 @@ textarea.form-control{resize:vertical;min-height:75px}
 <div id="app">
   <header id="topbar">
     <button class="hamburger" id="hamburger-btn"><i class="fa-solid fa-bars"></i></button>
-    <a href="#" class="logo"><div class="logo-mark"><i class="fa-solid fa-building-columns"></i></div>Jasmine<em>Park</em></a>
+    <a href="#" class="logo"><div class="logo-mark"><i class="fa-solid fa-building-columns"></i></div>Syndic <em>Jasmine Park</em></a>
     <div class="role-switcher" id="role-switcher" style="display:none">
       <button class="role-btn" id="btn-resident" onclick="setRole('resident')"><i class="fa-solid fa-user"></i> Résident</button>
       <button class="role-btn" id="btn-gestionnaire" onclick="setRole('gestionnaire')"><i class="fa-solid fa-briefcase"></i> Syndic</button>
@@ -1168,7 +1200,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <!-- ══ PWA Install Banner ══ -->
   <div id="pwa-banner" role="complementary" aria-label="Installer l'application">
     <span id="pwa-banner-icon">🏠</span>
-    <div id="pwa-banner-text">Installer SyndicPro
+    <div id="pwa-banner-text">Installer Syndic Jasmine Park
       <small>Accès rapide depuis votre écran d'accueil</small>
     </div>
     <button id="pwa-banner-install">Installer</button>
