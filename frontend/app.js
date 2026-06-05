@@ -1643,15 +1643,45 @@ async function loadGJardinage(){
     </div>`);
 }
 
+function openJardinageModal(villaPreset){
+  const villas = window._jardinage_villas || [];
+  const sel = document.getElementById('jard-villa-select');
+  if(sel){
+    const opts = ['<option value="">-- Choisir --</option>'];
+    villas.forEach(v => {
+      const lbl = v.lot + (v.prenom ? ' — ' + v.prenom + ' ' + v.nom : '');
+      opts.push('<option value="' + v.lot + '">' + lbl + '</option>');
+    });
+    opts.push('<optgroup label="Espaces partagés">');
+    ['Parc central','Espaces communs','Entrée principale','Parking','Piscine'].forEach(z=>{
+      opts.push('<option value="'+z+'">'+z+'</option>');
+    });
+    opts.push('</optgroup>');
+    sel.innerHTML = opts.join('');
+    if(villaPreset) sel.value = villaPreset;
+  }
+  document.getElementById('jard-date').value = new Date().toISOString().split('T')[0];
+  const h = document.getElementById('jard-heure');
+  if(h) h.value = '09:00';
+  ['jard-desc','jard-prestataire'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  const n = document.getElementById('jard-notifier'); if(n) n.checked = true;
+  openModal('modal-jardinage');
+}
+
 async function submitJardinage(){
-  const villa=document.getElementById('jard-villa').value.trim();
-  const date=document.getElementById('jard-date').value;
+  const sel = document.getElementById('jard-villa-select');
+  const villa = (sel?.value || document.getElementById('jard-villa')?.value || '').trim();
+  const date = document.getElementById('jard-date').value;
+  const heure = document.getElementById('jard-heure')?.value || '';
   const desc=document.getElementById('jard-desc').value.trim();
   const prest=document.getElementById('jard-prestataire').value.trim();
   if(!villa)return showError('Villa/Lot requis');
   if(!date)return showError('Date requise');
   // Formater la description avec la date pour affichage
   const dateLabel=new Date(date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const heureLabel=heure?' à '+heure:'';
   const body={
     type:'Jardinage',
     localisation:villa,
@@ -1820,6 +1850,7 @@ async function submitDeclarerPaiement(){
   btn.disabled=false;
 }
 
+function updateIncPriority(){}
 function openNewIncident(){
   // Reset le formulaire
   ['inc-type','inc-loc','inc-desc','inc-urgence'].forEach(id=>{
@@ -1833,7 +1864,13 @@ function openNewIncident(){
 }
 
 async function submitIncident(){
-  const body={type:document.getElementById('inc-type').value,localisation:document.getElementById('inc-loc').value,description:document.getElementById('inc-desc').value.trim(),urgence:document.getElementById('inc-urgence').value};
+  const body={
+    type:document.getElementById('inc-type')?.value||'Autre',
+    localisation:document.getElementById('inc-loc')?.value||'',
+    description:(document.getElementById('inc-desc')?.value||'').trim(),
+    urgence:document.getElementById('inc-urgence')?.value||'normal'
+  };
+  if(!body.type)return showError('Type de réclamation requis');
   if(!body.description)return showError('Description requise');
   try{await POST('/incidents',body);showToast(' Réclamation envoyée !');closeModal('modal-incident');
     ['r-incidents','g-travaux'].forEach(p=>loaded.delete(p));
@@ -2061,4 +2098,3 @@ function handleMoreItem(page,action){
   document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
   window.closeSidebar=close;window.openSidebar=open;
 })();
-
