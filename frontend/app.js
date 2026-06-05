@@ -1,5 +1,5 @@
 // ==========================================================
-// SyndicPro v2.1 — app.js
+// Syndic Jasmine Park v2.1 — app.js
 // ==========================================================
 const API = '/api';
 
@@ -38,26 +38,7 @@ function fmtDateTime(d){if(!d)return'—';return new Date(d).toLocaleString('fr-
 function ini(u){return((u.prenom||'?')[0]+(u.nom||'?')[0]).toUpperCase();}
 
 // ── AUTH ──────────────────────────────────────────────────
-function fillLogin(e,p){document.getElementById('login-email').value=e;document.getElementById('login-password').value=p;}
-async function doLogin() {
-  const email=document.getElementById('login-email').value.trim();
-  const pwd=document.getElementById('login-password').value;
-  const btn=document.getElementById('login-submit');
-  const err=document.getElementById('login-error');
-  err.style.display='none';
-  if(!email||!pwd){document.getElementById('login-error-msg').textContent='Remplissez tous les champs.';err.style.display='flex';return;}
-  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Connexion…';
-  try {
-    const data=await POST('/auth/login',{email,password:pwd});
-    if(!data)return;
-    state.token=data.token; state.user=data.user;
-    localStorage.setItem('sp_token',data.token);
-    initApp();
-  } catch(e){
-    document.getElementById('login-error-msg').textContent=e.error||'Identifiants incorrects.';
-    err.style.display='flex';
-  } finally { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i> Se connecter'; }
-}
+
 document.getElementById('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 function doLogout(){
@@ -190,7 +171,7 @@ async function loadRDashboard(){
   if(b){b.textContent=openInc||'';b.style.display=openInc?'':'none';}
   setPageContent('r-dashboard',`
     <div class="page-hdr">
-      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Villa ${u.lot||'—'}</p></div>
+      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Appartement ${u.lot||'—'}</p></div>
       <div class="hdr-actions"><button class="btn btn-primary btn-sm" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Signaler</button></div>
     </div>
     <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -1442,7 +1423,7 @@ async function saveSettings(){
 async function loadADashboard(){
   const stats=await GET('/admin/stats'); if(!stats)return;
   setPageContent('a-dashboard',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Administration SyndicPro</h1></div></div>
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Administration Syndic Jasmine Park</h1></div></div>
     <div class="metrics-grid">
       <div class="metric"><div class="metric-icon"><i class="fa-solid fa-users"></i></div><div class="metric-val">${stats.totalUsers}</div><div class="metric-label">Utilisateurs</div></div>
       <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-building"></i></div><div class="metric-val">${stats.totalResidences}</div><div class="metric-label">Résidences</div></div>
@@ -1729,18 +1710,22 @@ async function submitUploadDoc(){
 
   function openMenu() {
     sidebar.classList.add('open');
-    overlay && overlay.classList.add('show');
+    if (overlay) { overlay.classList.add('show'); }
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     btn.setAttribute('aria-expanded', 'true');
-    btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    btn.innerHTML = '<i class="fa-solid fa-xmark" style="pointer-events:none"></i>';
+    btn.style.background = 'rgba(255,255,255,.32)';
   }
 
   function closeMenu() {
     sidebar.classList.remove('open');
-    overlay && overlay.classList.remove('show');
+    if (overlay) { overlay.classList.remove('show'); }
     document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
     btn.setAttribute('aria-expanded', 'false');
-    btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    btn.innerHTML = '<i class="fa-solid fa-bars" style="pointer-events:none"></i>';
+    btn.style.background = 'rgba(255,255,255,.2)';
   }
 
   function toggleMenu(e) {
