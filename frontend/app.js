@@ -1055,7 +1055,7 @@ async function loadGResidents(){
     </div>
     <div class="card">
       <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Résident</th><th>Lot</th><th></th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Résident</th><th>Lot</th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
         <tbody>${data.map(r=>`<tr>
           <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:6px;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${ini(r)}</div><strong>${r.prenom} ${r.nom}</strong></div></td>
           <td>${r.lot||'—'}</td>
