@@ -407,6 +407,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  background: rgba(0,0,0,0.6) !important;
 }
 .modal-overlay.show {
   display: flex !important;
@@ -414,8 +415,8 @@ textarea.form-control{resize:vertical;min-height:75px}
 
 /* 2. Modal box : toujours visible et scrollable */
 .modal {
-  background: var(--white);
-  border-radius: var(--radius);
+  background: #ffffff !important;
+  border-radius: var(--radius, 12px);
   width: 100%;
   max-width: 540px;
   max-height: 90dvh;
@@ -423,6 +424,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   flex-direction: column;
   position: relative;
   z-index: 1001 !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
 }
 .modal-hdr {
   flex-shrink: 0;
@@ -433,7 +435,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   justify-content: space-between;
   position: sticky;
   top: 0;
-  background: var(--white);
+  background: #ffffff !important;
   z-index: 2;
 }
 .modal-body {
@@ -467,6 +469,8 @@ textarea.form-control{resize:vertical;min-height:75px}
     max-height: 92dvh !important;
     border-radius: 20px 20px 0 0 !important;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: #ffffff !important;
+    box-shadow: 0 -8px 40px rgba(0,0,0,.20) !important;
   }
   .modal-hdr h3 { font-size: 1rem !important; }
   .modal-body { padding: 1rem !important; }
@@ -508,6 +512,18 @@ button, [onclick], .btn, .nav-item, .close-modal {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+}
+
+  
+/* ══ MODAL FOND BLANC — PRIORITÉ ABSOLUE ══ */
+.modal-overlay.show .modal,
+.modal-overlay.show .modal-hdr,
+.modal-overlay.show .modal-body,
+.modal-overlay.show .modal-footer {
+  background: #ffffff !important;
+}
+.modal-overlay.show {
+  background: rgba(0,0,0,0.65) !important;
 }
 
   </style>
