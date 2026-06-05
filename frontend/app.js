@@ -1942,13 +1942,23 @@ document.getElementById('hamburger-btn').addEventListener('click',()=>{
   document.getElementById('sidebar-overlay').classList.toggle('show');
 });
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');}
-function openModal(id){document.getElementById(id)?.classList.add('show');}
-function closeModal(id){document.getElementById(id)?.classList.remove('show');}
+function openModal(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.add('show');
+}
+
+function closeModal(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.remove('show');
+}
+
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));});
 
 // ── Boot ──────────────────────────────────────────────────
 initApp();
+
+
 
 /* ══ Mobile navigation ══ */
 const BOTTOM_NAV = {
