@@ -2,16 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0d5c47" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0a3d2e" media="(prefers-color-scheme: dark)">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Syndic Jasmine Park">
-  <meta name="description" content="Gestion intelligente de copropriété — Syndic Jasmine Park">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Syndic Jasmine Park</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -26,7 +17,7 @@
   --danger:#c0392b;--danger-pale:#fdf1f0;
   --info:#1a6fa8;--info-pale:#e8f3fb;
   --success:#1a7a52;--warning:#b06b10;--warning-pale:#fef8ec;
-  --radius:12px;--radius-sm:8px;--sidebar-w:248px;--header-h:64px;--header-safe:calc(64px + env(safe-area-inset-top, 0px));
+  --radius:12px;--radius-sm:8px;--sidebar-w:248px;--header-h:64px;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);
   --shadow-md:0 4px 16px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);
   --font:'Plus Jakarta Sans',sans-serif;--font-display:'Fraunces',serif;
@@ -50,8 +41,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .login-btn{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .login-btn:hover{background:var(--primary-light);transform:translateY(-1px)}
 .login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.demo-creds{margin-top:1.25rem;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)}
-.demo-creds strong{color:var(--text);font-size:11px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+
+
 .demo-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
 .demo-row:last-child{border-bottom:none}
 .demo-role{font-weight:600;color:var(--text);font-size:11px}
@@ -104,7 +95,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   background:var(--surface);flex-shrink:0;width:100%
 }
 #sidebar.closed{transform:translateX(-100%)}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:399;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;backdrop-filter:blur(2px)}
 .sidebar-overlay.show{display:block}
 .nav-section{margin-bottom:1.25rem}
 .nav-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:4px;margin-top:12px;white-space:nowrap;overflow:hidden}
@@ -315,14 +306,9 @@ textarea.form-control{resize:vertical;min-height:75px}
 @media(max-width:1024px){.grid-2,.grid-3{grid-template-columns:1fr}}
 @media(max-width:768px){
   :root{--sidebar-w:0px}
-  #sidebar{
-    transform:translateX(-100%) !important;
-    width:280px !important;
-    box-shadow:4px 0 24px rgba(0,0,0,.25);
-    transition:transform .28s cubic-bezier(.4,0,.2,1) !important;
-    z-index:200 !important
-  }
-  #sidebar.open{transform:translateX(0) !important}
+  #sidebar{transform:translateX(-100%);width:260px;box-shadow:4px 0 20px rgba(0,0,0,.15)}
+  #sidebar.open{transform:translateX(0)}
+  #sidebar.closed{transform:translateX(-100%)}
   #main{margin-left:0;padding:1rem}
   .hamburger{display:flex}
   .user-name,.user-role-label{display:none}
@@ -333,239 +319,82 @@ textarea.form-control{resize:vertical;min-height:75px}
   .impaye-item{flex-wrap:wrap}
   .fab{display:flex}
   .hdr-actions .btn:not(.btn-icon):not(.btn-sm){display:none}
-
-  /* ═══ Tableaux → Cards sur mobile ═══ */
-  .data-table thead { display: none !important; }
-  .data-table tbody tr {
-    display: flex !important;
-    flex-direction: column !important;
-    background: var(--white) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
-    margin-bottom: .625rem !important;
-    padding: .75rem !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,.05) !important;
-  }
-  .data-table tbody td {
-    display: flex !important;
-    align-items: flex-start !important;
-    gap: .5rem !important;
-    border: none !important;
-    padding: .2rem 0 !important;
-    font-size: 13px !important;
-  }
-  .data-table tbody td::before {
-    content: attr(data-label) !important;
-    min-width: 100px !important;
-    font-size: 10.5px !important;
-    font-weight: 700 !important;
-    color: var(--text-3) !important;
-    text-transform: uppercase !important;
-    letter-spacing: .04em !important;
-    padding-top: 1px !important;
-    flex-shrink: 0 !important;
-  }
-  .data-table tbody td:not([data-label])::before { display: none !important; }
-  .data-table tbody td:empty { display: none !important; }
-  .data-table tr:hover td { background: none !important; }
-  }
+}
 @media(max-width:480px){.metrics-grid{grid-template-columns:1fr}}
 
-  /* ══ Bottom Navigation ══ */
-  #bottom-nav{
-    display:none;position:fixed;bottom:0;left:0;right:0;
-    height:60px;background:var(--surface);
-    border-top:1px solid var(--border);
-    z-index:150;flex-shrink:0;
-    box-shadow:0 -2px 12px rgba(0,0,0,.08)
-  }
-  .bn-item{
-    flex:1;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:2px;
-    border:none;background:none;cursor:pointer;
-    font-size:10px;color:var(--text-3);
-    padding:.25rem .5rem;transition:color .15s;
-    -webkit-tap-highlight-color:transparent;
-    position:relative
-  }
-  .bn-item.active{color:var(--primary)}
-  .bn-item.active i{transform:scale(1.1)}
-  .bn-item i{font-size:22px;transition:transform .15s}
-  .bn-item span{font-size:9px;font-weight:500;line-height:1}
-  .bn-badge{
-    position:absolute;top:4px;left:calc(50% + 6px);
-    background:var(--danger);color:#fff;
-    font-size:9px;font-weight:700;
-    border-radius:10px;min-width:16px;height:16px;
-    display:flex;align-items:center;justify-content:center;
-    padding:0 3px
-  }
+  /* ══ MOBILE RESPONSIVE — approche conservative ══ */
 
-  /* ══ PWA Install Banner ══ */
-  #pwa-banner{
-    display:none;position:fixed;bottom:68px;left:.75rem;right:.75rem;
-    background:var(--primary);color:#fff;
-    border-radius:14px;padding:.875rem 1rem;
-    box-shadow:0 4px 20px rgba(13,92,71,.35);
-    z-index:160;align-items:center;gap:.75rem
-  }
-  #pwa-banner.show{display:flex}
-  #pwa-banner-icon{font-size:1.5rem;flex-shrink:0}
-  #pwa-banner-text{flex:1;font-size:13px;font-weight:500}
-  #pwa-banner-text small{display:block;font-weight:400;opacity:.85;font-size:12px;margin-top:1px}
-  #pwa-banner-install{
-    background:#fff;color:var(--primary);border:none;
-    border-radius:8px;padding:.4rem .875rem;
-    font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0
-  }
-  #pwa-banner-close{
-    background:none;border:none;color:rgba(255,255,255,.7);
-    font-size:1.1rem;cursor:pointer;padding:.25rem;
-    flex-shrink:0;line-height:1
-  }
-
-  /* ══ Pull to refresh indicator ══ */
-  #ptr-indicator{
-    display:none;position:fixed;top:68px;left:50%;
-    transform:translateX(-50%);
-    background:var(--surface);border:1px solid var(--border);
-    border-radius:20px;padding:.3rem .75rem;
-    font-size:12px;color:var(--text-3);
-    box-shadow:0 2px 8px rgba(0,0,0,.1);z-index:200;
-    align-items:center;gap:.4rem
-  }
-
-  /* ══ Touch scroll amélioré ══ */
-  .msg-wrapper,.nav-scroll,.modal{-webkit-overflow-scrolling:touch}
-  * { -webkit-tap-highlight-color:transparent }
-  button,a,[onclick]{cursor:pointer;user-select:none}
-
-  /* ══ Offline banner ══ */
-  #offline-banner{
-    display:none;position:fixed;top:var(--header-h);left:0;right:0;
-    background:#333;color:#fff;text-align:center;
-    font-size:13px;padding:.4rem;z-index:300
-  }
-  #offline-banner.show{display:block}
-  body.offline #offline-banner{display:block}
-  
-  @media(display-mode:standalone){
-    .topbar{padding-top:env(safe-area-inset-top,0px)}
-    body{overscroll-behavior:none}
-  }
-  /* table mobile: voir @media */
+  /* Safe area pour la topbar */
   @media(max-width:768px){
-    /* table mobile: voir @media */
-  }
-  
-  @media(max-width:768px){
-    .topbar{padding:0 .75rem;padding-top:env(safe-area-inset-top,0px);gap:.5rem;min-height:calc(56px + env(safe-area-inset-top,0px))}
-    :root{--header-h:calc(56px + env(safe-area-inset-top,0px))}
+    .topbar{
+      padding-top:env(safe-area-inset-top,0px);
+      min-height:calc(var(--header-h) + env(safe-area-inset-top,0px));
+    }
     #hamburger-btn{
-      width:44px;height:44px;display:flex !important;align-items:center;justify-content:center;
-      background:rgba(255,255,255,.18);border-radius:10px;border:none;color:#fff;
-      font-size:1.2rem;cursor:pointer;flex-shrink:0;
-      z-index:300 !important;position:relative;
+      display:flex!important;
+      width:40px;height:40px;
+      background:rgba(255,255,255,.18);
+      border:none;border-radius:9px;
+      color:#fff;font-size:1.1rem;
+      align-items:center;justify-content:center;
+      cursor:pointer;flex-shrink:0;
       -webkit-tap-highlight-color:transparent;
       touch-action:manipulation;
-      transition:background .15s;
-      -webkit-user-select:none;user-select:none
     }
-    #hamburger-btn:active{background:rgba(255,255,255,.35)}
-    .logo{font-size:1rem}
-    .logo-mark{width:28px;height:28px;font-size:.7rem}
-    .topbar .user-chip{max-width:120px}
-    .topbar .user-chip .user-info{display:none}
-    .topbar .notification-btn{width:36px;height:36px}
-    #main{margin-top:calc(56px + env(safe-area-inset-top,0px));padding-top:.5rem}
-    #sidebar{top:calc(56px + env(safe-area-inset-top,0px));height:calc(100vh - 56px - env(safe-area-inset-top,0px))}
+    :root{--sidebar-w:0px}
+    #main{
+      margin-left:0!important;
+      margin-top:calc(var(--header-h) + env(safe-area-inset-top,0px))!important;
+      padding:1rem!important;
+      padding-bottom:72px!important;
+    }
+    #sidebar{
+      transform:translateX(-100%);
+      width:270px;
+      box-shadow:4px 0 20px rgba(0,0,0,.2);
+      transition:transform .25s ease;
+      z-index:200;
+    }
+    #sidebar.open{transform:translateX(0)}
+    .sidebar-overlay{
+      display:none;
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.55);
+      z-index:199;
+      cursor:pointer;
+    }
+    .sidebar-overlay.show{display:block!important}
+    #bottom-nav{
+      display:flex!important;
+      position:fixed;
+      bottom:0;left:0;right:0;
+      background:var(--surface);
+      border-top:1px solid var(--border);
+      z-index:100;
+      padding-bottom:env(safe-area-inset-bottom,0px);
+    }
+    .bn-item{
+      flex:1;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      padding:6px 2px;border:none;background:none;
+      font-size:9.5px;color:var(--text-3);gap:3px;
+      min-height:54px;cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .bn-item i{font-size:20px}
+    .bn-item.active{color:var(--primary)}
+    .metrics-grid{grid-template-columns:repeat(2,1fr)!important;gap:.625rem!important}
   }
-  
-/* ══ PRIORITÉS MOBILES ══ */
-.topbar{padding-top:max(env(safe-area-inset-top,0px),48px)!important;min-height:calc(max(env(safe-area-inset-top,0px),48px) + 60px)!important}
-@media(max-width:1024px),(max-height:599px) and (orientation:landscape){
-  #hamburger-btn{display:flex!important;width:44px;height:44px;background:rgba(255,255,255,.2);border:none;border-radius:10px;color:#fff;font-size:1.15rem;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;z-index:500;position:relative;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-  #main{margin-top:calc(max(env(safe-area-inset-top,0px),48px) + 60px)!important;margin-left:0!important;padding:1rem 1rem 80px!important}
-  #sidebar{top:calc(max(env(safe-area-inset-top,0px),48px) + 60px)!important;height:calc(100vh - max(env(safe-area-inset-top,0px),48px) - 60px)!important;z-index:400!important}
-  .metrics-grid{grid-template-columns:repeat(2,1fr)!important;gap:.625rem!important}
-  .metric{padding:.75rem!important;border-radius:14px!important}
-  .metric-val{font-size:1.6rem!important}
-  #bottom-nav{display:flex!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;background:var(--surface)!important;border-top:1px solid var(--border)!important;z-index:150!important;padding-bottom:env(safe-area-inset-bottom,4px)!important;box-shadow:0 -2px 12px rgba(0,0,0,.1)!important}
-  .bn-item{flex:1!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;padding:6px 2px!important;border:none!important;background:none!important;cursor:pointer!important;font-size:9px!important;color:var(--text-3)!important;gap:3px!important;min-height:54px!important;-webkit-tap-highlight-color:transparent!important}
-  .bn-item i{font-size:19px!important}
-  .bn-item.active{color:var(--primary)!important}
-  .bn-item.active i{transform:scale(1.1)!important}
-}
-@media(min-width:1025px) and (min-height:600px){
-  #hamburger-btn{display:none!important}
-  .topbar{padding-top:0!important;min-height:var(--header-h)!important}
-  #main{margin-top:var(--header-h)!important;margin-left:var(--sidebar-w)!important;padding:1.5rem 2rem!important}
-  #sidebar{top:var(--header-h)!important;height:calc(100vh - var(--header-h))!important;transform:none!important}
-  #bottom-nav{display:none!important}
-}
-/* Logout button sidebar */
-#sidebar-logout button.logout-btn,#sidebar-logout>button{background:#fee2e2!important;color:#dc2626!important;font-weight:700!important;border-radius:10px!important}
-
-  
-/* ═══ SIDEBAR OVERLAY AMÉLIORÉ ═══ */
-.sidebar-overlay.show {
-  display: block !important;
-  animation: fadeIn .2s ease;
-}
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
-
-/* ═══ RÉSIDENTS - colonnes correctes desktop ═══ */
-@media(min-width:769px){
-  /* S'assurer que le tableau des résidents affiche bien les colonnes */
-  .data-table thead { display: table-header-group !important; }
-  .data-table tbody tr { display: table-row !important; }
-  .data-table tbody td { display: table-cell !important; }
-  .data-table tbody td::before { display: none !important; }
-}
-
-/* ═══ MOBILE : page principale décalée sous le header ═══ */
-@media(max-width:1024px),(max-height:599px) and (orientation:landscape){
-  /* Empêcher le contenu derrière le sidebar d'être visible */
-  #sidebar { z-index: 400 !important; }
-  #sidebar.open { box-shadow: 4px 0 40px rgba(0,0,0,.35) !important; }
-  .sidebar-overlay { z-index: 399 !important; }
-  #hamburger-btn { z-index: 500 !important; }
-  #bottom-nav { z-index: 150 !important; }
-  
-  /* Padding sécurisé pour la bottom nav */
-  #main {
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  /* ══ Desktop : sidebar toujours visible ══ */
+  @media(min-width:769px){
+    #hamburger-btn{display:none!important}
+    #bottom-nav{display:none!important}
+    #sidebar{transform:none!important}
+    .data-table thead{display:table-header-group!important}
+    .data-table tbody tr{display:table-row!important}
+    .data-table tbody td{display:table-cell!important}
+    .data-table tbody td::before{display:none!important}
   }
-}
-
-  
-/* ══ OVERRIDE FINAL — priorité absolue ══ */
-@media(max-width:1024px),(max-height:599px) and (orientation:landscape){
-  #sidebar{
-    position:fixed!important;
-    top:0!important;left:0!important;
-    width:min(280px,80vw)!important;
-    height:100vh!important;
-    transform:translateX(-100%)!important;
-    transition:transform .28s cubic-bezier(.4,0,.2,1)!important;
-    z-index:400!important;
-    overflow-y:auto!important;
-    display:flex!important;flex-direction:column!important;
-  }
-  #sidebar.open{transform:translateX(0)!important}
-  #sidebar-overlay{
-    position:fixed!important;inset:0!important;
-    z-index:399!important;
-    pointer-events:auto!important;
-  }
-  /* Main content — jamais au-dessus du sidebar */
-  #main{z-index:0!important;position:relative!important}
-  /* Bottom nav — sous le sidebar */
-  #bottom-nav{z-index:150!important}
-  /* Header — au-dessus de tout */
-  .topbar{z-index:500!important}
-  #hamburger-btn{z-index:600!important;position:relative!important}
-}
 
   </style>
 </head>
@@ -645,7 +474,8 @@ textarea.form-control{resize:vertical;min-height:75px}
           <div class="nav-item" onclick="showPage('g-residents')"><i class="fa-solid fa-people-group"></i> Résidents</div>
           <div class="nav-item" onclick="showPage('g-documents')"><i class="fa-solid fa-folder-open"></i> Documents</div>
           <div class="nav-item" onclick="showPage('g-messagerie')"><i class="fa-solid fa-comments"></i> Messagerie</div>
-          <div class="nav-item" onclick="showPage('g-jardinage')"><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Jardinage</div>
+          <div class="nav-item" onclick="showPage('g-jardinage')"><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Jardinage
+      <div style="padding:.75rem 1rem 1.5rem;border-top:1px solid var(--border);margin-top:auto"><button onclick="doLogout()" style="width:100%;display:flex;align-items:center;gap:.625rem;padding:.7rem 1rem;border-radius:9px;background:#fee2e2;color:#dc2626;border:none;cursor:pointer;font-size:13px;font-weight:700"><i class="fa-solid fa-right-from-bracket"></i> Se déconnecter</button></div></div>
           <div class="nav-item" onclick="showPage('g-bilan')"><i class="fa-solid fa-scale-balanced"></i> Bilan financier</div>
         </div>
         <div class="nav-section">
@@ -692,15 +522,16 @@ textarea.form-control{resize:vertical;min-height:75px}
         <div class="nav-section">
           <div class="nav-label">Monitoring</div>
           <div class="nav-item" onclick="showPage('g-notifications')"><i class="fa-solid fa-paper-plane"></i> Notifications</div>
-          <div class="nav-item" onclick="showPage('a-notifications-log')"><i class="fa-solid fa-bell"></i> Log notifications</div>
+          <div class="nav-item" onclick="showPage('a-notifications-log')"><i class="fa-solid fa-bell"></i> Log notifications
+      <div style="padding:.75rem 1rem 1.5rem;border-top:1px solid var(--border);margin-top:auto"><button onclick="doLogout()" style="width:100%;display:flex;align-items:center;gap:.625rem;padding:.7rem 1rem;border-radius:9px;background:#fee2e2;color:#dc2626;border:none;cursor:pointer;font-size:13px;font-weight:700"><i class="fa-solid fa-right-from-bracket"></i> Se déconnecter</button></div></div>
           <div class="nav-item" onclick="showPage('a-agenda')"><i class="fa-solid fa-calendar-check"></i> Agenda global</div>
         </div>
       </div>
     </div>
     <!-- Bouton déconnexion fixe -->
-    <div id="sidebar-logout" style="padding:.875rem 1rem calc(.875rem + env(safe-area-inset-bottom,0px));border-top:2px solid var(--border);background:var(--surface);flex-shrink:0">
-      <button onclick="doLogout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:.625rem;padding:.75rem 1rem;border-radius:10px;background:#fee2e2;color:#dc2626;border:none;cursor:pointer;font-size:13.5px;font-weight:700;letter-spacing:.01em">
-        <i class="fa-solid fa-right-from-bracket"></i> Se déconnecter
+    <div id="sidebar-logout" style="padding:.75rem 1rem 1rem;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;margin-top:auto">
+      <button class="logout-btn" onclick="doLogout()" style="width:100%">
+        <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
       </button>
     </div>
   </nav>
@@ -801,7 +632,7 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group"><label class="form-label">Période</label><input class="form-control" id="af-periode" placeholder="Ex: Q3 2026"></div>
-        <div class="form-group"><label class="form-label">Montant (MAD)</label><input class="form-control" id="af-montant" type="number" placeholder="10"></div>
+        <div class="form-group"><label class="form-label">Montant/tantième (MAD)</label><input class="form-control" id="af-montant" type="number" placeholder="10"></div>
       </div>
       <div class="form-group"><label class="form-label">Échéance</label><input class="form-control" id="af-echeance" type="date"></div>
       <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="af-desc" style="min-height:65px" placeholder="Objet de cet appel de fonds…"></textarea></div>
@@ -814,31 +645,16 @@ textarea.form-control{resize:vertical;min-height:75px}
 <!-- Résident -->
 <div class="modal-overlay" id="modal-resident">
   <div class="modal">
-    <div class="modal-hdr">
-      <h3 id="modal-res-title"><i class="fa-solid fa-user-plus" style="color:var(--primary)"></i> Nouveau résident</h3>
-      <button class="close-modal" onclick="closeModal('modal-resident')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
+    <div class="modal-hdr"><h3 id="modal-res-title"><i class="fa-solid fa-user-plus" style="color:var(--primary)"></i> Nouveau résident</h3><button class="close-modal" onclick="closeModal('modal-resident')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
       <input type="hidden" id="res-id">
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Prénom</label><input class="form-control" id="res-prenom"></div>
-        <div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="res-nom"></div>
-      </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Prénom</label><input class="form-control" id="res-prenom"></div><div class="form-group"><label class="form-label">Nom</label><input class="form-control" id="res-nom"></div></div>
       <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="res-email" type="email"></div>
       <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="res-tel"></div>
-      <div class="form-group"><label class="form-label">Lot / Villa</label><input class="form-control" id="res-lot" placeholder="Ex: V10, Apt 24, Lot B3..."></div>
-      <div class="form-group"><label class="form-label">Mot de passe <span style="color:var(--text-3);font-weight:400">(laisser vide = Resident2026!)</span></label>
-        <input class="form-control" id="res-password" type="password" placeholder="Laisser vide pour le mot de passe par défaut">
-      </div>
-      <div class="switch-wrap" id="res-welcome-wrap">
-        <label class="switch"><input type="checkbox" id="res-welcome" checked><span class="slider-sw"></span></label>
-        <span class="switch-label">Envoyer email de bienvenue</span>
-      </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Lot</label><input class="form-control" id="res-lot"></div><div class="form-group"><label class="form-label">Tantièmes</label><input class="form-control" id="res-tantiemes" type="number"></div></div>
+      <div class="switch-wrap" id="res-welcome-wrap"><label class="switch"><input type="checkbox" id="res-welcome" checked><span class="slider-sw"></span></label><span class="switch-label">Envoyer email de bienvenue</span></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-resident')">Annuler</button>
-      <button class="btn btn-primary" onclick="submitResident()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-resident')">Annuler</button><button class="btn btn-primary" onclick="submitResident()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button></div>
   </div>
 </div>
 
@@ -964,7 +780,7 @@ textarea.form-control{resize:vertical;min-height:75px}
         <div class="form-group"><label class="form-label">Lot</label><input class="form-control" id="au-lot" placeholder="Ex: 4B"></div>
       </div>
       <div class="form-row">
-        
+        <div class="form-group"><label class="form-label">Tantièmes</label><input class="form-control" id="au-tantiemes" type="number"></div>
         <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="au-tel"></div>
       </div>
     </div>
@@ -1053,10 +869,8 @@ textarea.form-control{resize:vertical;min-height:75px}
     <div class="modal-hdr"><h3><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Planifier une intervention jardinage</h3><button class="close-modal" onclick="closeModal('modal-jardinage')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Villa / Lot concerné(e)</label>
-          <select class="form-control" id="jard-villa-select">
-            <option value="">-- Choisir --</option>
-          </select>
+        <div class="form-group"><label class="form-label">Villa / Lot / Zone</label>
+          <input class="form-control" id="jard-villa" placeholder="Ex: Villa 12, Lot A3, Commun…">
         </div>
         <div class="form-group"><label class="form-label">Date de l'intervention</label>
           <input class="form-control" id="jard-date" type="date">
@@ -1065,7 +879,7 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="form-group"><label class="form-label">Type d'intervention</label>
         <select class="form-control" id="jard-type-select" onchange="document.getElementById('jard-desc').value=this.options[this.selectedIndex].text">
           <option value="tonte">🌿 Tonte de pelouse</option>
-          <option value="taille">✂️ Taille des haies / arbustes</option>
+          <option value="taille">✂️ Taille haies / arbustes</option>
           <option value="arrosage">💧 Arrosage / irrigation</option>
           <option value="nettoyage">🧹 Nettoyage espaces verts</option>
           <option value="plantation">🌱 Plantation</option>
@@ -1073,15 +887,11 @@ textarea.form-control{resize:vertical;min-height:75px}
           <option value="autre">Autre</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Description</label>
-        <textarea class="form-control" id="jard-desc" placeholder="Précisez l'intervention…" style="min-height:60px">Tonte de pelouse</textarea>
+      <div class="form-group"><label class="form-label">Description détaillée</label>
+        <textarea class="form-control" id="jard-desc" placeholder="Précisez l'intervention…" style="min-height:65px">Tonte de pelouse</textarea>
       </div>
       <div class="form-group"><label class="form-label">Prestataire / Jardinier</label>
         <input class="form-control" id="jard-prestataire" placeholder="Nom du prestataire ou jardinier">
-      </div>
-      <div class="switch-wrap" style="margin-top:4px">
-        <label class="switch"><input type="checkbox" id="jard-notifier" checked><span class="slider-sw"></span></label>
-        <span class="switch-label" style="color:#27ae60"><i class="fa-solid fa-bell"></i> Notifier le(s) résident(s) concerné(s) par email</span>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-jardinage')">Annuler</button><button class="btn btn-primary" onclick="submitJardinage()" style="background:#27ae60"><i class="fa-solid fa-leaf"></i> Planifier</button></div>
@@ -1223,63 +1033,9 @@ textarea.form-control{resize:vertical;min-height:75px}
 </div>
 
 
-  <!-- ══ Bottom Navigation Mobile ══ -->
-  <nav id="bottom-nav" role="navigation" aria-label="Navigation principale"></nav>
-
-  <!-- ══ PWA Install Banner ══ -->
-  <div id="pwa-banner" role="complementary" aria-label="Installer l'application">
-    <span id="pwa-banner-icon">🏠</span>
-    <div id="pwa-banner-text">Installer Syndic Jasmine Park
-      <small>Accès rapide depuis votre écran d'accueil</small>
-    </div>
-    <button id="pwa-banner-install">Installer</button>
-    <button id="pwa-banner-close" aria-label="Fermer">✕</button>
-  </div>
-
-  <!-- ══ Offline Banner ══ -->
-  <div id="offline-banner">📶 Connexion perdue — certaines fonctionnalités sont limitées</div>
-
-
+<nav id="bottom-nav"></nav>
 <button class="fab" id="fab-btn" onclick="fabAction()"><i class="fa-solid fa-plus"></i></button>
 <div class="toast" id="toast"><i class="fa-solid fa-circle-check" id="toast-icon"></i><span id="toast-msg"></span></div>
 <script src="app.js"></script>
-
-<script>
-  /* ══ Service Worker Registration ══ */
-  if ('serviceWorker' in navigator) {
-    // Forcer reload du cache SW si nouvelle version
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        regs.forEach(r => r.update());
-      });
-      navigator.serviceWorker.register('/sw.js')
-        .then(reg => {
-          console.log('SW registered:', reg.scope);
-          reg.addEventListener('updatefound', () => {
-            const worker = reg.installing;
-            worker.addEventListener('statechange', () => {
-              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-                showToast('Mise à jour disponible — rechargez la page', 'info');
-              }
-            });
-          });
-        })
-        .catch(err => console.warn('SW registration failed:', err));
-    });
-  }
-
-  /* ══ Offline/Online detection ══ */
-  window.addEventListener('offline', () => {
-    document.getElementById('offline-banner').classList.add('show');
-    document.body.classList.add('offline');
-  });
-  window.addEventListener('online', () => {
-    document.getElementById('offline-banner').classList.remove('show');
-    document.body.classList.remove('offline');
-    showToast && showToast('Connexion rétablie');
-  });
-  if (!navigator.onLine) document.body.classList.add('offline');
-</script>
-
 </body>
 </html>
