@@ -1055,10 +1055,9 @@ async function loadGResidents(){
     </div>
     <div class="card">
       <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Résident</th><th>Lot</th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Résident</th><th>Lot</th><th></th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
         <tbody>${data.map(r=>`<tr>
           <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:6px;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${ini(r)}</div><strong>${r.prenom} ${r.nom}</strong></div></td>
-          <td>${r.lot||'—'}</td>
           <td>${r.lot||'—'}</td>
           <td style="font-size:12px;color:var(--info)">${r.email}</td>
           <td style="font-size:12px">${r.telephone||'—'}</td>
@@ -1711,21 +1710,33 @@ async function submitUploadDoc(){
 
   function openMenu() {
     sidebar.classList.add('open');
-    if (overlay) { overlay.classList.add('show'); }
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
+    // Overlay géré 100% en JS — indépendant du CSS
+    if (overlay) {
+      overlay.style.cssText = [
+        'display:block', 'position:fixed', 'inset:0',
+        'background:rgba(0,0,0,.65)', 'z-index:399',
+        'cursor:pointer', 'backdrop-filter:blur(1px)',
+        '-webkit-backdrop-filter:blur(1px)',
+        'animation:none', 'opacity:1'
+      ].join(';');
+    }
+    document.body.style.setProperty('overflow','hidden','important');
+    document.documentElement.style.setProperty('overflow','hidden','important');
     btn.setAttribute('aria-expanded', 'true');
-    btn.innerHTML = '<i class="fa-solid fa-xmark" style="pointer-events:none"></i>';
+    btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
     btn.style.background = 'rgba(255,255,255,.32)';
+    btn.style.borderRadius = '10px';
   }
 
   function closeMenu() {
     sidebar.classList.remove('open');
-    if (overlay) { overlay.classList.remove('show'); }
-    document.body.style.overflow = '';
-    document.documentElement.style.overflow = '';
+    if (overlay) {
+      overlay.style.cssText = 'display:none';
+    }
+    document.body.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('overflow');
     btn.setAttribute('aria-expanded', 'false');
-    btn.innerHTML = '<i class="fa-solid fa-bars" style="pointer-events:none"></i>';
+    btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
     btn.style.background = 'rgba(255,255,255,.2)';
   }
 
