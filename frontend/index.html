@@ -526,6 +526,61 @@ button, [onclick], .btn, .nav-item, .close-modal {
   background: rgba(0,0,0,0.65) !important;
 }
 
+  
+/* ══ RÉSIDENTS TABLE MOBILE ══ */
+@media(max-width:768px){
+  /* Table scroll horizontal si trop large */
+  #res-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  /* Ou mode card */
+  #res-table-wrap .data-table thead { display: none !important; }
+  #res-table-wrap .data-table tbody tr {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #fff !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    margin-bottom: .625rem !important;
+    padding: .75rem !important;
+  }
+  #res-table-wrap .data-table tbody td {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: .5rem !important;
+    border: none !important;
+    padding: .2rem 0 !important;
+    font-size: 13px !important;
+  }
+  #res-table-wrap .data-table tbody td::before {
+    content: attr(data-label) !important;
+    min-width: 80px !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    color: var(--text-3, #9e9c95) !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+    flex-shrink: 0 !important;
+    padding-top: 2px !important;
+  }
+  #res-table-wrap .data-table tbody td:empty { display: none !important; }
+  /* Boutons d'action dans la card */
+  #res-table-wrap .data-table tbody td[data-label="Actions"] {
+    margin-top: .375rem !important;
+    padding-top: .5rem !important;
+    border-top: 1px solid var(--border) !important;
+  }
+  #res-table-wrap .data-table tbody td[data-label="Actions"] > div {
+    gap: .5rem !important;
+  }
+  #res-table-wrap .data-table tbody td[data-label="Actions"] button {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: 8px !important;
+  }
+}
+
   </style>
 </head>
 <body>
