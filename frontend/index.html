@@ -95,10 +95,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   background:var(--surface);flex-shrink:0;width:100%
 }
 #sidebar.closed{transform:translateX(-100%)}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;backdrop-filter:blur(2px)}
-.sidebar-overlay.show{display:block}
-.nav-section{margin-bottom:1.25rem}
-.nav-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:4px;margin-top:12px;white-space:nowrap;overflow:hidden}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;font-weight:700;letter-spacing:.08em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:4px;margin-top:12px;white-space:nowrap;overflow:hidden}
 .nav-item{display:flex;align-items:center;gap:9px;padding:8px 1.25rem;cursor:pointer;font-size:13px;color:var(--text-2);transition:all .15s;border-right:3px solid transparent;border-left:3px solid transparent;user-select:none;white-space:nowrap;overflow:hidden;width:100%;box-sizing:border-box}
 .nav-item:hover{background:var(--surface2);color:var(--text)}
 .nav-item.active{background:var(--primary-pale);color:var(--primary);font-weight:600;border-right-color:var(--primary)}
@@ -248,9 +245,7 @@ input:checked+.slider-sw{background:var(--primary)}input:checked+.slider-sw::bef
 textarea.form-control{resize:vertical;min-height:75px}
 
 /* ── MODALS ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px)}
-.modal-overlay.show{display:flex}
-.modal{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-md);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:fadeIn .2s ease}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;border-radius:var(--radius);box-shadow:var(--shadow-md);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:fadeIn .2s ease}
 .modal-hdr{padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:10}
 .modal-hdr h3{font-size:14.5px;font-weight:700;color:var(--text)}
 .modal-body{padding:1.4rem}
@@ -579,7 +574,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <div class="modal">
     <div class="modal-hdr"><h3><i class="fa-solid fa-wrench" style="color:var(--primary);mr:6px"></i> Signaler une réclamation</h3><button class="close-modal" onclick="closeModal('modal-incident')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
+      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Ascenseur</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
       <div class="form-group"><label class="form-label">Localisation précise</label><input class="form-control" id="inc-loc" placeholder="Ex: Couloir 3e étage, parking B2…"></div>
       <div class="form-group"><label class="form-label">Description détaillée</label><textarea class="form-control" id="inc-desc" placeholder="Décrivez l'incident avec le maximum de détails…"></textarea></div>
       <div class="form-row">
@@ -820,7 +815,7 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="form-row">
         <div class="form-group"><label class="form-label">Type d'intervention</label>
           <select class="form-control" id="intv-type">
-            <option>Plomberie</option><option>Électricité</option>
+            <option>Plomberie</option><option>Ascenseur</option><option>Électricité</option>
             <option>Parties communes</option><option>Sécurité</option><option>Peinture</option>
             <option>Jardinage</option><option>Toiture</option><option>Nuisances</option><option>Autre</option>
           </select>
