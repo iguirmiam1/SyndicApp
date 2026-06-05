@@ -1059,6 +1059,7 @@ async function loadGResidents(){
         <tbody>${data.map(r=>`<tr>
           <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:6px;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${ini(r)}</div><strong>${r.prenom} ${r.nom}</strong></div></td>
           <td>${r.lot||'—'}</td>
+          <td>${r.lot||'—'}</td>
           <td style="font-size:12px;color:var(--info)">${r.email}</td>
           <td style="font-size:12px">${r.telephone||'—'}</td>
           <td>${statusPill(r.statut_charges||'en_attente')}</td>
