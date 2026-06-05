@@ -190,7 +190,7 @@ async function loadRDashboard(){
   if(b){b.textContent=openInc||'';b.style.display=openInc?'':'none';}
   setPageContent('r-dashboard',`
     <div class="page-hdr">
-      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Villa ${u.lot||'—'}</p></div>
+      <div class="page-hdr-left"><h1>Bonjour, ${u.prenom} ${u.nom} 👋</h1><p>${state.user.residence_nom||'Résidence'} · Appartement ${u.lot||'—'}</p></div>
       <div class="hdr-actions"><button class="btn btn-primary btn-sm" onclick="openModal('modal-incident')"><i class="fa-solid fa-plus"></i> Signaler</button></div>
     </div>
     <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -261,7 +261,7 @@ async function loadRFinances(){
 
 async function loadRIncidents(){
   const data=await GET('/incidents'); if(!data)return;
-  const typeIcon={Plomberie:'droplet','Électricité':'bolt','Parties communes':'building',Sécurité:'shield-halved',Nuisances:'volume-high',Autre:'wrench'};
+  const typeIcon={Plomberie:'droplet',Ascenseur:'elevator','Électricité':'bolt','Parties communes':'building',Sécurité:'shield-halved',Nuisances:'volume-high',Autre:'wrench'};
   const urgIcon={'normal':'','urgent':'','tres_urgent':''};
   const actifs=data.filter(i=>i.statut!=='resolu'&&i.statut!=='ferme');
   const resolus=data.filter(i=>i.statut==='resolu'||i.statut==='ferme');
@@ -2106,42 +2106,147 @@ initApp();
 // BOTTOM NAVIGATION — Mobile
 // ══════════════════════════════════════════════════════════════
 
+// Configuration bottom nav avec indicateur "Plus"
 const BOTTOM_NAV = {
   resident: [
-    { page: 'r-dashboard',  icon: 'fa-house',       label: 'Accueil' },
-    { page: 'r-finances',   icon: 'fa-wallet',      label: 'Paiements', badge: 'nb-paiements-due' },
-    { page: 'r-incidents',  icon: 'fa-wrench',      label: 'Réclamations' },
-    { page: 'r-messagerie', icon: 'fa-comment',     label: 'Messages', badge: 'nb-messages' },
-    { page: 'r-jardinage',  icon: 'fa-leaf',        label: 'Jardinage' },
+    { page: 'r-dashboard',  icon: 'fa-house',        label: 'Accueil' },
+    { page: 'r-finances',   icon: 'fa-wallet',       label: 'Paiements' },
+    { page: 'r-incidents',  icon: 'fa-wrench',       label: 'Réclamations' },
+    { page: 'r-messagerie', icon: 'fa-comment-dots', label: 'Messages' },
+    { page: '__more_r',     icon: 'fa-grid-2',       label: 'Plus' },
   ],
   gestionnaire: [
-    { page: 'g-dashboard',   icon: 'fa-gauge',      label: 'Tableau' },
-    { page: 'g-comptabilite',icon: 'fa-money-bill', label: 'Compta', badge: 'nb-declarations' },
-    { page: 'g-travaux',     icon: 'fa-hard-hat',   label: 'Travaux' },
-    { page: 'g-messagerie',  icon: 'fa-comments',   label: 'Messages' },
-    { page: 'g-residents',   icon: 'fa-people-roof',label: 'Résidents' },
+    { page: 'g-dashboard',   icon: 'fa-gauge-high',  label: 'Tableau' },
+    { page: 'g-comptabilite',icon: 'fa-coins',       label: 'Compta' },
+    { page: 'g-travaux',     icon: 'fa-hard-hat',    label: 'Travaux' },
+    { page: 'g-messagerie',  icon: 'fa-comment-dots',label: 'Messages' },
+    { page: '__more_g',      icon: 'fa-grid-2',      label: 'Plus' },
   ],
   admin: [
-    { page: 'a-dashboard',   icon: 'fa-gauge',      label: 'Dashboard' },
-    { page: 'a-users',       icon: 'fa-users',      label: 'Utilisateurs' },
-    { page: 'g-comptabilite',icon: 'fa-money-bill', label: 'Compta' },
-    { page: 'g-travaux',     icon: 'fa-hard-hat',   label: 'Travaux' },
-    { page: 'g-documents',   icon: 'fa-folder',     label: 'Docs' },
+    { page: 'a-dashboard',   icon: 'fa-gauge-high',  label: 'Dashboard' },
+    { page: 'a-users',       icon: 'fa-users',       label: 'Utilisateurs' },
+    { page: 'g-comptabilite',icon: 'fa-coins',       label: 'Compta' },
+    { page: 'g-travaux',     icon: 'fa-hard-hat',    label: 'Travaux' },
+    { page: '__more_a',      icon: 'fa-grid-2',      label: 'Plus' },
   ],
 };
+
+// Menus "Plus" par rôle (drawer mobile)
+const MORE_MENUS = {
+  resident: [
+    { page: 'r-documents',  icon: 'fa-folder',          label: 'Documents' },
+    { page: 'r-messagerie', icon: 'fa-people-group',     label: 'Forum résidents' },
+    { page: 'r-ag',         icon: 'fa-users-between-lines',label: 'Assemblées' },
+    { page: 'r-jardinage',  icon: 'fa-leaf',             label: 'Jardinage' },
+    { page: 'r-profil',     icon: 'fa-user-circle',      label: 'Mon profil' },
+    { action: 'logout',     icon: 'fa-right-from-bracket',label: 'Déconnexion', danger: true },
+  ],
+  gestionnaire: [
+    { page: 'g-residents',  icon: 'fa-people-roof',      label: 'Résidents' },
+    { page: 'g-documents',  icon: 'fa-folder-open',      label: 'Documents' },
+    { page: 'g-jardinage',  icon: 'fa-leaf',             label: 'Jardinage' },
+    { page: 'g-notifications',icon: 'fa-bell',           label: 'Notifications' },
+    { page: 'g-agenda',     icon: 'fa-calendar',         label: 'Agenda auto' },
+    { page: 'g-bilan',      icon: 'fa-chart-line',       label: 'Bilan financier' },
+    { page: 'g-impayes',    icon: 'fa-triangle-exclamation',label: 'Impayés' },
+    { page: 'g-ag',         icon: 'fa-users-between-lines',label: 'Tenue des AG' },
+    { page: 'g-settings',   icon: 'fa-gear',             label: 'Paramètres' },
+    { action: 'logout',     icon: 'fa-right-from-bracket',label: 'Déconnexion', danger: true },
+  ],
+  admin: [
+    { page: 'a-roles',      icon: 'fa-shield-halved',    label: 'Rôles & Accès' },
+    { page: 'a-residences', icon: 'fa-building',         label: 'Résidences' },
+    { page: 'g-documents',  icon: 'fa-folder-open',      label: 'Documents' },
+    { page: 'g-notifications',icon: 'fa-bell',           label: 'Notifications' },
+    { page: 'g-settings',   icon: 'fa-gear',             label: 'Paramètres' },
+    { action: 'logout',     icon: 'fa-right-from-bracket',label: 'Déconnexion', danger: true },
+  ],
+};
+
+let _moreMenuOpen = false;
+let _currentRole  = '';
+
+function openMoreMenu(role) {
+  const items = MORE_MENUS[role] || [];
+  const overlay = document.createElement('div');
+  overlay.id = 'more-menu-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;flex-direction:column;justify-content:flex-end';
+
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--surface);border-radius:18px 18px 0 0;padding:1rem;max-height:85vh;overflow-y:auto;padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px))';
+
+  sheet.innerHTML = `
+    <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .875rem"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;padding:0 .25rem .625rem">Plus de fonctionnalités</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem">
+      ${items.map(item => `
+        <button onclick="handleMoreItem('${item.page||''}','${item.action||''}')"
+          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;
+                 padding:.875rem .5rem;border-radius:12px;border:none;cursor:pointer;
+                 background:${item.danger?'#fee2e2':'var(--white)'};
+                 color:${item.danger?'var(--danger)':'var(--text)'};
+                 font-size:11px;font-weight:500;
+                 box-shadow:0 1px 3px rgba(0,0,0,.08);
+                 min-height:72px;transition:opacity .15s">
+          <i class="fa-solid ${item.icon}" style="font-size:1.25rem;${item.danger?'':'color:var(--primary)'}"></i>
+          ${item.label}
+        </button>`).join('')}
+    </div>`;
+
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click', (e) => { if(e.target===overlay) closeMoreMenu(); });
+
+  // Swipe down pour fermer
+  let startY = 0;
+  sheet.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive:true });
+  sheet.addEventListener('touchend', e => {
+    if(e.changedTouches[0].clientY - startY > 80) closeMoreMenu();
+  }, { passive:true });
+
+  document.getElementById('more-menu-overlay')?.remove();
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+  _moreMenuOpen = true;
+  // Animation entrée
+  requestAnimationFrame(() => sheet.style.transform = 'translateY(0)');
+}
+
+function closeMoreMenu() {
+  const overlay = document.getElementById('more-menu-overlay');
+  if(overlay) overlay.remove();
+  document.body.style.overflow = '';
+  _moreMenuOpen = false;
+}
+
+function handleMoreItem(page, action) {
+  closeMoreMenu();
+  if(action === 'logout') { doLogout(); return; }
+  if(page) showPage(page);
+}
+
+
 
 function renderBottomNav(role, currentPage){
   const nav = document.getElementById('bottom-nav');
   if(!nav) return;
+  _currentRole = role;
   const items = BOTTOM_NAV[role] || [];
-  nav.innerHTML = items.map(item => `
-    <button class="bn-item${currentPage===item.page?' active':''}"
-            onclick="showPage('${item.page}')"
-            aria-label="${item.label}"
-            aria-current="${currentPage===item.page?'page':'false'}">
-      <i class="fa-solid ${item.icon}" aria-hidden="true"></i>
-      <span>${item.label}</span>
-    </button>`).join('');
+  nav.innerHTML = items.map(item => {
+    const isMore = item.page.startsWith('__more');
+    const isActive = !isMore && currentPage===item.page;
+    const handler = isMore
+      ? 'openMoreMenu(' + JSON.stringify(role) + ')'
+      : 'showPage(' + JSON.stringify(item.page) + ')';
+    return '<button class="bn-item' + (isActive?' active':'') + '"'
+      + ' onclick="' + handler + '"'
+      + ' aria-label="' + item.label + '"'
+      + (isActive ? ' aria-current="page"' : '')
+      + (isMore ? ' style="color:var(--text-3)"' : '')
+      + '>'
+      + '<i class="fa-solid ' + item.icon + '" aria-hidden="true"></i>'
+      + '<span>' + item.label + '</span>'
+      + '</button>';
+  }).join('');
 }
 
 function updateBottomNavActive(page){
