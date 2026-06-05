@@ -1720,70 +1720,119 @@ async function submitUploadDoc(){
 // ── Sidebar / Modals ──────────────────────────────────────
 // ── Hamburger + Sidebar Mobile ──────────────────────────────────
 (function initSidebar() {
-  const btn      = document.getElementById('hamburger-btn');
-  const sidebar  = document.getElementById('sidebar');
-  const overlay  = document.getElementById('sidebar-overlay');
-  if (!btn || !sidebar) return;
+  const btn     = document.getElementById('hamburger-btn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (!btn || !sidebar) { console.warn('[Sidebar] Elements not found'); return; }
 
-  function isMenuOpen() { return sidebar.classList.contains('open'); }
+  let _open = false;
+  let _touchStartX = 0;
+  let _isBusy = false;
+
+  function isOpen() { return _open; }
 
   function openMenu() {
+    if (_open) return;
+    _open = true;
     sidebar.classList.add('open');
     overlay && overlay.classList.add('show');
     document.body.style.overflow = 'hidden';
-    btn.setAttribute('aria-expanded', 'true');
     btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    btn.style.background = 'rgba(255,255,255,.3)';
+    btn.setAttribute('aria-expanded', 'true');
+    console.log('[Sidebar] Opened');
   }
 
   function closeMenu() {
+    if (!_open) return;
+    _open = false;
     sidebar.classList.remove('open');
     overlay && overlay.classList.remove('show');
     document.body.style.overflow = '';
-    btn.setAttribute('aria-expanded', 'false');
     btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    btn.style.background = 'rgba(255,255,255,.15)';
+    btn.setAttribute('aria-expanded', 'false');
+    console.log('[Sidebar] Closed');
   }
 
-  function toggleMenu(e) {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    isMenuOpen() ? closeMenu() : openMenu();
+  function toggleMenu() {
+    _open ? closeMenu() : openMenu();
   }
 
-  // Événements bouton — touch en priorité pour supprimer le délai 300ms
-  btn.addEventListener('pointerdown', toggleMenu, { passive: false });
+  // ── Bouton hamburger — événements multiples pour max compatibilité ──
+  let _lastToggle = 0;
+  function onBtnActivate(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - _lastToggle < 300) return; // Anti-double-fire
+    _lastToggle = now;
+    toggleMenu();
+  }
 
-  // Fermer en cliquant sur l'overlay
-  if (overlay) overlay.addEventListener('pointerdown', (e) => { e.preventDefault(); closeMenu(); }, { passive: false });
-
-  // Fermer quand on navigue (clic sur un item du menu)
-  sidebar.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('pointerdown', () => setTimeout(closeMenu, 150));
+  // Priorité 1 : touchstart (iOS/Android — immédiat, sans délai 300ms)
+  btn.addEventListener('touchstart', onBtnActivate, { passive: false });
+  // Priorité 2 : mousedown (desktop / simulateurs)
+  btn.addEventListener('mousedown', onBtnActivate);
+  // Priorité 3 : click (fallback universel)
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Si touchstart a déjà géré l'événement, skip
+    if (Date.now() - _lastToggle < 300) return;
+    _lastToggle = Date.now();
+    toggleMenu();
   });
 
-  // Swipe gauche pour fermer
-  let touchStartX = 0;
-  sidebar.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
-  sidebar.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (dx < -60) closeMenu();
+  // ── Overlay — fermer en touchant dehors ──
+  if (overlay) {
+    overlay.addEventListener('touchstart', (e) => { e.preventDefault(); closeMenu(); }, { passive: false });
+    overlay.addEventListener('mousedown', (e) => { e.preventDefault(); closeMenu(); });
+  }
+
+  // ── Items de nav — fermer au clic ──
+  document.addEventListener('click', (e) => {
+    if (_open && e.target.closest && e.target.closest('.nav-item')) {
+      setTimeout(closeMenu, 200);
+    }
+  });
+
+  // ── Swipe geste ──
+  document.addEventListener('touchstart', (e) => {
+    _touchStartX = e.touches[0]?.clientX ?? 0;
   }, { passive: true });
 
-  // Swipe droit pour ouvrir (depuis le bord gauche)
-  document.addEventListener('touchstart', e => {
-    if (e.touches[0].clientX < 20) touchStartX = e.touches[0].clientX;
-  }, { passive: true });
-  document.addEventListener('touchend', e => {
-    const startedAtEdge = touchStartX < 20;
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (startedAtEdge && dx > 60 && !isMenuOpen()) openMenu();
-    touchStartX = 0;
+  document.addEventListener('touchend', (e) => {
+    const endX = e.changedTouches[0]?.clientX ?? 0;
+    const dx   = endX - _touchStartX;
+    // Swipe droit depuis bord gauche → ouvrir
+    if (_touchStartX < 25 && dx > 55 && !_open) openMenu();
+    // Swipe gauche quand ouvert → fermer
+    if (_open && dx < -55) closeMenu();
+    _touchStartX = 0;
   }, { passive: true });
 
-  // Echap clavier
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+  // ── Clavier ──
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 
-  // Exposer closeSidebar globalement (utilisé ailleurs)
-  window.closeSidebar = closeMenu;
+  // ── Fermer en changeant d'orientation ──
+  window.addEventListener('orientationchange', () => setTimeout(closeMenu, 100));
+  window.addEventListener('resize', () => {
+    // En desktop (≥ 1025px + haut ≥ 600px), le sidebar doit toujours être visible
+    if (window.innerWidth >= 1025 && window.innerHeight >= 600) {
+      sidebar.classList.remove('open');
+      overlay && overlay.classList.remove('show');
+      document.body.style.overflow = '';
+      _open = false;
+    }
+  });
+
+  // ── Exposer globalement ──
   window.openSidebar  = openMenu;
+  window.closeSidebar = closeMenu;
+  window.toggleSidebar = toggleMenu;
+
+  console.log('[Sidebar] Init OK, btn:', btn, 'sidebar:', sidebar);
 })();
 
 
@@ -2102,5 +2151,3 @@ function updateBottomNavActive(page){
     btn.setAttribute('aria-current', p === page ? 'page' : 'false');
   });
 }
-
-
