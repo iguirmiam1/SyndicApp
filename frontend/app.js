@@ -1064,20 +1064,23 @@ async function togglePresence(agId,residentId,currentMode,el){
 
 async function loadGResidents(){
   const data=await GET('/residents'); if(!data)return;
+  window._jardinage_villas = data.map(r=>({lot:r.lot||'',prenom:r.prenom||'',nom:r.nom||'',id:r.id})).filter(r=>r.lot);
   setPageContent('g-residents',`
     <div class="page-hdr"><div class="page-hdr-left"><h1>Résidents</h1><p>${data.length} copropriétaires</p></div>
       <div class="hdr-actions"><button class="btn btn-primary" onclick="openResidentModal()"><i class="fa-solid fa-user-plus"></i> Ajouter un résident</button></div>
     </div>
     <div class="card">
-      <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Résident</th><th>Lot</th><th>Tantièmes</th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
+      <div id="res-list-container"></div>
+      <script>document.getElementById('res-list-container') && renderResidentList(window._last_residents||[]);</script>
+      <div style="overflow-x:auto" id="res-table-wrap"><table class="data-table">
+        <thead><tr><th>Résident</th><th>Lot</th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
         <tbody>${data.map(r=>`<tr>
-          <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:6px;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${ini(r)}</div><strong>${r.prenom} ${r.nom}</strong></div></td>
-          <td>${r.lot||'—'}</td><td>${r.tantiemes||0}/1000</td>
-          <td style="font-size:12px;color:var(--info)">${r.email}</td>
-          <td style="font-size:12px">${r.telephone||'—'}</td>
-          <td>${statusPill(r.statut_charges||'en_attente')}</td>
-          <td><div style="display:flex;gap:4px">
+          <td data-label="Résident"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:6px;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${ini(r)}</div><strong>${r.prenom} ${r.nom}</strong></div></td>
+          <td data-label="Lot">${r.lot||'—'}</td>
+          <td data-label="Email" style="font-size:12px;color:var(--info)">${r.email}</td>
+          <td data-label="Tél." style="font-size:12px">${r.telephone||'—'}</td>
+          <td data-label="Statut">${statusPill(r.statut_charges||'en_attente')}</td>
+          <td data-label="Actions"><div style="display:flex;gap:4px">
             <button class="btn-icon btn-sm" title="Modifier" onclick='openResidentModal(${JSON.stringify(r)})'><i class="fa-solid fa-edit"></i></button>
             <button class="btn-icon btn-sm" title="Email bienvenue" onclick="sendBienvenueEmail(${r.id})" style="color:var(--primary)"><i class="fa-solid fa-envelope"></i></button>
             <button class="btn-icon btn-sm" title="Supprimer" style="color:var(--danger)" onclick="deleteResident(${r.id},'${r.prenom} ${r.nom}')"><i class="fa-solid fa-trash"></i></button>
@@ -1643,7 +1646,18 @@ async function loadGJardinage(){
     </div>`);
 }
 
-function openJardinageModal(villaPreset){
+async function openJardinageModal(villaPreset){
+  // Charger les résidents depuis l'API si pas encore fait
+  if(!window._jardinage_villas || window._jardinage_villas.length === 0) {
+    try {
+      const residents = await GET('/residents');
+      if(residents && residents.length > 0) {
+        window._jardinage_villas = residents.map(r => ({
+          lot: r.lot||'', prenom: r.prenom||'', nom: r.nom||'', id: r.id
+        })).filter(r => r.lot);
+      }
+    } catch(e) { console.warn('Jardinage: cannot load residents', e); }
+  }
   const villas = window._jardinage_villas || [];
   const sel = document.getElementById('jard-villa-select');
   if(sel){
