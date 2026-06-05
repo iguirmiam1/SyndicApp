@@ -538,6 +538,35 @@ textarea.form-control{resize:vertical;min-height:75px}
   }
 }
 
+  
+/* ══ OVERRIDE FINAL — priorité absolue ══ */
+@media(max-width:1024px),(max-height:599px) and (orientation:landscape){
+  #sidebar{
+    position:fixed!important;
+    top:0!important;left:0!important;
+    width:min(280px,80vw)!important;
+    height:100vh!important;
+    transform:translateX(-100%)!important;
+    transition:transform .28s cubic-bezier(.4,0,.2,1)!important;
+    z-index:400!important;
+    overflow-y:auto!important;
+    display:flex!important;flex-direction:column!important;
+  }
+  #sidebar.open{transform:translateX(0)!important}
+  #sidebar-overlay{
+    position:fixed!important;inset:0!important;
+    z-index:399!important;
+    pointer-events:auto!important;
+  }
+  /* Main content — jamais au-dessus du sidebar */
+  #main{z-index:0!important;position:relative!important}
+  /* Bottom nav — sous le sidebar */
+  #bottom-nav{z-index:150!important}
+  /* Header — au-dessus de tout */
+  .topbar{z-index:500!important}
+  #hamburger-btn{z-index:600!important;position:relative!important}
+}
+
   </style>
 </head>
 <body>
@@ -1218,7 +1247,11 @@ textarea.form-control{resize:vertical;min-height:75px}
 <script>
   /* ══ Service Worker Registration ══ */
   if ('serviceWorker' in navigator) {
+    // Forcer reload du cache SW si nouvelle version
     window.addEventListener('load', () => {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.update());
+      });
       navigator.serviceWorker.register('/sw.js')
         .then(reg => {
           console.log('SW registered:', reg.scope);
