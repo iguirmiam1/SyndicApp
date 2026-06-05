@@ -38,7 +38,26 @@ function fmtDateTime(d){if(!d)return'—';return new Date(d).toLocaleString('fr-
 function ini(u){return((u.prenom||'?')[0]+(u.nom||'?')[0]).toUpperCase();}
 
 // ── AUTH ──────────────────────────────────────────────────
-
+function fillLogin(e,p){document.getElementById('login-email').value=e;document.getElementById('login-password').value=p;}
+async function doLogin() {
+  const email=document.getElementById('login-email').value.trim();
+  const pwd=document.getElementById('login-password').value;
+  const btn=document.getElementById('login-submit');
+  const err=document.getElementById('login-error');
+  err.style.display='none';
+  if(!email||!pwd){document.getElementById('login-error-msg').textContent='Remplissez tous les champs.';err.style.display='flex';return;}
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Connexion…';
+  try {
+    const data=await POST('/auth/login',{email,password:pwd});
+    if(!data)return;
+    state.token=data.token; state.user=data.user;
+    localStorage.setItem('sp_token',data.token);
+    initApp();
+  } catch(e){
+    document.getElementById('login-error-msg').textContent=e.error||'Identifiants incorrects.';
+    err.style.display='flex';
+  } finally { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i> Se connecter'; }
+}
 document.getElementById('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 function doLogout(){
@@ -77,26 +96,21 @@ async function initApp(){
     document.getElementById('user-av').style.background='var(--violet)';
     document.getElementById('user-role-top').textContent='Administrateur';
     showNav('nav-admin');
-    renderBottomNav('admin', 'a-dashboard');
+    renderBottomNav('admin','a-dashboard');
     showPage('a-dashboard');
   } else if(u.role==='gestionnaire'){
     document.getElementById('user-av').style.background='var(--accent)';
     document.getElementById('user-role-top').textContent='Gestionnaire · Syndic';
     showNav('nav-gestionnaire');
-    renderBottomNav('gestionnaire', 'g-dashboard');
+    renderBottomNav('gestionnaire','g-dashboard');
     showPage('g-dashboard');
   } else {
     document.getElementById('user-av').style.background='var(--info)';
     document.getElementById('user-role-top').textContent=`Copropriétaire · Lot ${u.lot||'—'}`;
     showNav('nav-resident');
-    renderBottomNav('resident', 'r-dashboard');
+    renderBottomNav('resident','r-dashboard');
     showPage('r-dashboard');
   }
-
-  // PWA install prompt
-  initPWAInstall();
-  // Demander permission push notifications (Phase 4)
-  setTimeout(initPushNotifications, 3000);
 }
 
 // ── NAVIGATION ────────────────────────────────────────────
@@ -495,6 +509,7 @@ function renderRProfil(){
         </div>
         <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);font-size:13px;color:var(--text-2)">
           <div>Lot : <strong>${u.lot||'—'}</strong></div>
+          <div style="margin-top:4px">Tantièmes : <strong>${u.tantiemes||0}/1000</strong></div>
           <div style="margin-top:4px">Résidence : <strong>${state.user.residence_nom||'—'}</strong></div>
         </div>
       </div>
@@ -1055,10 +1070,10 @@ async function loadGResidents(){
     </div>
     <div class="card">
       <div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Résident</th><th>Lot</th><th></th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Résident</th><th>Lot</th><th>Tantièmes</th><th>Email</th><th>Tél.</th><th>Statut charges</th><th>Actions</th></tr></thead>
         <tbody>${data.map(r=>`<tr>
           <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:6px;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${ini(r)}</div><strong>${r.prenom} ${r.nom}</strong></div></td>
-          <td>${r.lot||'—'}</td>
+          <td>${r.lot||'—'}</td><td>${r.tantiemes||0}/1000</td>
           <td style="font-size:12px;color:var(--info)">${r.email}</td>
           <td style="font-size:12px">${r.telephone||'—'}</td>
           <td>${statusPill(r.statut_charges||'en_attente')}</td>
@@ -1072,34 +1087,23 @@ async function loadGResidents(){
 }
 
 function openResidentModal(r=null){
-  // Fermer tout modal déjà ouvert
-  document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
   const isEdit=!!r;
   document.getElementById('modal-res-title').innerHTML=`<i class="fa-solid fa-user-${isEdit?'edit':'plus'}" style="color:var(--primary)"></i> ${isEdit?'Modifier':'Nouveau'} résident`;
   document.getElementById('res-id').value=r?.id||'';
-  ['prenom','nom','email','tel','lot'].forEach(f=>document.getElementById('res-'+f).value=(r?.[f==='tel'?'telephone':f])||'');
-  const pwdField=document.getElementById('res-password');
-  if(pwdField)pwdField.value='';
-  const welcomeWrap=document.getElementById('res-welcome-wrap');
-  if(welcomeWrap)welcomeWrap.style.display=isEdit?'none':'';
-  const welcomeCheck=document.getElementById('res-welcome');
-  if(welcomeCheck)welcomeCheck.checked=true;
+  ['prenom','nom','email','tel','lot','tantiemes'].forEach(f=>document.getElementById('res-'+f).value=r?.(f==='tel'?'telephone':f)||'');
+  document.getElementById('res-welcome-wrap').style.display=isEdit?'none':'';
   openModal('modal-resident');
 }
 
 async function submitResident(){
   const id=document.getElementById('res-id').value;
-  const body={prenom:document.getElementById('res-prenom').value,nom:document.getElementById('res-nom').value,email:document.getElementById('res-email').value,telephone:document.getElementById('res-tel').value,lot:document.getElementById('res-lot').value};
+  const body={prenom:document.getElementById('res-prenom').value,nom:document.getElementById('res-nom').value,email:document.getElementById('res-email').value,telephone:document.getElementById('res-tel').value,lot:document.getElementById('res-lot').value,tantiemes:parseInt(document.getElementById('res-tantiemes').value)||0};
   if(!body.prenom||!body.nom||!body.email)return showError('Champs requis manquants');
   try{
     if(id){await PUT('/residents/'+id,body);showToast(' Résident mis à jour');}
     else{const r=await POST('/residents',body);showToast(' Résident créé');if(document.getElementById('res-welcome').checked&&r?.id)sendBienvenueEmail(r.id);}
     closeModal('modal-resident');loaded.delete('g-residents');loadGResidents();
-  }catch(e){
-    if(e.error?.includes('409')||e.error?.includes('déjà')||e.error?.includes('unique'))
-      showError('Email déjà utilisé — ce résident existe peut-être déjà.');
-    else showError(e.error||'Erreur création résident');
-  }
+  }catch(e){showError(e.error||'Erreur');}
 }
 
 async function deleteResident(id,nom){
@@ -1109,11 +1113,6 @@ async function deleteResident(id,nom){
 }
 
 // ── Documents Gestionnaire ────────────────────────────────
-
-async function sendBienvenueEmail(userId){
-  try{await POST('/notifications/bienvenue/'+userId,{});showToast('Email bienvenue envoyé');}
-  catch{showError('Email non configuré — ajoutez SMTP_USER dans Render');}
-}
 async function loadGDocuments(){
   const data=await GET('/documents'); if(!data)return;
   const cats={ag:'Assemblées Générales',reglementation:'Réglementation',contrats:'Contrats',financier:'Financier',autre:'Autres'};
@@ -1470,6 +1469,208 @@ async function loadAUsers(){
     </div>`);
 }
 
+async function loadARoles(){
+  const users=await GET('/admin/users'); if(!users)return;
+  const rc={admin:'var(--violet)',gestionnaire:'var(--accent)',resident:'var(--info)'};
+  setPageContent('a-roles',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Rôles & Accès</h1></div></div>
+    <div class="card"><div style="overflow-x:auto"><table class="data-table">
+      <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle actuel</th><th>Modifier le rôle</th></tr></thead>
+      <tbody>${users.map(u=>`<tr>
+        <td><strong>${u.prenom} ${u.nom}</strong></td><td style="font-size:12px">${u.email}</td>
+        <td><span class="pill" style="background:${rc[u.role]}18;color:${rc[u.role]}">${u.role}</span></td>
+        <td><div style="display:flex;gap:6px;align-items:center">
+          <select class="form-control" id="rs-${u.id}" style="padding:4px 8px;font-size:12px;max-width:130px">
+            <option value="resident" ${u.role==='resident'?'selected':''}>Résident</option>
+            <option value="gestionnaire" ${u.role==='gestionnaire'?'selected':''}>Gestionnaire</option>
+            <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+          </select>
+          <button class="btn btn-primary btn-xs" onclick="changeRole(${u.id})"><i class="fa-solid fa-check"></i> Appliquer</button>
+        </div></td></tr>`).join('')}
+      </tbody></table></div>
+    </div>`);
+}
+
+async function loadATypes(kind){
+  const data=await GET('/admin/types-'+kind); if(!data)return;
+  const titles={charges:'Types de charges',depenses:'Types de dépenses',reclamations:'Types de réclamations'};
+  const prioCols={faible:'pill-gray',normale:'pill-blue',haute:'pill-orange',urgente:'pill-red'};
+  setPageContent('a-types-'+kind,`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>${titles[kind]}</h1><p>${data.length} type(s) configuré(s)</p></div>
+      <div class="hdr-actions"><button class="btn btn-primary" onclick="openTypeModal('${kind}')"><i class="fa-solid fa-plus"></i> Ajouter un type</button></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-tags"></i> Catalogue
+        <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openTypeModal('${kind}')"><i class="fa-solid fa-plus"></i> Nouveau</button></div>
+      </div>
+      ${data.length?`<div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Nom</th>${kind==='depenses'?'<th>Catégorie</th>':''}<th>Description</th>${kind==='reclamations'?'<th>Priorité</th><th>Délai</th>':''}<th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>${data.map(t=>`<tr>
+          <td><strong>${t.nom}</strong></td>
+          ${kind==='depenses'?`<td><span class="pill pill-blue">${t.categorie||'—'}</span></td>`:''}
+          <td style="color:var(--text-2);font-size:12px">${t.description||'—'}</td>
+          ${kind==='reclamations'?`<td><span class="pill ${prioCols[t.priorite]||'pill-gray'}">${t.priorite}</span></td><td>${t.delai_traitement_jours||7}j</td>`:''}
+          <td>${t.actif?`<span class="pill pill-green">Actif</span>`:`<span class="pill pill-gray">Inactif</span>`}</td>
+          <td><div style="display:flex;gap:4px">
+            <button class="btn-icon btn-sm" onclick='openTypeModal("${kind}",${JSON.stringify(t)})'><i class="fa-solid fa-edit"></i></button>
+            <button class="btn-icon btn-sm" style="color:var(--danger)" onclick="deleteType('${kind}',${t.id},'${t.nom}')"><i class="fa-solid fa-trash"></i></button>
+          </div></td></tr>`).join('')}
+        </tbody></table></div>`:`<div class="empty-state"><i class="fa-solid fa-tags"></i><p>Aucun type configuré</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openTypeModal('${kind}')"><i class="fa-solid fa-plus"></i> Créer le premier</button></div>`}
+    </div>`);
+}
+
+async function loadAResidences(){
+  const data=await GET('/admin/residences'); if(!data)return;
+  setPageContent('a-residences',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Résidences</h1><p>${data.length} résidence(s)</p></div></div>
+    <div class="card"><div style="overflow-x:auto"><table class="data-table">
+      <thead><tr><th>Nom</th><th>Adresse</th><th>Ville</th><th>Lots</th><th>Utilisateurs</th></tr></thead>
+      <tbody>${data.map(r=>`<tr><td><strong>${r.nom}</strong></td><td>${r.adresse}</td><td>${r.ville}</td><td>${r.nb_lots}</td><td><span class="pill pill-blue">${r.nb_utilisateurs}</span></td></tr>`).join('')}</tbody>
+    </table></div></div>`);
+}
+
+async function loadANotifLog(){
+  const log=await GET('/notifications/log').catch(()=>[]);
+  const sc={sent:'pill-green',failed:'pill-red',pending:'pill-yellow'};
+  setPageContent('a-notifications-log',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Log Notifications</h1><p>${(log||[]).length} entrée(s)</p></div>
+      <div class="hdr-actions"><button class="btn btn-ghost btn-sm" onclick="testEmail()"><i class="fa-solid fa-flask"></i> Tester</button></div>
+    </div>
+    <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric"><div class="metric-icon"><i class="fa-solid fa-envelope"></i></div><div class="metric-val">${(log||[]).filter(n=>n.type==='email').length}</div><div class="metric-label">Emails</div></div>
+      <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-brands fa-whatsapp"></i></div><div class="metric-val">${(log||[]).filter(n=>n.type==='whatsapp').length}</div><div class="metric-label">SMS</div></div>
+      <div class="metric danger"><div class="metric-icon"><i class="fa-solid fa-circle-exclamation"></i></div><div class="metric-val">${(log||[]).filter(n=>n.status==='failed').length}</div><div class="metric-label">Échecs</div></div>
+    </div>
+    <div class="card"><div style="overflow-x:auto"><table class="data-table">
+      <thead><tr><th>Date</th><th>Type</th><th>Événement</th><th>Destinataire</th><th>Statut</th></tr></thead>
+      <tbody>${(log||[]).map(n=>`<tr><td>${fmtDateTime(n.created_at)}</td><td><span class="pill ${n.type==='email'?'pill-blue':'pill-green'}">${n.type}</span></td><td><span class="pill pill-gray">${n.event}</span></td><td style="font-size:12px">${n.recipient_email||'—'}</td><td><span class="pill ${sc[n.status]||'pill-gray'}">${n.status}</span></td></tr>`).join('')}
+      </tbody></table></div></div>`);
+}
+
+
+// ====================== JARDINAGE ==========================
+
+// Helpers jardinage date
+function extractJardDate(desc){
+  if(!desc)return '—';
+  const m=desc.match(/\s*([^|]+)\|/);
+  return m?m[1].trim():'—';
+}
+function extractJardDesc(desc){
+  if(!desc)return desc||'—';
+  const m=desc.match(/\|\s*(.+)$/);
+  return m?m[1].trim():desc;
+}
+async function loadRJardinage(){
+  // Lire les interventions jardinage depuis les incidents de type Jardinage
+  const all=await GET('/incidents'); if(!all)return;
+  const now=new Date();
+  const jardins=all.filter(i=>i.type==='Jardinage'||i.type==='jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const aVenir=jardins.filter(i=>i.statut!=='resolu'&&i.statut!=='ferme');
+  const passes=jardins.filter(i=>i.statut==='resolu').slice(0,5);
+  const typeIcon={tonte:'scissors',taille:'leaf',arrosage:'droplet',nettoyage:'broom',plantation:'seedling',traitement:'spray-can-sparkles'};
+  setPageContent('r-jardinage',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Planning Jardinage</h1><p>Espaces verts de la résidence</p></div></div>
+    <div class="card" style="background:linear-gradient(135deg,#1a7a52 0%,#27ae60 100%);border:none;color:#fff">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <div style="font-size:3rem"></div>
+        <div><div style="font-size:1.2rem;font-weight:700">Espaces verts — ${state.user.residence_nom||'Résidence'}</div>
+        <div style="opacity:.8;font-size:13px;margin-top:4px">${aVenir.length} intervention(s) planifiée(s) · Prestataire : ${aVenir[0]?.prestataire||'Voir avec le syndic'}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-calendar-days" style="color:#27ae60"></i> Interventions planifiées</div>
+      ${aVenir.length?`<div style="display:flex;flex-direction:column;gap:8px">
+        ${aVenir.map(j=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border-left:4px solid #27ae60">
+          <div style="width:42px;height:42px;border-radius:9px;background:#e8f8f0;color:#27ae60;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0"></div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${j.localisation||'Espaces communs'}</div>
+            <div style="font-size:12px;color:var(--text-2);margin-top:2px">${j.description||j.type}</div>
+            ${j.prestataire?`<div style="font-size:11px;color:#27ae60;margin-top:2px"><i class="fa-solid fa-user-gear"></i> ${j.prestataire}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${fmtDate(j.created_at)}</div>
+            <span class="pill" style="background:#e8f8f0;color:#27ae60;margin-top:4px">${j.statut==='en_cours'?'En cours':'Planifié'}</span>
+          </div>
+        </div>`).join('')}
+      </div>`:`<div class="empty-state"><i class="fa-solid fa-leaf" style="color:#27ae60"></i><p>Aucune intervention planifiée</p></div>`}
+    </div>
+    ${passes.length?`<div class="card"><div class="card-hdr"><i class="fa-solid fa-clock-rotate-left"></i> Interventions passées</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${passes.map(j=>`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:6px;opacity:.7">
+          <span style="font-size:1.2rem"></span>
+          <div style="flex:1;font-size:13px;color:var(--text-2)">${j.localisation||'Espaces communs'} — ${j.description||''}</div>
+          <div style="font-size:11px;color:var(--text-3)">${fmtDate(j.date_resolution)}</div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}`);
+}
+
+async function loadGJardinage(){
+  const all=await GET('/incidents'); if(!all)return;
+  const jardins=all.filter(i=>i.type==='Jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  setPageContent('g-jardinage',`
+    <div class="page-hdr"><div class="page-hdr-left"><h1>Planning Jardinage</h1><p>${jardins.length} intervention(s) configurée(s)</p></div>
+      <div class="hdr-actions"><button class="btn btn-primary" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Planifier une intervention</button></div>
+    </div>
+    <div class="card" style="background:linear-gradient(135deg,#1a7a52 0%,#27ae60 100%);border:none;color:#fff;padding:1.25rem">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <div style="font-size:2.5rem"></div>
+        <div><div style="font-size:1.1rem;font-weight:700">Gestion espaces verts</div>
+        <div style="opacity:.8;font-size:13px">Planifiez les interventions par villa/lot et par date</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-calendar-days" style="color:#27ae60"></i> Interventions planifiées
+        <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Ajouter</button></div>
+      </div>
+      ${jardins.length?`<div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Villa / Lot</th><th>Date planifiée</th><th>Type</th><th>Date saisie</th><th>Description</th><th>Prestataire</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>${jardins.map(j=>`<tr>
+          <td><strong>${j.localisation||'Commun'}</strong></td>
+          <td>${fmtDate(j.created_at)}</td>
+          <td><span style="background:#e8f8f0;color:#27ae60;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600"> Jardinage</span></td>
+          <td style="font-weight:600;color:var(--text)">${extractJardDate(j.description)}</td>
+          <td style="color:var(--text-2);font-size:12px">${extractJardDesc(j.description)}</td>
+          <td>${j.prestataire||'—'}</td>
+          <td>${statusPill(j.statut)}</td>
+          <td><div style="display:flex;gap:4px">
+            <button class="btn-icon btn-sm" onclick='openEditIntervention(${JSON.stringify(j).replace(/`/g,"'")})'><i class="fa-solid fa-edit"></i></button>
+            ${j.statut!=='resolu'?`<button class="btn btn-primary btn-xs" onclick="resolveIncident(${j.id})"><i class="fa-solid fa-check"></i></button>`:''}
+          </div></td>
+        </tr>`).join('')}</tbody>
+      </table></div>`:`<div class="empty-state"><i class="fa-solid fa-leaf" style="color:#27ae60"></i><p>Aucune intervention planifiée</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Planifier la première</button></div>`}
+    </div>`);
+}
+
+async function submitJardinage(){
+  const villa=document.getElementById('jard-villa').value.trim();
+  const date=document.getElementById('jard-date').value;
+  const desc=document.getElementById('jard-desc').value.trim();
+  const prest=document.getElementById('jard-prestataire').value.trim();
+  if(!villa)return showError('Villa/Lot requis');
+  if(!date)return showError('Date requise');
+  // Formater la description avec la date pour affichage
+  const dateLabel=new Date(date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const body={
+    type:'Jardinage',
+    localisation:villa,
+    description:` ${dateLabel} | ${desc||'Intervention jardinage'}`,
+    prestataire:prest,
+    urgence:'normal',
+    statut:'ouvert',
+  };
+  try{
+    await POST('/incidents',body);
+    showToast(' Intervention jardinage planifiée pour le '+dateLabel);
+    closeModal('modal-jardinage');
+    ['jard-villa','jard-date','jard-desc','jard-prestataire'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    loaded.delete('g-jardinage');loaded.delete('r-jardinage');
+    loadGJardinage();
+  }catch(e){showError(e.error||'Erreur');}
+}
+
+// ── Admin Actions ─────────────────────────────────────────
 function openUserModal(user){
   document.getElementById('modal-user-title').innerHTML=`<i class="fa-solid fa-user-${user?'edit':'plus'}" style="color:var(--primary)"></i> ${user?'Modifier':'Nouvel'} utilisateur`;
   document.getElementById('au-id').value=user?.id||'';
@@ -1479,7 +1680,7 @@ function openUserModal(user){
   document.getElementById('au-password').value='';
   document.getElementById('au-role').value=user?.role||'resident';
   document.getElementById('au-lot').value=user?.lot||'';
-  
+  document.getElementById('au-tantiemes').value=user?.tantiemes||'';
   document.getElementById('au-tel').value=user?.telephone||'';
   openModal('modal-admin-user');
 }
@@ -1487,7 +1688,7 @@ function openUserModal(user){
 async function submitAdminUser(){
   const id=document.getElementById('au-id').value;
   const pwd=document.getElementById('au-password').value;
-  const body={prenom:document.getElementById('au-prenom').value,nom:document.getElementById('au-nom').value,email:document.getElementById('au-email').value,role:document.getElementById('au-role').value,lot:document.getElementById('au-lot').value,telephone:document.getElementById('au-tel').value};
+  const body={prenom:document.getElementById('au-prenom').value,nom:document.getElementById('au-nom').value,email:document.getElementById('au-email').value,role:document.getElementById('au-role').value,lot:document.getElementById('au-lot').value,tantiemes:parseInt(document.getElementById('au-tantiemes').value)||0,telephone:document.getElementById('au-tel').value};
   if(pwd)body.password=pwd;
   if(!body.prenom||!body.nom||!body.email)return showError('Champs requis manquants');
   try{
@@ -1699,457 +1900,164 @@ async function submitUploadDoc(){
 }
 
 // ── Sidebar / Modals ──────────────────────────────────────
-// ── Hamburger + Sidebar Mobile ──────────────────────────────────
-(function initSidebar() {
-  const btn      = document.getElementById('hamburger-btn');
-  const sidebar  = document.getElementById('sidebar');
-  const overlay  = document.getElementById('sidebar-overlay');
-  if (!btn || !sidebar) return;
-
-  function isMenuOpen() { return sidebar.classList.contains('open'); }
-
-  function openMenu() {
-    sidebar.classList.add('open');
-    // Overlay géré 100% en JS — indépendant du CSS
-    if (overlay) {
-      overlay.style.cssText = [
-        'display:block', 'position:fixed', 'inset:0',
-        'background:rgba(0,0,0,.65)', 'z-index:399',
-        'cursor:pointer', 'backdrop-filter:blur(1px)',
-        '-webkit-backdrop-filter:blur(1px)',
-        'animation:none', 'opacity:1'
-      ].join(';');
-    }
-    document.body.style.setProperty('overflow','hidden','important');
-    document.documentElement.style.setProperty('overflow','hidden','important');
-    btn.setAttribute('aria-expanded', 'true');
-    btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    btn.style.background = 'rgba(255,255,255,.32)';
-    btn.style.borderRadius = '10px';
-  }
-
-  function closeMenu() {
-    sidebar.classList.remove('open');
-    if (overlay) {
-      overlay.style.cssText = 'display:none';
-    }
-    document.body.style.removeProperty('overflow');
-    document.documentElement.style.removeProperty('overflow');
-    btn.setAttribute('aria-expanded', 'false');
-    btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
-    btn.style.background = 'rgba(255,255,255,.2)';
-  }
-
-  function toggleMenu(e) {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    isMenuOpen() ? closeMenu() : openMenu();
-  }
-
-  // Événements bouton — touch en priorité pour supprimer le délai 300ms
-  btn.addEventListener('pointerdown', toggleMenu, { passive: false });
-
-  // Fermer en cliquant sur l'overlay
-  if (overlay) overlay.addEventListener('pointerdown', (e) => { e.preventDefault(); closeMenu(); }, { passive: false });
-
-  // Fermer quand on navigue (clic sur un item du menu)
-  sidebar.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('pointerdown', () => setTimeout(closeMenu, 150));
-  });
-
-  // Swipe gauche pour fermer
-  let touchStartX = 0;
-  sidebar.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
-  sidebar.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (dx < -60) closeMenu();
-  }, { passive: true });
-
-  // Swipe droit pour ouvrir (depuis le bord gauche)
-  document.addEventListener('touchstart', e => {
-    if (e.touches[0].clientX < 20) touchStartX = e.touches[0].clientX;
-  }, { passive: true });
-  document.addEventListener('touchend', e => {
-    const startedAtEdge = touchStartX < 20;
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (startedAtEdge && dx > 60 && !isMenuOpen()) openMenu();
-    touchStartX = 0;
-  }, { passive: true });
-
-  // Echap clavier
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
-
-  // Exposer closeSidebar globalement (utilisé ailleurs)
-  window.closeSidebar = closeMenu;
-  window.openSidebar  = openMenu;
-})();
-
+document.getElementById('hamburger-btn').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+});
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');}
+function openModal(id){document.getElementById(id)?.classList.add('show');}
+function closeModal(id){document.getElementById(id)?.classList.remove('show');}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));});
 
 // ── Boot ──────────────────────────────────────────────────
 initApp();
-async function loadARoles(){
-  const users=await GET('/admin/users'); if(!users)return;
-  const rc={admin:'var(--violet)',gestionnaire:'var(--accent)',resident:'var(--info)'};
-  setPageContent('a-roles',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Rôles & Accès</h1></div></div>
-    <div class="card"><div style="overflow-x:auto"><table class="data-table">
-      <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle actuel</th><th>Modifier le rôle</th></tr></thead>
-      <tbody>${users.map(u=>`<tr>
-        <td><strong>${u.prenom} ${u.nom}</strong></td><td style="font-size:12px">${u.email}</td>
-        <td><span class="pill" style="background:${rc[u.role]}18;color:${rc[u.role]}">${u.role}</span></td>
-        <td><div style="display:flex;gap:6px;align-items:center">
-          <select class="form-control" id="rs-${u.id}" style="padding:4px 8px;font-size:12px;max-width:130px">
-            <option value="resident" ${u.role==='resident'?'selected':''}>Résident</option>
-            <option value="gestionnaire" ${u.role==='gestionnaire'?'selected':''}>Gestionnaire</option>
-            <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
-          </select>
-          <button class="btn btn-primary btn-xs" onclick="changeRole(${u.id})"><i class="fa-solid fa-check"></i> Appliquer</button>
-        </div></td></tr>`).join('')}
-      </tbody></table></div>
-    </div>`);
-}
 
-async function loadATypes(kind){
-  const data=await GET('/admin/types-'+kind); if(!data)return;
-  const titles={charges:'Types de charges',depenses:'Types de dépenses',reclamations:'Types de réclamations'};
-  const prioCols={faible:'pill-gray',normale:'pill-blue',haute:'pill-orange',urgente:'pill-red'};
-  setPageContent('a-types-'+kind,`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>${titles[kind]}</h1><p>${data.length} type(s) configuré(s)</p></div>
-      <div class="hdr-actions"><button class="btn btn-primary" onclick="openTypeModal('${kind}')"><i class="fa-solid fa-plus"></i> Ajouter un type</button></div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><i class="fa-solid fa-tags"></i> Catalogue
-        <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openTypeModal('${kind}')"><i class="fa-solid fa-plus"></i> Nouveau</button></div>
-      </div>
-      ${data.length?`<div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Nom</th>${kind==='depenses'?'<th>Catégorie</th>':''}<th>Description</th>${kind==='reclamations'?'<th>Priorité</th><th>Délai</th>':''}<th>Statut</th><th>Actions</th></tr></thead>
-        <tbody>${data.map(t=>`<tr>
-          <td><strong>${t.nom}</strong></td>
-          ${kind==='depenses'?`<td><span class="pill pill-blue">${t.categorie||'—'}</span></td>`:''}
-          <td style="color:var(--text-2);font-size:12px">${t.description||'—'}</td>
-          ${kind==='reclamations'?`<td><span class="pill ${prioCols[t.priorite]||'pill-gray'}">${t.priorite}</span></td><td>${t.delai_traitement_jours||7}j</td>`:''}
-          <td>${t.actif?`<span class="pill pill-green">Actif</span>`:`<span class="pill pill-gray">Inactif</span>`}</td>
-          <td><div style="display:flex;gap:4px">
-            <button class="btn-icon btn-sm" onclick='openTypeModal("${kind}",${JSON.stringify(t)})'><i class="fa-solid fa-edit"></i></button>
-            <button class="btn-icon btn-sm" style="color:var(--danger)" onclick="deleteType('${kind}',${t.id},'${t.nom}')"><i class="fa-solid fa-trash"></i></button>
-          </div></td></tr>`).join('')}
-        </tbody></table></div>`:`<div class="empty-state"><i class="fa-solid fa-tags"></i><p>Aucun type configuré</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openTypeModal('${kind}')"><i class="fa-solid fa-plus"></i> Créer le premier</button></div>`}
-    </div>`);
-}
-
-async function loadAResidences(){
-  const data=await GET('/admin/residences'); if(!data)return;
-  setPageContent('a-residences',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Résidences</h1><p>${data.length} résidence(s)</p></div></div>
-    <div class="card"><div style="overflow-x:auto"><table class="data-table">
-      <thead><tr><th>Nom</th><th>Adresse</th><th>Ville</th><th>Lots</th><th>Utilisateurs</th></tr></thead>
-      <tbody>${data.map(r=>`<tr><td><strong>${r.nom}</strong></td><td>${r.adresse}</td><td>${r.ville}</td><td>${r.nb_lots}</td><td><span class="pill pill-blue">${r.nb_utilisateurs}</span></td></tr>`).join('')}</tbody>
-    </table></div></div>`);
-}
-
-async function loadANotifLog(){
-  const log=await GET('/notifications/log').catch(()=>[]);
-  const sc={sent:'pill-green',failed:'pill-red',pending:'pill-yellow'};
-  setPageContent('a-notifications-log',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Log Notifications</h1><p>${(log||[]).length} entrée(s)</p></div>
-      <div class="hdr-actions"><button class="btn btn-ghost btn-sm" onclick="testEmail()"><i class="fa-solid fa-flask"></i> Tester</button></div>
-    </div>
-    <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="metric"><div class="metric-icon"><i class="fa-solid fa-envelope"></i></div><div class="metric-val">${(log||[]).filter(n=>n.type==='email').length}</div><div class="metric-label">Emails</div></div>
-      <div class="metric accent"><div class="metric-icon"><i class="fa-solid fa-brands fa-whatsapp"></i></div><div class="metric-val">${(log||[]).filter(n=>n.type==='whatsapp').length}</div><div class="metric-label">SMS</div></div>
-      <div class="metric danger"><div class="metric-icon"><i class="fa-solid fa-circle-exclamation"></i></div><div class="metric-val">${(log||[]).filter(n=>n.status==='failed').length}</div><div class="metric-label">Échecs</div></div>
-    </div>
-    <div class="card"><div style="overflow-x:auto"><table class="data-table">
-      <thead><tr><th>Date</th><th>Type</th><th>Événement</th><th>Destinataire</th><th>Statut</th></tr></thead>
-      <tbody>${(log||[]).map(n=>`<tr><td>${fmtDateTime(n.created_at)}</td><td><span class="pill ${n.type==='email'?'pill-blue':'pill-green'}">${n.type}</span></td><td><span class="pill pill-gray">${n.event}</span></td><td style="font-size:12px">${n.recipient_email||'—'}</td><td><span class="pill ${sc[n.status]||'pill-gray'}">${n.status}</span></td></tr>`).join('')}
-      </tbody></table></div></div>`);
-}
-
-
-// ====================== JARDINAGE ==========================
-
-// Helpers jardinage date
-function extractJardDate(desc){
-  if(!desc)return '—';
-  const m=desc.match(/\s*([^|]+)\|/);
-  return m?m[1].trim():'—';
-}
-function extractJardDesc(desc){
-  if(!desc)return desc||'—';
-  const m=desc.match(/\|\s*(.+)$/);
-  return m?m[1].trim():desc;
-}
-async function loadRJardinage(){
-  // Lire les interventions jardinage depuis les incidents de type Jardinage
-  const all=await GET('/incidents'); if(!all)return;
-  const now=new Date();
-  const jardins=all.filter(i=>i.type==='Jardinage'||i.type==='jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-  const aVenir=jardins.filter(i=>i.statut!=='resolu'&&i.statut!=='ferme');
-  const passes=jardins.filter(i=>i.statut==='resolu').slice(0,5);
-  const typeIcon={tonte:'scissors',taille:'leaf',arrosage:'droplet',nettoyage:'broom',plantation:'seedling',traitement:'spray-can-sparkles'};
-  setPageContent('r-jardinage',`
-    <div class="page-hdr"><div class="page-hdr-left"><h1>Planning Jardinage</h1><p>Espaces verts de la résidence</p></div></div>
-    <div class="card" style="background:linear-gradient(135deg,#1a7a52 0%,#27ae60 100%);border:none;color:#fff">
-      <div style="display:flex;align-items:center;gap:1rem">
-        <div style="font-size:3rem"></div>
-        <div><div style="font-size:1.2rem;font-weight:700">Espaces verts — ${state.user.residence_nom||'Résidence'}</div>
-        <div style="opacity:.8;font-size:13px;margin-top:4px">${aVenir.length} intervention(s) planifiée(s) · Prestataire : ${aVenir[0]?.prestataire||'Voir avec le syndic'}</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><i class="fa-solid fa-calendar-days" style="color:#27ae60"></i> Interventions planifiées</div>
-      ${aVenir.length?`<div style="display:flex;flex-direction:column;gap:8px">
-        ${aVenir.map(j=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border-left:4px solid #27ae60">
-          <div style="width:42px;height:42px;border-radius:9px;background:#e8f8f0;color:#27ae60;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0"></div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${j.localisation||'Espaces communs'}</div>
-            <div style="font-size:12px;color:var(--text-2);margin-top:2px">${j.description||j.type}</div>
-            ${j.prestataire?`<div style="font-size:11px;color:#27ae60;margin-top:2px"><i class="fa-solid fa-user-gear"></i> ${j.prestataire}</div>`:''}
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:12px;font-weight:600;color:var(--text)">${fmtDate(j.created_at)}</div>
-            <span class="pill" style="background:#e8f8f0;color:#27ae60;margin-top:4px">${j.statut==='en_cours'?'En cours':'Planifié'}</span>
-          </div>
-        </div>`).join('')}
-      </div>`:`<div class="empty-state"><i class="fa-solid fa-leaf" style="color:#27ae60"></i><p>Aucune intervention planifiée</p></div>`}
-    </div>
-    ${passes.length?`<div class="card"><div class="card-hdr"><i class="fa-solid fa-clock-rotate-left"></i> Interventions passées</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        ${passes.map(j=>`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:6px;opacity:.7">
-          <span style="font-size:1.2rem"></span>
-          <div style="flex:1;font-size:13px;color:var(--text-2)">${j.localisation||'Espaces communs'} — ${j.description||''}</div>
-          <div style="font-size:11px;color:var(--text-3)">${fmtDate(j.date_resolution)}</div>
-        </div>`).join('')}
-      </div>
-    </div>`:''}`);
-}
-
-async function loadGJardinage(){
-  const [all, residents] = await Promise.all([GET('/incidents'), GET('/residents')]);
-  if(!all)return;
-  const jardins=all.filter(i=>i.type==='Jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-  const villas=(residents||[]).filter(r=>r.lot).map(r=>({lot:r.lot,prenom:r.prenom,nom:r.nom,id:r.id,email:r.email}));
-  window._jardinage_villas = villas;
-
-  setPageContent('g-jardinage',`
-    <div class="page-hdr">
-      <div class="page-hdr-left"><h1>Planning Jardinage</h1><p>${jardins.length} intervention(s) planifiée(s)</p></div>
-      <div class="hdr-actions"><button class="btn btn-primary" onclick="openJardinageModal()" style="background:#27ae60"><i class="fa-solid fa-plus"></i> Planifier</button></div>
-    </div>
-    <div class="card" style="background:linear-gradient(135deg,#1a7a52 0%,#27ae60 100%);border:none;color:#fff;padding:1.25rem">
-      <div style="display:flex;align-items:center;gap:1rem">
-        <div style="font-size:2.5rem">🌿</div>
-        <div><div style="font-size:1.1rem;font-weight:700">Gestion espaces verts</div>
-        <div style="opacity:.8;font-size:13px">${villas.length} villa(s)/lot(s) · Cliquez sur une villa pour planifier directement</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr" style="color:#27ae60"><i class="fa-solid fa-house-tree"></i> Sélection rapide par villa
-        <div class="card-hdr-right"><button class="btn btn-sm" onclick="openJardinageModal('Commun')" style="background:#27ae60;color:#fff"><i class="fa-solid fa-tree"></i> Espaces communs</button></div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
-        ${villas.map(v=>`
-        <div onclick="openJardinageModal('${v.lot}')" style="background:#e8f8f0;border:1px solid #b3dccb;border-radius:10px;padding:10px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px"
-          onmouseover="this.style.background='#d0f0e0'" onmouseout="this.style.background='#e8f8f0'">
-          <i class="fa-solid fa-house" style="color:#27ae60"></i>
-          <div><div style="font-weight:700;font-size:13px">${v.lot}</div>
-          <div style="font-size:11px;color:var(--text-3)">${v.prenom} ${v.nom}</div></div>
-        </div>`).join('')}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><i class="fa-solid fa-calendar-days" style="color:#27ae60"></i> Interventions planifiées
-        <div class="card-hdr-right"><button class="btn btn-primary btn-sm" onclick="openJardinageModal()" style="background:#27ae60"><i class="fa-solid fa-plus"></i> Ajouter</button></div>
-      </div>
-      ${jardins.length?`<div style="overflow-x:auto"><table class="data-table">
-        <thead><tr><th>Villa / Lot</th><th>Date planifiée</th><th>Description</th><th>Prestataire</th><th>Statut</th><th>Actions</th></tr></thead>
-        <tbody>${jardins.map(j=>`<tr>
-          <td><strong>${j.localisation||'—'}</strong></td>
-          <td style="font-weight:600;color:#27ae60">${extractJardDate(j.description)}</td>
-          <td>${extractJardDesc(j.description)}</td>
-          <td>${j.prestataire||'—'}</td>
-          <td>${statusPill(j.statut)}</td>
-          <td><div style="display:flex;gap:4px">
-            <button class="btn-icon btn-sm" onclick='openEditIntervention(${JSON.stringify(j).replace(/`/g,"'")})'><i class="fa-solid fa-edit"></i></button>
-            ${j.statut!=='resolu'?`<button class="btn btn-primary btn-xs" onclick="openResolveModal(${j.id},'${j.type}')" style="background:#27ae60"><i class="fa-solid fa-check"></i></button>`:''}
-          </div></td>
-        </tr>`).join('')}</tbody>
-      </table></div>`:`<div class="empty-state"><i class="fa-solid fa-leaf" style="color:#27ae60"></i><p>Aucune intervention planifiée — cliquez sur une villa ci-dessus</p></div>`}
-    </div>`);
-}
-
-
-function openJardinageModal(villaPreset){
-  const villas = window._jardinage_villas || [];
-  const select = document.getElementById('jard-villa-select');
-  if(select){
-    select.innerHTML = [
-      '<option value="">-- Choisir une villa / un lot --</option>',
-      ...villas.map(v=>`<option value="${v.lot}">${v.lot} — ${v.prenom} ${v.nom}</option>`),
-      '<option value="Commun">Espaces communs (notif à tous les résidents)</option>'
-    ].join('');
-    if(villaPreset) select.value = villaPreset;
-  }
-  document.getElementById('jard-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('jard-desc').value = '';
-  document.getElementById('jard-prestataire').value = '';
-  const notifEl = document.getElementById('jard-notifier');
-  if(notifEl) notifEl.checked = true;
-  openModal('modal-jardinage');
-}
-
-async function submitJardinage(){
-  const select = document.getElementById('jard-villa-select');
-  const villa = select?.value?.trim();
-  const date = document.getElementById('jard-date').value;
-  const desc = document.getElementById('jard-desc').value.trim();
-  const prest = document.getElementById('jard-prestataire').value.trim();
-  const notifier = document.getElementById('jard-notifier')?.checked !== false;
-  if(!villa) return showError('Sélectionnez une villa/lot');
-  if(!date)  return showError('Date requise');
-
-  const dateLabel = new Date(date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  const body = {
-    type: 'Jardinage',
-    localisation: villa,
-    description: `📅 ${dateLabel} | ${desc||'Intervention jardinage'}`,
-    prestataire: prest || null,
-    urgence: 'normal', statut: 'ouvert',
-  };
-  try{
-    await POST('/incidents', body);
-
-    // Notifier les résidents concernés
-    if(notifier){
-      const villas = window._jardinage_villas || [];
-      const targets = villa === 'Commun' ? villas : villas.filter(v => v.lot === villa);
-      try{
-        const result = await POST('/notifications/jardinage', {
-          villa, date, dateLabel,
-          description: desc || 'Intervention jardinage',
-          prestataire: prest || null,
-          resident_ids: targets.map(v => v.id),
-        });
-        if(result?.sent > 0) showToast(`✅ Planifié · ${result.sent} résident(s) notifié(s) par email`);
-        else showToast(`✅ Intervention planifiée pour ${villa} le ${dateLabel}`);
-      }catch(e){
-        showToast(`✅ Planifié (notif: ${e.message||'non configuré'})`,'warn');
-      }
-    } else {
-      showToast(`✅ Intervention planifiée pour ${villa} le ${dateLabel}`);
-    }
-
-    closeModal('modal-jardinage');
-    loaded.delete('g-jardinage'); loaded.delete('r-jardinage');
-    loadGJardinage();
-  }catch(e){ showError(e.error||'Erreur création'); }
-}
-
-
-// ── Sidebar / Modals ──────────────────────────────────────
-// ── Hamburger mobile (robuste avec touch et click) ──────────────
-
-// ── Boot ──────────────────────────────────────────────────
-initApp();
-// ══════════════════════════════════════════════════════════════
-// BOTTOM NAVIGATION — Mobile
-// ══════════════════════════════════════════════════════════════
-
+/* ══ Mobile navigation ══ */
 const BOTTOM_NAV = {
-  resident: [
-    { page:'r-dashboard',  icon:'fa-house',           label:'Accueil' },
-    { page:'r-finances',   icon:'fa-wallet',          label:'Paiements' },
-    { page:'r-incidents',  icon:'fa-wrench',          label:'Réclamations' },
-    { page:'r-messagerie', icon:'fa-comment-dots',    label:'Messages' },
-    { page:'__more',       icon:'fa-bars-staggered',  label:'Plus' },
+  resident:[
+    {page:'r-dashboard',  icon:'fa-house',        label:'Accueil'},
+    {page:'r-finances',   icon:'fa-wallet',       label:'Paiements'},
+    {page:'r-incidents',  icon:'fa-wrench',       label:'Réclamations'},
+    {page:'r-messagerie', icon:'fa-comment-dots', label:'Messages'},
+    {page:'__more',       icon:'fa-grip',         label:'Plus'},
   ],
-  gestionnaire: [
-    { page:'g-dashboard',    icon:'fa-gauge-high',    label:'Tableau' },
-    { page:'g-comptabilite', icon:'fa-coins',         label:'Compta' },
-    { page:'g-travaux',      icon:'fa-hard-hat',      label:'Travaux' },
-    { page:'g-residents',    icon:'fa-people-roof',   label:'Résidents' },
-    { page:'__more',         icon:'fa-bars-staggered',label:'Plus' },
+  gestionnaire:[
+    {page:'g-dashboard',    icon:'fa-gauge-high', label:'Tableau'},
+    {page:'g-comptabilite', icon:'fa-coins',      label:'Compta'},
+    {page:'g-travaux',      icon:'fa-hard-hat',   label:'Travaux'},
+    {page:'g-residents',    icon:'fa-people-roof',label:'Résidents'},
+    {page:'__more',         icon:'fa-grip',       label:'Plus'},
   ],
-  admin: [
-    { page:'a-dashboard',    icon:'fa-gauge-high',    label:'Dashboard' },
-    { page:'a-users',        icon:'fa-users',         label:'Utilisateurs' },
-    { page:'g-comptabilite', icon:'fa-coins',         label:'Compta' },
-    { page:'g-residents',    icon:'fa-people-roof',   label:'Résidents' },
-    { page:'__more',         icon:'fa-bars-staggered',label:'Plus' },
+  admin:[
+    {page:'a-dashboard',    icon:'fa-gauge-high', label:'Dashboard'},
+    {page:'a-users',        icon:'fa-users',      label:'Utilisateurs'},
+    {page:'g-comptabilite', icon:'fa-coins',      label:'Compta'},
+    {page:'g-residents',    icon:'fa-people-roof',label:'Résidents'},
+    {page:'__more',         icon:'fa-grip',       label:'Plus'},
+  ],
+};
+const MORE_MENUS = {
+  resident:[
+    {page:'r-documents', icon:'fa-folder',             label:'Documents'},
+    {page:'r-ag',        icon:'fa-users-between-lines',label:'Assemblées'},
+    {page:'r-jardinage', icon:'fa-leaf',               label:'Jardinage'},
+    {page:'r-profil',    icon:'fa-user-circle',        label:'Mon profil'},
+    {action:'logout',    icon:'fa-right-from-bracket', label:'Déconnexion',danger:true},
+  ],
+  gestionnaire:[
+    {page:'g-messagerie',   icon:'fa-comments',            label:'Messagerie'},
+    {page:'g-documents',    icon:'fa-folder-open',         label:'Documents'},
+    {page:'g-jardinage',    icon:'fa-leaf',                label:'Jardinage'},
+    {page:'g-notifications',icon:'fa-bell',                label:'Notifications'},
+    {page:'g-agenda',       icon:'fa-calendar-check',      label:'Agenda auto'},
+    {page:'g-bilan',        icon:'fa-chart-line',          label:'Bilan financier'},
+    {page:'g-impayes',      icon:'fa-triangle-exclamation',label:'Impayés'},
+    {page:'g-ag',           icon:'fa-users-between-lines', label:'Tenue des AG'},
+    {page:'g-settings',     icon:'fa-gear',                label:'Paramètres'},
+    {action:'logout',       icon:'fa-right-from-bracket',  label:'Déconnexion',danger:true},
+  ],
+  admin:[
+    {page:'a-roles',        icon:'fa-shield-halved',       label:'Rôles & Accès'},
+    {page:'a-residences',   icon:'fa-building',            label:'Résidences'},
+    {page:'g-documents',    icon:'fa-folder-open',         label:'Documents'},
+    {page:'g-notifications',icon:'fa-bell',                label:'Notifications'},
+    {page:'g-settings',     icon:'fa-gear',                label:'Paramètres'},
+    {action:'logout',       icon:'fa-right-from-bracket',  label:'Déconnexion',danger:true},
   ],
 };
 
-const MORE_MENUS = {
-  resident: [
-    { page:'r-documents',  icon:'fa-folder',              label:'Documents',      col:'#0d5c47' },
-    { page:'r-ag',         icon:'fa-users-between-lines', label:'Assemblées',     col:'#0d5c47' },
-    { page:'r-jardinage',  icon:'fa-leaf',                label:'Jardinage',      col:'#16a34a' },
-    { page:'r-profil',     icon:'fa-user-circle',         label:'Mon profil',     col:'#0d5c47' },
-    { action:'logout',     icon:'fa-right-from-bracket',  label:'Déconnexion',    danger:true },
-  ],
-  gestionnaire: [
-    { page:'g-messagerie', icon:'fa-comments',            label:'Messagerie',     col:'#0d5c47' },
-    { page:'g-documents',  icon:'fa-folder-open',         label:'Documents',      col:'#0d5c47' },
-    { page:'g-jardinage',  icon:'fa-leaf',                label:'Jardinage',      col:'#16a34a' },
-    { page:'g-notifications',icon:'fa-bell',              label:'Notifications',  col:'#0d5c47' },
-    { page:'g-agenda',     icon:'fa-calendar-check',      label:'Agenda auto',    col:'#0d5c47' },
-    { page:'g-bilan',      icon:'fa-chart-line',          label:'Bilan financier',col:'#0d5c47' },
-    { page:'g-impayes',    icon:'fa-triangle-exclamation',label:'Impayés',        col:'#dc2626' },
-    { page:'g-ag',         icon:'fa-users-between-lines', label:'Tenue des AG',   col:'#0d5c47' },
-    { page:'g-settings',   icon:'fa-gear',                label:'Paramètres',     col:'#6b7280' },
-    { action:'logout',     icon:'fa-right-from-bracket',  label:'Déconnexion',    danger:true },
-  ],
-  admin: [
-    { page:'a-roles',      icon:'fa-shield-halved',       label:'Rôles & Accès',  col:'#7c3aed' },
-    { page:'a-residences', icon:'fa-building',            label:'Résidences',     col:'#0d5c47' },
-    { page:'g-documents',  icon:'fa-folder-open',         label:'Documents',      col:'#0d5c47' },
-    { page:'g-notifications',icon:'fa-bell',              label:'Notifications',  col:'#0d5c47' },
-    { page:'g-jardinage',  icon:'fa-leaf',                label:'Jardinage',      col:'#16a34a' },
-    { page:'g-settings',   icon:'fa-gear',                label:'Paramètres',     col:'#6b7280' },
-    { action:'logout',     icon:'fa-right-from-bracket',  label:'Déconnexion',    danger:true },
-  ],
-};
+let _bnRole='';
+function renderBottomNav(role,currentPage){
+  const nav=document.getElementById('bottom-nav');
+  if(!nav)return;
+  _bnRole=role;
+  nav.innerHTML=(BOTTOM_NAV[role]||[]).map(item=>{
+    const isMore=item.page==='__more';
+    const active=!isMore&&item.page===currentPage;
+    const click=isMore?'openMoreMenu('+JSON.stringify(role)+')':'showPage('+JSON.stringify(item.page)+')';
+    return '<button class="bn-item'+(active?' active':'')+'" onclick="'+click+'" aria-label="'+item.label+'">'
+      +'<i class="fa-solid '+item.icon+'"></i><span>'+item.label+'</span></button>';
+  }).join('');
+}
+function updateBnActive(page){
+  document.querySelectorAll('#bottom-nav .bn-item').forEach(b=>{
+    const m=b.getAttribute('onclick')||'';
+    const p=m.match(/"([^"]+)"/);
+    b.classList.toggle('active',p&&p[1]===page);
+  });
+}
+function openMoreMenu(role){
+  const items=MORE_MENUS[role]||[];
+  const ov=document.createElement('div');
+  ov.id='_mob_more';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:800;display:flex;flex-direction:column;justify-content:flex-end';
+  const sh=document.createElement('div');
+  sh.style.cssText='background:var(--surface);border-radius:20px 20px 0 0;padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom,0px));max-height:85vh;overflow-y:auto';
+  const grid = document.createElement('div');
+  grid.innerHTML = '<div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .75rem"></div>'
+    + '<div style="font-size:.7rem;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:.75rem">Toutes les fonctionnalités</div>'
+    + '<div id="_more_grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem"></div>';
+  sh.appendChild(grid);
+  const gridEl = grid.querySelector('#_more_grid');
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.75rem .25rem;border-radius:12px;border:none;cursor:pointer;background:'+(item.danger?'#fee2e2':'#fff')+';min-height:76px;-webkit-tap-highlight-color:transparent';
+    btn.innerHTML = '<div style="width:38px;height:38px;border-radius:10px;background:'+(item.danger?'#fecaca':'#e6f4ef')+';display:flex;align-items:center;justify-content:center"><i class="fa-solid '+item.icon+'" style="font-size:1rem;color:'+(item.danger?'#dc2626':'var(--primary)')+'"></i></div>'
+      + '<span style="font-size:10px;font-weight:500;text-align:center;color:'+(item.danger?'#dc2626':'var(--text)')+'">'+item.label+'</span>';
+    btn.addEventListener('click', () => handleMoreItem(item.page||'', item.action||''));
+    gridEl.appendChild(btn);
+  });
+  ov.appendChild(sh);
+  ov.addEventListener('click',e=>{if(e.target===ov)closeMoreMenu();});
+  let sy=0;
+  sh.addEventListener('touchstart',e=>{sy=e.touches[0].clientY;},{passive:true});
+  sh.addEventListener('touchend',e=>{if(e.changedTouches[0].clientY-sy>80)closeMoreMenu();},{passive:true});
+  document.getElementById('_mob_more')?.remove();
+  document.body.appendChild(ov);
+  document.body.style.overflow='hidden';
+}
 
 
 function closeMoreMenu(){
-  const ov=document.getElementById('_more_overlay');
-  if(ov)ov.remove();
+  document.getElementById('_mob_more')?.remove();
   document.body.style.overflow='';
 }
-
 function handleMoreItem(page,action){
   closeMoreMenu();
   if(action==='logout'){doLogout();return;}
   if(page)showPage(page);
 }
 
-
-
-function renderBottomNav(role, currentPage){
-  const nav = document.getElementById('bottom-nav');
-  if(!nav) return;
-  _currentRole = role;
-  const items = BOTTOM_NAV[role] || [];
-  nav.innerHTML = items.map(item => {
-    const isMore = item.page === '__more';
-    const isActive = !isMore && currentPage === item.page;
-    const handler = isMore
-      ? 'openMoreMenu(' + JSON.stringify(role) + ')'
-      : 'showPage(' + JSON.stringify(item.page) + ')';
-    return '<button class="bn-item' + (isActive ? ' active' : '') + '"'
-      + ' onclick="' + handler + '"'
-      + ' aria-label="' + item.label + '"'
-      + (isActive ? ' aria-current="page"' : '')
-      + '>'
-      + '<i class="fa-solid ' + item.icon + '"></i>'
-      + '<span>' + item.label + '</span>'
-      + '</button>';
-  }).join('');
-}
-
-function updateBottomNavActive(page){
-  document.querySelectorAll('.bn-item').forEach(btn => {
-    const p = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-    btn.classList.toggle('active', p === page);
-    btn.setAttribute('aria-current', p === page ? 'page' : 'false');
-  });
-}
+/* Hamburger sidebar */
+(function(){
+  const btn=document.getElementById('hamburger-btn');
+  const sb=document.getElementById('sidebar');
+  const ov=document.getElementById('sidebar-overlay');
+  if(!btn||!sb)return;
+  let _open=false,_lastT=0;
+  function open(){
+    _open=true;
+    sb.classList.add('open');
+    if(ov){ov.style.display='block';ov.style.opacity='1';}
+    document.body.style.overflow='hidden';
+    btn.innerHTML='<i class="fa-solid fa-xmark"></i>';
+  }
+  function close(){
+    _open=false;
+    sb.classList.remove('open');
+    if(ov){ov.style.display='';}
+    document.body.style.overflow='';
+    btn.innerHTML='<i class="fa-solid fa-bars"></i>';
+  }
+  function toggle(e){
+    e.preventDefault();e.stopPropagation();
+    const now=Date.now();if(now-_lastT<400)return;_lastT=now;
+    _open?close():open();
+  }
+  btn.addEventListener('touchstart',toggle,{passive:false});
+  btn.addEventListener('click',e=>{if(Date.now()-_lastT>400)toggle(e);});
+  if(ov)ov.addEventListener('click',close);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+  window.closeSidebar=close;window.openSidebar=open;
+})();
