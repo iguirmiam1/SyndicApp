@@ -1720,119 +1720,70 @@ async function submitUploadDoc(){
 // ── Sidebar / Modals ──────────────────────────────────────
 // ── Hamburger + Sidebar Mobile ──────────────────────────────────
 (function initSidebar() {
-  const btn     = document.getElementById('hamburger-btn');
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  if (!btn || !sidebar) { console.warn('[Sidebar] Elements not found'); return; }
+  const btn      = document.getElementById('hamburger-btn');
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('sidebar-overlay');
+  if (!btn || !sidebar) return;
 
-  let _open = false;
-  let _touchStartX = 0;
-  let _isBusy = false;
-
-  function isOpen() { return _open; }
+  function isMenuOpen() { return sidebar.classList.contains('open'); }
 
   function openMenu() {
-    if (_open) return;
-    _open = true;
     sidebar.classList.add('open');
     overlay && overlay.classList.add('show');
     document.body.style.overflow = 'hidden';
-    btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    btn.style.background = 'rgba(255,255,255,.3)';
     btn.setAttribute('aria-expanded', 'true');
-    console.log('[Sidebar] Opened');
+    btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
   }
 
   function closeMenu() {
-    if (!_open) return;
-    _open = false;
     sidebar.classList.remove('open');
     overlay && overlay.classList.remove('show');
     document.body.style.overflow = '';
-    btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
-    btn.style.background = 'rgba(255,255,255,.15)';
     btn.setAttribute('aria-expanded', 'false');
-    console.log('[Sidebar] Closed');
+    btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
   }
 
-  function toggleMenu() {
-    _open ? closeMenu() : openMenu();
+  function toggleMenu(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    isMenuOpen() ? closeMenu() : openMenu();
   }
 
-  // ── Bouton hamburger — événements multiples pour max compatibilité ──
-  let _lastToggle = 0;
-  function onBtnActivate(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    const now = Date.now();
-    if (now - _lastToggle < 300) return; // Anti-double-fire
-    _lastToggle = now;
-    toggleMenu();
-  }
+  // Événements bouton — touch en priorité pour supprimer le délai 300ms
+  btn.addEventListener('pointerdown', toggleMenu, { passive: false });
 
-  // Priorité 1 : touchstart (iOS/Android — immédiat, sans délai 300ms)
-  btn.addEventListener('touchstart', onBtnActivate, { passive: false });
-  // Priorité 2 : mousedown (desktop / simulateurs)
-  btn.addEventListener('mousedown', onBtnActivate);
-  // Priorité 3 : click (fallback universel)
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Si touchstart a déjà géré l'événement, skip
-    if (Date.now() - _lastToggle < 300) return;
-    _lastToggle = Date.now();
-    toggleMenu();
+  // Fermer en cliquant sur l'overlay
+  if (overlay) overlay.addEventListener('pointerdown', (e) => { e.preventDefault(); closeMenu(); }, { passive: false });
+
+  // Fermer quand on navigue (clic sur un item du menu)
+  sidebar.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('pointerdown', () => setTimeout(closeMenu, 150));
   });
 
-  // ── Overlay — fermer en touchant dehors ──
-  if (overlay) {
-    overlay.addEventListener('touchstart', (e) => { e.preventDefault(); closeMenu(); }, { passive: false });
-    overlay.addEventListener('mousedown', (e) => { e.preventDefault(); closeMenu(); });
-  }
-
-  // ── Items de nav — fermer au clic ──
-  document.addEventListener('click', (e) => {
-    if (_open && e.target.closest && e.target.closest('.nav-item')) {
-      setTimeout(closeMenu, 200);
-    }
-  });
-
-  // ── Swipe geste ──
-  document.addEventListener('touchstart', (e) => {
-    _touchStartX = e.touches[0]?.clientX ?? 0;
+  // Swipe gauche pour fermer
+  let touchStartX = 0;
+  sidebar.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  sidebar.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (dx < -60) closeMenu();
   }, { passive: true });
 
-  document.addEventListener('touchend', (e) => {
-    const endX = e.changedTouches[0]?.clientX ?? 0;
-    const dx   = endX - _touchStartX;
-    // Swipe droit depuis bord gauche → ouvrir
-    if (_touchStartX < 25 && dx > 55 && !_open) openMenu();
-    // Swipe gauche quand ouvert → fermer
-    if (_open && dx < -55) closeMenu();
-    _touchStartX = 0;
+  // Swipe droit pour ouvrir (depuis le bord gauche)
+  document.addEventListener('touchstart', e => {
+    if (e.touches[0].clientX < 20) touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const startedAtEdge = touchStartX < 20;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (startedAtEdge && dx > 60 && !isMenuOpen()) openMenu();
+    touchStartX = 0;
   }, { passive: true });
 
-  // ── Clavier ──
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+  // Echap clavier
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
 
-  // ── Fermer en changeant d'orientation ──
-  window.addEventListener('orientationchange', () => setTimeout(closeMenu, 100));
-  window.addEventListener('resize', () => {
-    // En desktop (≥ 1025px + haut ≥ 600px), le sidebar doit toujours être visible
-    if (window.innerWidth >= 1025 && window.innerHeight >= 600) {
-      sidebar.classList.remove('open');
-      overlay && overlay.classList.remove('show');
-      document.body.style.overflow = '';
-      _open = false;
-    }
-  });
-
-  // ── Exposer globalement ──
-  window.openSidebar  = openMenu;
+  // Exposer closeSidebar globalement (utilisé ailleurs)
   window.closeSidebar = closeMenu;
-  window.toggleSidebar = toggleMenu;
-
-  console.log('[Sidebar] Init OK, btn:', btn, 'sidebar:', sidebar);
+  window.openSidebar  = openMenu;
 })();
 
 
@@ -2106,122 +2057,72 @@ initApp();
 // BOTTOM NAVIGATION — Mobile
 // ══════════════════════════════════════════════════════════════
 
-// Configuration bottom nav avec indicateur "Plus"
 const BOTTOM_NAV = {
   resident: [
-    { page: 'r-dashboard',  icon: 'fa-house',        label: 'Accueil' },
-    { page: 'r-finances',   icon: 'fa-wallet',       label: 'Paiements' },
-    { page: 'r-incidents',  icon: 'fa-wrench',       label: 'Réclamations' },
-    { page: 'r-messagerie', icon: 'fa-comment-dots', label: 'Messages' },
-    { page: '__more_r',     icon: 'fa-grid-2',       label: 'Plus' },
+    { page:'r-dashboard',  icon:'fa-house',           label:'Accueil' },
+    { page:'r-finances',   icon:'fa-wallet',          label:'Paiements' },
+    { page:'r-incidents',  icon:'fa-wrench',          label:'Réclamations' },
+    { page:'r-messagerie', icon:'fa-comment-dots',    label:'Messages' },
+    { page:'__more',       icon:'fa-bars-staggered',  label:'Plus' },
   ],
   gestionnaire: [
-    { page: 'g-dashboard',   icon: 'fa-gauge-high',  label: 'Tableau' },
-    { page: 'g-comptabilite',icon: 'fa-coins',       label: 'Compta' },
-    { page: 'g-travaux',     icon: 'fa-hard-hat',    label: 'Travaux' },
-    { page: 'g-messagerie',  icon: 'fa-comment-dots',label: 'Messages' },
-    { page: '__more_g',      icon: 'fa-grid-2',      label: 'Plus' },
+    { page:'g-dashboard',    icon:'fa-gauge-high',    label:'Tableau' },
+    { page:'g-comptabilite', icon:'fa-coins',         label:'Compta' },
+    { page:'g-travaux',      icon:'fa-hard-hat',      label:'Travaux' },
+    { page:'g-residents',    icon:'fa-people-roof',   label:'Résidents' },
+    { page:'__more',         icon:'fa-bars-staggered',label:'Plus' },
   ],
   admin: [
-    { page: 'a-dashboard',   icon: 'fa-gauge-high',  label: 'Dashboard' },
-    { page: 'a-users',       icon: 'fa-users',       label: 'Utilisateurs' },
-    { page: 'g-comptabilite',icon: 'fa-coins',       label: 'Compta' },
-    { page: 'g-travaux',     icon: 'fa-hard-hat',    label: 'Travaux' },
-    { page: '__more_a',      icon: 'fa-grid-2',      label: 'Plus' },
+    { page:'a-dashboard',    icon:'fa-gauge-high',    label:'Dashboard' },
+    { page:'a-users',        icon:'fa-users',         label:'Utilisateurs' },
+    { page:'g-comptabilite', icon:'fa-coins',         label:'Compta' },
+    { page:'g-residents',    icon:'fa-people-roof',   label:'Résidents' },
+    { page:'__more',         icon:'fa-bars-staggered',label:'Plus' },
   ],
 };
 
-// Menus "Plus" par rôle (drawer mobile)
 const MORE_MENUS = {
   resident: [
-    { page: 'r-documents',  icon: 'fa-folder',          label: 'Documents' },
-    { page: 'r-messagerie', icon: 'fa-people-group',     label: 'Forum résidents' },
-    { page: 'r-ag',         icon: 'fa-users-between-lines',label: 'Assemblées' },
-    { page: 'r-jardinage',  icon: 'fa-leaf',             label: 'Jardinage' },
-    { page: 'r-profil',     icon: 'fa-user-circle',      label: 'Mon profil' },
-    { action: 'logout',     icon: 'fa-right-from-bracket',label: 'Déconnexion', danger: true },
+    { page:'r-documents',  icon:'fa-folder',              label:'Documents',      col:'#0d5c47' },
+    { page:'r-ag',         icon:'fa-users-between-lines', label:'Assemblées',     col:'#0d5c47' },
+    { page:'r-jardinage',  icon:'fa-leaf',                label:'Jardinage',      col:'#16a34a' },
+    { page:'r-profil',     icon:'fa-user-circle',         label:'Mon profil',     col:'#0d5c47' },
+    { action:'logout',     icon:'fa-right-from-bracket',  label:'Déconnexion',    danger:true },
   ],
   gestionnaire: [
-    { page: 'g-residents',  icon: 'fa-people-roof',      label: 'Résidents' },
-    { page: 'g-documents',  icon: 'fa-folder-open',      label: 'Documents' },
-    { page: 'g-jardinage',  icon: 'fa-leaf',             label: 'Jardinage' },
-    { page: 'g-notifications',icon: 'fa-bell',           label: 'Notifications' },
-    { page: 'g-agenda',     icon: 'fa-calendar',         label: 'Agenda auto' },
-    { page: 'g-bilan',      icon: 'fa-chart-line',       label: 'Bilan financier' },
-    { page: 'g-impayes',    icon: 'fa-triangle-exclamation',label: 'Impayés' },
-    { page: 'g-ag',         icon: 'fa-users-between-lines',label: 'Tenue des AG' },
-    { page: 'g-settings',   icon: 'fa-gear',             label: 'Paramètres' },
-    { action: 'logout',     icon: 'fa-right-from-bracket',label: 'Déconnexion', danger: true },
+    { page:'g-messagerie', icon:'fa-comments',            label:'Messagerie',     col:'#0d5c47' },
+    { page:'g-documents',  icon:'fa-folder-open',         label:'Documents',      col:'#0d5c47' },
+    { page:'g-jardinage',  icon:'fa-leaf',                label:'Jardinage',      col:'#16a34a' },
+    { page:'g-notifications',icon:'fa-bell',              label:'Notifications',  col:'#0d5c47' },
+    { page:'g-agenda',     icon:'fa-calendar-check',      label:'Agenda auto',    col:'#0d5c47' },
+    { page:'g-bilan',      icon:'fa-chart-line',          label:'Bilan financier',col:'#0d5c47' },
+    { page:'g-impayes',    icon:'fa-triangle-exclamation',label:'Impayés',        col:'#dc2626' },
+    { page:'g-ag',         icon:'fa-users-between-lines', label:'Tenue des AG',   col:'#0d5c47' },
+    { page:'g-settings',   icon:'fa-gear',                label:'Paramètres',     col:'#6b7280' },
+    { action:'logout',     icon:'fa-right-from-bracket',  label:'Déconnexion',    danger:true },
   ],
   admin: [
-    { page: 'a-roles',      icon: 'fa-shield-halved',    label: 'Rôles & Accès' },
-    { page: 'a-residences', icon: 'fa-building',         label: 'Résidences' },
-    { page: 'g-documents',  icon: 'fa-folder-open',      label: 'Documents' },
-    { page: 'g-notifications',icon: 'fa-bell',           label: 'Notifications' },
-    { page: 'g-settings',   icon: 'fa-gear',             label: 'Paramètres' },
-    { action: 'logout',     icon: 'fa-right-from-bracket',label: 'Déconnexion', danger: true },
+    { page:'a-roles',      icon:'fa-shield-halved',       label:'Rôles & Accès',  col:'#7c3aed' },
+    { page:'a-residences', icon:'fa-building',            label:'Résidences',     col:'#0d5c47' },
+    { page:'g-documents',  icon:'fa-folder-open',         label:'Documents',      col:'#0d5c47' },
+    { page:'g-notifications',icon:'fa-bell',              label:'Notifications',  col:'#0d5c47' },
+    { page:'g-jardinage',  icon:'fa-leaf',                label:'Jardinage',      col:'#16a34a' },
+    { page:'g-settings',   icon:'fa-gear',                label:'Paramètres',     col:'#6b7280' },
+    { action:'logout',     icon:'fa-right-from-bracket',  label:'Déconnexion',    danger:true },
   ],
 };
 
-let _moreMenuOpen = false;
-let _currentRole  = '';
 
-function openMoreMenu(role) {
-  const items = MORE_MENUS[role] || [];
-  const overlay = document.createElement('div');
-  overlay.id = 'more-menu-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;flex-direction:column;justify-content:flex-end';
-
-  const sheet = document.createElement('div');
-  sheet.style.cssText = 'background:var(--surface);border-radius:18px 18px 0 0;padding:1rem;max-height:85vh;overflow-y:auto;padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px))';
-
-  sheet.innerHTML = `
-    <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .875rem"></div>
-    <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;padding:0 .25rem .625rem">Plus de fonctionnalités</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem">
-      ${items.map(item => `
-        <button onclick="handleMoreItem('${item.page||''}','${item.action||''}')"
-          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;
-                 padding:.875rem .5rem;border-radius:12px;border:none;cursor:pointer;
-                 background:${item.danger?'#fee2e2':'var(--white)'};
-                 color:${item.danger?'var(--danger)':'var(--text)'};
-                 font-size:11px;font-weight:500;
-                 box-shadow:0 1px 3px rgba(0,0,0,.08);
-                 min-height:72px;transition:opacity .15s">
-          <i class="fa-solid ${item.icon}" style="font-size:1.25rem;${item.danger?'':'color:var(--primary)'}"></i>
-          ${item.label}
-        </button>`).join('')}
-    </div>`;
-
-  overlay.appendChild(sheet);
-  overlay.addEventListener('click', (e) => { if(e.target===overlay) closeMoreMenu(); });
-
-  // Swipe down pour fermer
-  let startY = 0;
-  sheet.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive:true });
-  sheet.addEventListener('touchend', e => {
-    if(e.changedTouches[0].clientY - startY > 80) closeMoreMenu();
-  }, { passive:true });
-
-  document.getElementById('more-menu-overlay')?.remove();
-  document.body.appendChild(overlay);
-  document.body.style.overflow = 'hidden';
-  _moreMenuOpen = true;
-  // Animation entrée
-  requestAnimationFrame(() => sheet.style.transform = 'translateY(0)');
+function closeMoreMenu(){
+  const ov=document.getElementById('_more_overlay');
+  if(ov)ov.remove();
+  document.body.style.overflow='';
 }
 
-function closeMoreMenu() {
-  const overlay = document.getElementById('more-menu-overlay');
-  if(overlay) overlay.remove();
-  document.body.style.overflow = '';
-  _moreMenuOpen = false;
-}
-
-function handleMoreItem(page, action) {
+function handleMoreItem(page,action){
   closeMoreMenu();
-  if(action === 'logout') { doLogout(); return; }
-  if(page) showPage(page);
+  if(action==='logout'){doLogout();return;}
+  if(page)showPage(page);
 }
 
 
@@ -2232,18 +2133,17 @@ function renderBottomNav(role, currentPage){
   _currentRole = role;
   const items = BOTTOM_NAV[role] || [];
   nav.innerHTML = items.map(item => {
-    const isMore = item.page.startsWith('__more');
-    const isActive = !isMore && currentPage===item.page;
+    const isMore = item.page === '__more';
+    const isActive = !isMore && currentPage === item.page;
     const handler = isMore
       ? 'openMoreMenu(' + JSON.stringify(role) + ')'
       : 'showPage(' + JSON.stringify(item.page) + ')';
-    return '<button class="bn-item' + (isActive?' active':'') + '"'
+    return '<button class="bn-item' + (isActive ? ' active' : '') + '"'
       + ' onclick="' + handler + '"'
       + ' aria-label="' + item.label + '"'
       + (isActive ? ' aria-current="page"' : '')
-      + (isMore ? ' style="color:var(--text-3)"' : '')
       + '>'
-      + '<i class="fa-solid ' + item.icon + '" aria-hidden="true"></i>'
+      + '<i class="fa-solid ' + item.icon + '"></i>'
       + '<span>' + item.label + '</span>'
       + '</button>';
   }).join('');
