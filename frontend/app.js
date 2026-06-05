@@ -1718,24 +1718,48 @@ async function submitUploadDoc(){
 }
 
 // ── Sidebar / Modals ──────────────────────────────────────
-document.getElementById('hamburger-btn').addEventListener('click',()=>{
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('show');
-});
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');}
-// ══════════════════════════════════════════════════════════════
-// PHASE 3 — PWA INSTALL PROMPT
-// ══════════════════════════════════════════════════════════════
+// ── Hamburger mobile (robuste avec touch et click) ──────────────
+const _hamburger = document.getElementById('hamburger-btn');
+const _sidebar    = document.getElementById('sidebar');
+const _overlay    = document.getElementById('sidebar-overlay');
 
-let _deferredPrompt = null;
+function openSidebar(){
+  _sidebar?.classList.add('open');
+  _overlay?.classList.add('show');
+  document.body.style.overflow='hidden'; // Empêche le scroll body
+}
 
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  _deferredPrompt = e;
-  // Montrer la bannière après 30s si non installé
-  if (!localStorage.getItem('pwa_dismissed')) {
-    setTimeout(showPWABanner, 30000);
-  }
+function closeSidebar(){
+  _sidebar?.classList.remove('open');
+  _overlay?.classList.remove('show');
+  document.body.style.overflow='';
+}
+
+function toggleSidebar(){
+  if(_sidebar?.classList.contains('open')) closeSidebar();
+  else openSidebar();
+}
+
+if(_hamburger){
+  // Utiliser touchstart pour réactivité immédiate sur mobile
+  _hamburger.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Empêche le délai 300ms
+    toggleSidebar();
+  }, { passive: false });
+  _hamburger.addEventListener('click', toggleSidebar);
+}
+
+if(_overlay){
+  _overlay.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    closeSidebar();
+  }, { passive: false });
+  _overlay.addEventListener('click', closeSidebar);
+}
+
+// Fermer sidebar sur navigation (mobile)
+document.addEventListener('keydown', (e) => {
+  if(e.key==='Escape') closeSidebar();
 });
 
 window.addEventListener('appinstalled', () => {
@@ -2137,15 +2161,7 @@ async function submitJardinage(){
 
 
 // ── Sidebar / Modals ──────────────────────────────────────
-document.getElementById('hamburger-btn').addEventListener('click',()=>{
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('show');
-});
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');}
-function openModal(id){document.getElementById(id)?.classList.add('show');}
-function closeModal(id){document.getElementById(id)?.classList.remove('show');}
-document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));});
+// ── Hamburger mobile (robuste avec touch et click) ──────────────
 
 // ── Boot ──────────────────────────────────────────────────
 initApp();
