@@ -867,12 +867,20 @@ textarea.form-control{resize:vertical;min-height:75px}
   <div class="modal">
     <div class="modal-hdr"><h3><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Planifier une intervention jardinage</h3><button class="close-modal" onclick="closeModal('modal-jardinage')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Villa / Lot</label>
+        <select class="form-control" id="jard-villa-select">
+          <option value="">-- Choisir --</option>
+        </select>
+      </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Villa / Lot / Zone</label>
-          <input class="form-control" id="jard-villa" placeholder="Ex: Villa 12, Lot A3, Commun…">
-        </div>
-        <div class="form-group"><label class="form-label">Date de l'intervention</label>
+        <div class="form-group">
+          <label class="form-label">Date de l'intervention</label>
           <input class="form-control" id="jard-date" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Heure de passage</label>
+          <input class="form-control" id="jard-heure" type="time" value="09:00">
         </div>
       </div>
       <div class="form-group"><label class="form-label">Type d'intervention</label>
