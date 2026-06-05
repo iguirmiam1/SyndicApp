@@ -8,8 +8,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Jasmine Park">
-  <meta name="description" content="Gestion intelligente de copropriété — Jasmine Park">
+  <meta name="apple-mobile-web-app-title" content="SyndicPro">
+  <meta name="description" content="Gestion intelligente de copropriété — SyndicPro">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.png">
 <title>Jasmine Park — Gestion de Copropriété</title>
@@ -104,7 +104,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   background:var(--surface);flex-shrink:0;width:100%
 }
 #sidebar.closed{transform:translateX(-100%)}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;backdrop-filter:blur(2px)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;backdrop-filter:blur(3px);cursor:pointer}
 .sidebar-overlay.show{display:block}
 .nav-section{margin-bottom:1.25rem}
 .nav-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:4px;margin-top:12px;white-space:nowrap;overflow:hidden}
@@ -315,9 +315,14 @@ textarea.form-control{resize:vertical;min-height:75px}
 @media(max-width:1024px){.grid-2,.grid-3{grid-template-columns:1fr}}
 @media(max-width:768px){
   :root{--sidebar-w:0px}
-  #sidebar{transform:translateX(-100%);width:260px;box-shadow:4px 0 20px rgba(0,0,0,.15)}
-  #sidebar.open{transform:translateX(0)}
-  #sidebar.closed{transform:translateX(-100%)}
+  #sidebar{
+    transform:translateX(-100%) !important;
+    width:280px !important;
+    box-shadow:4px 0 24px rgba(0,0,0,.25);
+    transition:transform .28s cubic-bezier(.4,0,.2,1) !important;
+    z-index:200 !important
+  }
+  #sidebar.open{transform:translateX(0) !important}
   #main{margin-left:0;padding:1rem}
   .hamburger{display:flex}
   .user-name,.user-role-label{display:none}
@@ -422,11 +427,16 @@ textarea.form-control{resize:vertical;min-height:75px}
     .topbar{padding:0 .75rem;padding-top:env(safe-area-inset-top,0px);gap:.5rem;min-height:calc(56px + env(safe-area-inset-top,0px))}
     :root{--header-h:calc(56px + env(safe-area-inset-top,0px))}
     #hamburger-btn{
-      width:40px;height:40px;display:flex;align-items:center;justify-content:center;
-      background:rgba(255,255,255,.15);border-radius:8px;border:none;color:#fff;
-      font-size:1.1rem;cursor:pointer;flex-shrink:0;z-index:101;position:relative;
-      -webkit-tap-highlight-color:rgba(255,255,255,.2);touch-action:manipulation
+      width:44px;height:44px;display:flex !important;align-items:center;justify-content:center;
+      background:rgba(255,255,255,.18);border-radius:10px;border:none;color:#fff;
+      font-size:1.2rem;cursor:pointer;flex-shrink:0;
+      z-index:300 !important;position:relative;
+      -webkit-tap-highlight-color:transparent;
+      touch-action:manipulation;
+      transition:background .15s;
+      -webkit-user-select:none;user-select:none
     }
+    #hamburger-btn:active{background:rgba(255,255,255,.35)}
     .logo{font-size:1rem}
     .logo-mark{width:28px;height:28px;font-size:.7rem}
     .topbar .user-chip{max-width:120px}
@@ -617,7 +627,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <div class="modal">
     <div class="modal-hdr"><h3><i class="fa-solid fa-wrench" style="color:var(--primary);mr:6px"></i> Signaler une réclamation</h3><button class="close-modal" onclick="closeModal('modal-incident')"><i class="fa-solid fa-xmark"></i></button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Ascenseur</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
+      <div class="form-group"><label class="form-label">Type de réclamation</label><select class="form-control" id="inc-type" onchange="updateIncPriority()"><option>Plomberie</option><option>Électricité</option><option>Parties communes</option><option>Sécurité</option><option>Nuisances</option><option>Autre</option></select></div>
       <div class="form-group"><label class="form-label">Localisation précise</label><input class="form-control" id="inc-loc" placeholder="Ex: Couloir 3e étage, parking B2…"></div>
       <div class="form-group"><label class="form-label">Description détaillée</label><textarea class="form-control" id="inc-desc" placeholder="Décrivez l'incident avec le maximum de détails…"></textarea></div>
       <div class="form-row">
@@ -873,7 +883,7 @@ textarea.form-control{resize:vertical;min-height:75px}
       <div class="form-row">
         <div class="form-group"><label class="form-label">Type d'intervention</label>
           <select class="form-control" id="intv-type">
-            <option>Plomberie</option><option>Ascenseur</option><option>Électricité</option>
+            <option>Plomberie</option><option>Électricité</option>
             <option>Parties communes</option><option>Sécurité</option><option>Peinture</option>
             <option>Jardinage</option><option>Toiture</option><option>Nuisances</option><option>Autre</option>
           </select>
@@ -1097,7 +1107,7 @@ textarea.form-control{resize:vertical;min-height:75px}
   <!-- ══ PWA Install Banner ══ -->
   <div id="pwa-banner" role="complementary" aria-label="Installer l'application">
     <span id="pwa-banner-icon">🏠</span>
-    <div id="pwa-banner-text">Installer Jasmine Park
+    <div id="pwa-banner-text">Installer SyndicPro
       <small>Accès rapide depuis votre écran d'accueil</small>
     </div>
     <button id="pwa-banner-install">Installer</button>
