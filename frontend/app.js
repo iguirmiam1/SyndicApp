@@ -164,6 +164,9 @@ async function loadPage(id){
       case 'a-notifications-log':await loadANotifLog(); break;
       case 'a-agenda':       await loadGAgenda(true); break;
       case 'r-jardinage':    await loadRJardinage(); break;
+      case 'r-reservations': await loadRReservations(); break;
+      case 'g-reservations': await loadGReservations(); break;
+      case 'g-securite':     await loadGSecurite(); break;
       case 'g-jardinage':    await loadGJardinage(); break;
       case 'g-bilan':        await loadGBilan(); break;
     }
@@ -2122,3 +2125,420 @@ function handleMoreItem(page,action){
   document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
   window.closeSidebar=close;window.openSidebar=open;
 })();
+
+
+// ══════════════════════════════════════════════════════════════════
+// RÉSERVATION TERRAINS — Padel & Football
+// ══════════════════════════════════════════════════════════════════
+
+// ── Créneaux horaires disponibles ───────────────────────────────
+const CRENEAUX = ['07:00','08:00','09:00','10:00','11:00','12:00',
+  '13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00'];
+
+const TERRAIN_ICON = { padel: '🏸', foot: '⚽' };
+const STATUT_RESA = {
+  confirmee: { label:'Confirmée', cls:'pill-green' },
+  annulee:   { label:'Annulée',   cls:'pill-red' },
+  validee:   { label:'Validée ✓', cls:'pill-teal' },
+  expiree:   { label:'Expirée',   cls:'pill-gray' },
+};
+
+// ── QR Code (librairie qrcode.js via CDN) ───────────────────────
+function loadQRLib() {
+  return new Promise(resolve => {
+    if (window.QRCode) return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = resolve;
+    document.head.appendChild(s);
+  });
+}
+
+async function generateQR(containerId, data) {
+  await loadQRLib();
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  new QRCode(el, {
+    text: typeof data === 'string' ? data : JSON.stringify(data),
+    width: 200, height: 200,
+    colorDark: '#0a3d2e', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PAGE RÉSIDENT — Réservation terrains
+// ══════════════════════════════════════════════════════════════════
+async function loadRReservations() {
+  const [terrains, mesResas] = await Promise.all([
+    GET('/reservations/terrains'),
+    GET('/reservations/mes')
+  ]);
+  if (!terrains) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const padels = terrains.filter(t => t.type === 'padel');
+  const foots  = terrains.filter(t => t.type === 'foot');
+
+  const futuresResas = (mesResas||[]).filter(r =>
+    r.date >= today && r.statut !== 'annulee'
+  ).slice(0, 5);
+
+  setPageContent('r-reservations', `
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <h1>🏸 Réservation Terrains</h1>
+        <p>Padel & Football — Jasmine Park</p>
+      </div>
+    </div>
+
+    <!-- Sélecteur de terrain et date -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-hdr"><h3>📅 Réserver un créneau</h3></div>
+      <div class="modal-body" style="padding:1rem 0 0">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Type de terrain</label>
+            <select class="form-control" id="resa-type" onchange="loadResaDispo()">
+              <option value="">-- Choisir --</option>
+              <optgroup label="🏸 Padel (${padels.length} terrains)">
+                ${padels.map(t => `<option value="${t.id}">${t.nom} — ${t.description||''}</option>`).join('')}
+              </optgroup>
+              <optgroup label="⚽ Football (${foots.length} terrains)">
+                ${foots.map(t => `<option value="${t.id}">${t.nom} — ${t.description||''}</option>`).join('')}
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input class="form-control" type="date" id="resa-date"
+              value="${today}" min="${today}"
+              onchange="loadResaDispo()">
+          </div>
+        </div>
+        <div id="resa-creneaux" style="margin-top:.75rem"></div>
+      </div>
+    </div>
+
+    <!-- Mes prochaines réservations -->
+    <div class="card">
+      <div class="card-hdr">
+        <h3>🎫 Mes réservations à venir</h3>
+      </div>
+      <div id="mes-resas-list">
+        ${futuresResas.length === 0
+          ? '<div class="empty-state"><div class="empty-icon">📭</div><p>Aucune réservation à venir</p></div>'
+          : futuresResas.map(r => renderResaCard(r)).join('')}
+      </div>
+    </div>
+  `);
+}
+
+function renderResaCard(r) {
+  const icon = TERRAIN_ICON[r.terrain_type] || '🏟️';
+  const st   = STATUT_RESA[r.statut] || { label: r.statut, cls: 'pill-gray' };
+  const dateStr = new Date(r.date).toLocaleDateString('fr-FR',
+    { weekday:'short', day:'2-digit', month:'short' });
+  return `
+    <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem 1rem;border-bottom:1px solid var(--border)">
+      <div style="width:46px;height:46px;border-radius:12px;background:var(--primary-pale);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.9rem">${r.terrain_nom}</div>
+        <div style="font-size:.8rem;color:var(--text-2)">${dateStr} · ${String(r.heure_debut).slice(0,5)} – ${String(r.heure_fin).slice(0,5)}</div>
+        <div style="font-size:.78rem;color:var(--text-3);margin-top:1px">${r.nb_joueurs} joueur(s)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.375rem">
+        <span class="pill ${st.cls}">${st.label}</span>
+        ${r.statut === 'confirmee'
+          ? `<button class="btn btn-xs btn-ghost" onclick="showQRCode('${r.token_qr}',${JSON.stringify(r).replace(/'/g,"\\'")})" style="font-size:11px">📲 QR Code</button>`
+          : ''}
+        ${r.statut === 'confirmee'
+          ? `<button class="btn btn-xs" style="color:var(--danger);font-size:11px" onclick="annulerResa(${r.id})">✕ Annuler</button>`
+          : ''}
+      </div>
+    </div>`;
+}
+
+async function loadResaDispo() {
+  const terrain_id = document.getElementById('resa-type')?.value;
+  const date       = document.getElementById('resa-date')?.value;
+  const container  = document.getElementById('resa-creneaux');
+  if (!terrain_id || !date || !container) return;
+
+  container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-3)">Chargement...</div>';
+
+  const dispos = await GET(`/reservations/disponibilites?terrain_id=${terrain_id}&date=${date}`);
+  if (!dispos) return;
+
+  // Construire les créneaux d'1h
+  const reserved = dispos.map(d => d.heure_debut.slice(0,5));
+  const now = new Date();
+  const isToday = date === now.toISOString().split('T')[0];
+  const currentHour = now.getHours();
+
+  const slots = CRENEAUX.slice(0, -1).map(h => {
+    const hNum = parseInt(h);
+    const isPast = isToday && hNum <= currentHour;
+    const isTaken = reserved.includes(h);
+    return { h, hFin: CRENEAUX[CRENEAUX.indexOf(h)+1], isPast, isTaken };
+  });
+
+  container.innerHTML = `
+    <div style="font-size:.8rem;font-weight:600;color:var(--text-3);text-transform:uppercase;margin-bottom:.5rem">
+      Créneaux disponibles
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.375rem">
+      ${slots.map(s => `
+        <button onclick="${s.isTaken||s.isPast ? '' : `confirmerResa('${terrain_id}','${date}','${s.h}','${s.hFin}')`}"
+          style="padding:.5rem .25rem;border-radius:8px;border:1.5px solid ${
+            s.isTaken ? '#fee2e2' : s.isPast ? '#f0f0f0' : 'var(--primary)'};
+          background:${s.isTaken ? '#fee2e2' : s.isPast ? '#f9f9f9' : 'var(--primary-pale)'};
+          color:${s.isTaken ? '#dc2626' : s.isPast ? '#ccc' : 'var(--primary)'};
+          font-size:.8rem;font-weight:600;cursor:${s.isTaken||s.isPast?'not-allowed':'pointer'};
+          -webkit-tap-highlight-color:transparent">
+          ${s.h.slice(0,5)}${s.isTaken ? '<br><span style="font-size:.65rem">Réservé</span>' : s.isPast ? '<br><span style="font-size:.65rem">Passé</span>' : '<br><span style="font-size:.65rem">Libre</span>'}
+        </button>`).join('')}
+    </div>
+    <div style="display:flex;gap:1rem;margin-top:.625rem;font-size:.75rem">
+      <span style="color:var(--primary)">● Disponible</span>
+      <span style="color:#dc2626">● Réservé</span>
+      <span style="color:#ccc">● Passé</span>
+    </div>`;
+}
+
+function confirmerResa(terrain_id, date, hDebut, hFin) {
+  const dateLabel = new Date(date).toLocaleDateString('fr-FR',
+    { weekday:'long', day:'2-digit', month:'long' });
+  document.getElementById('confirm-resa-info').innerHTML =
+    `<strong>${hDebut} – ${hFin}</strong> le ${dateLabel}`;
+  document.getElementById('confirm-resa-terrain').value  = terrain_id;
+  document.getElementById('confirm-resa-date').value     = date;
+  document.getElementById('confirm-resa-debut').value    = hDebut;
+  document.getElementById('confirm-resa-fin').value      = hFin;
+  document.getElementById('confirm-resa-joueurs').value  = '2';
+  document.getElementById('confirm-resa-notes').value    = '';
+  openModal('modal-confirmer-resa');
+}
+
+async function submitResa() {
+  const body = {
+    terrain_id: document.getElementById('confirm-resa-terrain').value,
+    date:        document.getElementById('confirm-resa-date').value,
+    heure_debut: document.getElementById('confirm-resa-debut').value,
+    heure_fin:   document.getElementById('confirm-resa-fin').value,
+    nb_joueurs:  document.getElementById('confirm-resa-joueurs').value,
+    notes:       document.getElementById('confirm-resa-notes').value,
+  };
+  const result = await POST('/reservations', body);
+  if (!result) return;
+  closeModal('modal-confirmer-resa');
+  showToast('✅ Réservation confirmée !');
+  // Afficher le QR code immédiatement
+  await showQRCode(result.token_qr, result);
+  loadRReservations();
+}
+
+async function showQRCode(token, resa) {
+  // Remplir le modal QR
+  const r = typeof resa === 'string' ? JSON.parse(resa) : resa;
+  const dateLabel = r.dateLabel || new Date(r.date).toLocaleDateString('fr-FR',
+    { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  document.getElementById('qr-info').innerHTML = `
+    <div style="text-align:center;margin-bottom:1rem">
+      <div style="font-size:1.4rem">${TERRAIN_ICON[r.terrain_type]||'🏟️'}</div>
+      <div style="font-weight:700;font-size:1rem;margin:.25rem 0">${r.terrain_nom}</div>
+      <div style="font-size:.85rem;color:var(--text-2)">${dateLabel}</div>
+      <div style="font-size:.85rem;color:var(--text-2)">${String(r.heure_debut||'').slice(0,5)} – ${String(r.heure_fin||'').slice(0,5)}</div>
+      <div style="font-size:.8rem;color:var(--text-3);margin-top:.25rem">${r.prenom} ${r.nom_resident} · Lot ${r.lot}</div>
+    </div>`;
+  openModal('modal-qr-code');
+  await generateQR('qr-canvas', r.qr_data || JSON.stringify({ token, ...r }));
+  // Bouton partager natif (si disponible)
+  const shareBtn = document.getElementById('qr-share-btn');
+  if (shareBtn) {
+    shareBtn.style.display = navigator.share ? 'flex' : 'none';
+    shareBtn.onclick = () => shareQR(token, r);
+  }
+}
+
+async function shareQR(token, r) {
+  const text = `🏟️ Réservation Jasmine Park\n${TERRAIN_ICON[r.terrain_type]||''} ${r.terrain_nom}\n📅 ${new Date(r.date).toLocaleDateString('fr-FR')}\n⏰ ${String(r.heure_debut).slice(0,5)} – ${String(r.heure_fin).slice(0,5)}\n👤 ${r.prenom} ${r.nom_resident} (Lot ${r.lot})\n\n🔑 Code d'accès: ${token.slice(0,8).toUpperCase()}`;
+  try {
+    await navigator.share({ title: 'Réservation Jasmine Park', text });
+  } catch(e) {
+    // Copier dans le presse-papiers
+    await navigator.clipboard?.writeText(text);
+    showToast('Infos copiées dans le presse-papiers');
+  }
+}
+
+async function annulerResa(id) {
+  if (!confirm('Annuler cette réservation ?')) return;
+  const r = await fetch(`/api/reservations/${id}/annuler`, {
+    method:'PUT', headers:{'Authorization':'Bearer '+state.token}
+  });
+  if (r.ok) { showToast('Réservation annulée'); loadRReservations(); }
+  else showError('Impossible d\'annuler');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PAGE GESTIONNAIRE — Toutes les réservations
+// ══════════════════════════════════════════════════════════════════
+async function loadGReservations() {
+  const today = new Date().toISOString().split('T')[0];
+  const [resas, terrains] = await Promise.all([
+    GET(`/reservations?date=${today}`),
+    GET('/reservations/terrains')
+  ]);
+
+  const byTerrain = {};
+  (terrains||[]).forEach(t => { byTerrain[t.id] = []; });
+  (resas||[]).forEach(r => {
+    if (byTerrain[r.terrain_id]) byTerrain[r.terrain_id].push(r);
+  });
+
+  setPageContent('g-reservations', `
+    <div class="page-hdr">
+      <div class="page-hdr-left"><h1>🏟️ Réservations Terrains</h1><p>${(resas||[]).length} réservation(s) aujourd'hui</p></div>
+      <div class="hdr-actions">
+        <input type="date" class="form-control" id="gresa-date" value="${today}"
+          style="width:160px" onchange="reloadGResas()">
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem">
+      ${(terrains||[]).map(t => {
+        const tResas = byTerrain[t.id] || [];
+        return `
+        <div class="card">
+          <div class="card-hdr" style="background:${t.type==='padel'?'var(--primary-pale)':'#fef3c7'}">
+            <h3 style="font-size:.95rem">${TERRAIN_ICON[t.type]} ${t.nom}</h3>
+            <span class="pill ${tResas.length>0?'pill-green':'pill-gray'}" style="font-size:.75rem">
+              ${tResas.length}/${(t.type==='padel'?12:12)} créneaux
+            </span>
+          </div>
+          <div style="padding:.5rem 0">
+            ${tResas.length === 0
+              ? '<div style="text-align:center;padding:1rem;color:var(--text-3);font-size:.85rem">Aucune réservation</div>'
+              : tResas.map(r => `
+                <div style="display:flex;align-items:center;gap:.625rem;padding:.5rem 1rem;border-bottom:1px solid var(--border)">
+                  <div style="flex:1">
+                    <div style="font-weight:600;font-size:.85rem">${String(r.heure_debut).slice(0,5)} – ${String(r.heure_fin).slice(0,5)}</div>
+                    <div style="font-size:.78rem;color:var(--text-2)">${r.prenom} ${r.nom_resident} · Lot ${r.lot}</div>
+                  </div>
+                  <span class="pill ${STATUT_RESA[r.statut]?.cls||'pill-gray'}" style="font-size:.7rem">${STATUT_RESA[r.statut]?.label||r.statut}</span>
+                  ${r.statut==='confirmee'
+                    ? `<button class="btn-icon" onclick="annulerResaG(${r.id})" title="Annuler"><i class="fa-solid fa-xmark" style="color:var(--danger)"></i></button>`
+                    : ''}
+                </div>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `);
+}
+
+async function reloadGResas() {
+  const date = document.getElementById('gresa-date')?.value;
+  const resas = await GET(`/reservations${date?'?date='+date:''}`);
+  if (resas) loadGReservations();
+}
+
+async function annulerResaG(id) {
+  if (!confirm('Annuler cette réservation ?')) return;
+  const r = await fetch(`/api/reservations/${id}/annuler`,
+    { method:'PUT', headers:{'Authorization':'Bearer '+state.token} });
+  if (r.ok) { showToast('Réservation annulée'); loadGReservations(); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PAGE SÉCURITÉ — Validation QR codes à l'entrée
+// ══════════════════════════════════════════════════════════════════
+async function loadGSecurite() {
+  const todayResas = await GET('/reservations/today') || [];
+  setPageContent('g-securite', `
+    <div class="page-hdr">
+      <div class="page-hdr-left"><h1>🛡️ Sécurité — Entrée Terrains</h1>
+        <p>${todayResas.length} réservation(s) aujourd'hui</p></div>
+    </div>
+
+    <!-- Scanner QR -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-hdr"><h3>📷 Valider un QR Code</h3></div>
+      <div style="padding:1rem">
+        <div style="display:flex;gap:.625rem">
+          <input class="form-control" id="qr-token-input" placeholder="Collez ou saisissez le token QR…" style="flex:1">
+          <button class="btn btn-primary" onclick="validerQRManuel()">
+            <i class="fa-solid fa-check"></i> Valider
+          </button>
+        </div>
+        <div id="qr-result" style="margin-top:.75rem"></div>
+      </div>
+    </div>
+
+    <!-- Liste du jour -->
+    <div class="card">
+      <div class="card-hdr"><h3>📋 Réservations du jour</h3></div>
+      <div>
+        ${todayResas.length === 0
+          ? '<div class="empty-state"><div class="empty-icon">🎾</div><p>Aucune réservation aujourd\'hui</p></div>'
+          : todayResas.map(r => `
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid var(--border)">
+              <div style="font-size:1.5rem">${TERRAIN_ICON[r.terrain_type]||'🏟️'}</div>
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:.9rem">${r.terrain_nom}</div>
+                <div style="font-size:.8rem;color:var(--text-2)">${String(r.heure_debut).slice(0,5)} – ${String(r.heure_fin).slice(0,5)} · ${r.prenom} ${r.nom_resident} (Lot ${r.lot})</div>
+              </div>
+              <span class="pill ${STATUT_RESA[r.statut]?.cls||'pill-gray'}">${STATUT_RESA[r.statut]?.label||r.statut}</span>
+              ${r.statut==='confirmee'
+                ? `<button class="btn btn-sm btn-primary" onclick="validerResaDirecte(${r.id},'${r.token_qr}')">✓ Valider</button>`
+                : ''}
+            </div>`).join('')}
+      </div>
+    </div>
+  `);
+}
+
+async function validerQRManuel() {
+  const token = document.getElementById('qr-token-input')?.value?.trim();
+  if (!token) return showError('Entrez un token QR');
+  await validerToken(token);
+}
+
+async function validerResaDirecte(id, token) {
+  await validerToken(token);
+}
+
+async function validerToken(token) {
+  const res = await fetch('/api/reservations/valider', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.token},
+    body: JSON.stringify({ token })
+  });
+  const data = await res.json();
+  const el = document.getElementById('qr-result');
+  if (!el) return;
+  if (res.ok && data.success) {
+    const r = data.reservation;
+    el.innerHTML = `
+      <div style="background:#d1fae5;border:2px solid #10b981;border-radius:12px;padding:1rem;text-align:center">
+        <div style="font-size:2rem">✅</div>
+        <div style="font-weight:700;color:#065f46;font-size:1.1rem">ACCÈS AUTORISÉ</div>
+        <div style="margin-top:.5rem;font-size:.9rem;color:#065f46">
+          ${TERRAIN_ICON[r.terrain_type]||''} ${r.terrain_nom}<br>
+          <strong>${r.prenom} ${r.nom_resident}</strong> · Lot ${r.lot}<br>
+          ${String(r.heure_debut).slice(0,5)} – ${String(r.heure_fin).slice(0,5)}
+        </div>
+      </div>`;
+    showToast('✅ Accès autorisé !');
+    setTimeout(() => loadGSecurite(), 3000);
+  } else {
+    el.innerHTML = `
+      <div style="background:#fee2e2;border:2px solid #dc2626;border-radius:12px;padding:1rem;text-align:center">
+        <div style="font-size:2rem">❌</div>
+        <div style="font-weight:700;color:#991b1b;font-size:1rem">ACCÈS REFUSÉ</div>
+        <div style="font-size:.85rem;color:#991b1b;margin-top:.25rem">${data.error||'QR invalide'}</div>
+      </div>`;
+  }
+}
