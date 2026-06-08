@@ -637,6 +637,7 @@ button, [onclick], .btn, .nav-item, .close-modal {
           <div class="nav-item" onclick="showPage('r-ag')"><i class="fa-solid fa-users"></i> Assemblées Générales</div>
           <div class="nav-item" onclick="showPage('r-jardinage')"><i class="fa-solid fa-leaf" style="color:#27ae60"></i> Planning Jardinage</div>
           <div class="nav-item" onclick="showPage('r-reservations')"><i class="fa-solid fa-calendar-check" style="color:#e07b1a"></i> Réservation Terrains</div>
+          <div class="nav-item" onclick="showPage('r-qrcode')"><i class="fa-solid fa-qrcode" style="color:#7c3aed"></i> QR Code Visiteurs</div>
         </div>
         <div class="nav-section">
           <div class="nav-label">Compte</div>
@@ -644,6 +645,8 @@ button, [onclick], .btn, .nav-item, .close-modal {
         </div>
       </div>
     </div>
+    <!-- SECURITE -->
+    <div class="page" id="page-s-validation"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <!-- GESTIONNAIRE -->
     <div id="nav-gestionnaire" style="display:none">
       <div class="nav-scroll">
@@ -732,6 +735,7 @@ button, [onclick], .btn, .nav-item, .close-modal {
     <div class="page" id="page-r-ag"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-r-profil"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-r-reservations"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
+    <div class="page" id="page-r-qrcode"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <!-- GESTIONNAIRE -->
     <div class="page" id="page-g-dashboard"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
     <div class="page" id="page-g-comptabilite"><div class="loading-state"><i class="fa-solid fa-circle-notch"></i></div></div>
@@ -846,6 +850,21 @@ button, [onclick], .btn, .nav-item, .close-modal {
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-resident')">Annuler</button><button class="btn btn-primary" onclick="submitResident()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button></div>
   </div>
 </div>
+
+<!-- SECURITE -->
+<nav id="nav-securite" style="display:none">
+  <div class="nav-scroll">
+    <div class="nav-section">
+      <div class="nav-label">Sécurité</div>
+      <div class="nav-item" onclick="showPage('s-validation')"><i class="fa-solid fa-qrcode" style="color:var(--primary)"></i> Valider un QR Code</div>
+    </div>
+  </div>
+  <div id="sidebar-logout-s" style="padding:.875rem 1rem;border-top:1px solid var(--border)">
+    <button onclick="doLogout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:.625rem;padding:.7rem 1rem;border-radius:9px;background:#fee2e2;color:#dc2626;border:none;cursor:pointer;font-size:13px;font-weight:700">
+      <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
+    </button>
+  </div>
+</nav>
 
 <!-- AG -->
 <div class="modal-overlay" id="modal-ag-create">
@@ -1302,6 +1321,84 @@ button, [onclick], .btn, .nav-item, .close-modal {
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-qr-code')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ Modal Générer QR Visiteur ══ -->
+<div class="modal-overlay" id="modal-gen-qr">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-qrcode" style="color:#7c3aed"></i> Générer un QR Code visiteur</h3>
+      <button class="close-modal" onclick="closeModal('modal-gen-qr')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nom du visiteur <span style="color:var(--text-3)">(optionnel)</span></label>
+        <input class="form-control" id="qrv-nom" placeholder="Ex: Mohamed Alami, Livraison Amazon...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Motif de la visite</label>
+        <select class="form-control" id="qrv-motif">
+          <option value="visite">👤 Visite personnelle</option>
+          <option value="livraison">📦 Livraison / Colis</option>
+          <option value="maintenance">🔧 Prestataire / Maintenance</option>
+          <option value="famille">👨‍👩‍👧 Famille</option>
+          <option value="autre">🔹 Autre</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valide à partir du</label>
+          <input class="form-control" type="datetime-local" id="qrv-debut">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valide jusqu'au</label>
+          <input class="form-control" type="datetime-local" id="qrv-fin">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre d'entrées autorisées</label>
+        <select class="form-control" id="qrv-usages">
+          <option value="1">1 entrée (usage unique)</option>
+          <option value="2">2 entrées</option>
+          <option value="5">5 entrées</option>
+          <option value="99">Illimité (sur la période)</option>
+        </select>
+      </div>
+      <div style="background:#f3e8ff;border-radius:8px;padding:.75rem;font-size:.82rem;color:#6d28d9">
+        <i class="fa-solid fa-circle-info"></i> Le QR Code sera partageable avec votre visiteur. La sécurité le scannera à l'entrée.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-gen-qr')">Annuler</button>
+      <button class="btn btn-primary" onclick="genererQRVisiteur()" style="background:#7c3aed;border-color:#7c3aed">
+        <i class="fa-solid fa-qrcode"></i> Générer le QR Code
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal Afficher QR Visiteur ══ -->
+<div class="modal-overlay" id="modal-qr-visiteur">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-qrcode" style="color:#7c3aed"></i> QR Code d'accès visiteur</h3>
+      <button class="close-modal" onclick="closeModal('modal-qr-visiteur')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <div id="qrv-info-display"></div>
+      <div id="qrv-canvas" style="display:flex;justify-content:center;margin:1rem auto;padding:1rem;background:#fff;border-radius:14px;border:2px solid #e9d5ff;max-width:260px"></div>
+      <div style="background:#f3e8ff;border-radius:8px;padding:.75rem;font-size:.8rem;color:#6d28d9;margin-bottom:.75rem">
+        📲 Partagez ce QR Code avec votre visiteur.<br>La sécurité le scannera à l'entrée de la résidence.
+      </div>
+      <button id="qrv-share-btn" class="btn btn-primary" style="width:100%;background:#7c3aed;border-color:#7c3aed;margin-bottom:.5rem" onclick="partagerQRVisiteur()">
+        <i class="fa-solid fa-share-nodes"></i> Partager avec le visiteur
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-qr-visiteur')">Fermer</button>
     </div>
   </div>
 </div>
