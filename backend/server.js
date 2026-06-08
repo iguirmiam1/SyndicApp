@@ -30,6 +30,7 @@ app.use('/api/settings',      require('./routes/settings'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/push', require('./routes/push'));
+app.use('/api/reservations', require('./routes/reservations'));
 
 // Agenda — chargement sécurisé
 try {
