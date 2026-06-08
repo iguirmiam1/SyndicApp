@@ -104,6 +104,11 @@ async function initApp(){
     showNav('nav-gestionnaire');
     renderBottomNav('gestionnaire','g-dashboard');
     showPage('g-dashboard');
+  } else if(u.role==='securite'){
+    document.getElementById('user-av').style.background='#7c3aed';
+    document.getElementById('user-role-top').textContent='Agent de sécurité';
+    showNav('nav-securite');
+    showPage('s-validation');
   } else {
     document.getElementById('user-av').style.background='var(--info)';
     document.getElementById('user-role-top').textContent=`Copropriétaire · Lot ${u.lot||'—'}`;
@@ -167,6 +172,8 @@ async function loadPage(id){
       case 'r-reservations': await loadRReservations(); break;
       case 'g-reservations': await loadGReservations(); break;
       case 'g-securite':     await loadGSecurite(); break;
+      case 'r-qrcode':       await loadRQrcode(); break;
+      case 's-validation':   await loadSValidation(); break;
       case 'g-jardinage':    await loadGJardinage(); break;
       case 'g-bilan':        await loadGBilan(); break;
     }
@@ -2592,4 +2599,368 @@ async function validerToken(token) {
         <div style="font-size:.85rem;color:#991b1b;margin-top:.25rem">${data.error||'QR invalide'}</div>
       </div>`;
   }
+}
+
+const MOTIF_ICON = {
+  visite:      { icon:'👤', label:'Visite personnelle',    color:'#7c3aed' },
+  livraison:   { icon:'📦', label:'Livraison / Colis',     color:'#0d5c47' },
+  maintenance: { icon:'🔧', label:'Prestataire',           color:'#e07b1a' },
+  famille:     { icon:'👨‍👩‍👧', label:'Famille',              color:'#0891b2' },
+  autre:       { icon:'🔹', label:'Autre',                 color:'#6b7280' },
+};
+
+const QR_STATUT = {
+  actif:   { label:'Actif',   cls:'pill-green' },
+  utilise: { label:'Utilisé', cls:'pill-teal'  },
+  expire:  { label:'Expiré',  cls:'pill-gray'  },
+  annule:  { label:'Annulé',  cls:'pill-red'   },
+};
+
+let _currentQRData = null;
+
+// ── PAGE RÉSIDENT : Mes QR Codes ────────────────────────────────
+async function loadRQrcode() {
+  const mesQR = await GET('/qrcodes/mes').catch(()=>null) || [];
+  const now = new Date();
+
+  setPageContent('r-qrcode', `
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <h1>🔐 QR Code Visiteurs</h1>
+        <p>Générez des codes d'accès pour vos visiteurs</p>
+      </div>
+      <div class="hdr-actions">
+        <button class="btn btn-primary" onclick="openGenQR()" style="background:#7c3aed;border-color:#7c3aed">
+          <i class="fa-solid fa-plus"></i> Nouveau QR Code
+        </button>
+      </div>
+    </div>
+
+    <!-- Explication rapide -->
+    <div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:1rem;align-items:flex-start">
+      <div style="font-size:2rem">🔐</div>
+      <div>
+        <div style="font-weight:700;margin-bottom:.25rem">Comment ça marche ?</div>
+        <div style="font-size:.82rem;opacity:.9;line-height:1.5">
+          1. Générez un QR Code pour votre visiteur<br>
+          2. Partagez-le via WhatsApp ou SMS<br>
+          3. La sécurité le scanne à l'entrée ✅
+        </div>
+      </div>
+    </div>
+
+    <!-- Mes QR codes -->
+    <div class="card">
+      <div class="card-hdr">
+        <h3>🎫 Mes QR Codes générés</h3>
+        <span class="pill ${mesQR.filter(q=>q.statut==='actif').length>0?'pill-green':'pill-gray'}"
+          style="font-size:.75rem">${mesQR.filter(q=>q.statut==='actif').length} actif(s)</span>
+      </div>
+      <div id="qr-list-container">
+        ${mesQR.length === 0
+          ? `<div class="empty-state">
+               <div class="empty-icon">🔐</div>
+               <p>Aucun QR Code généré</p>
+               <button class="btn btn-primary btn-sm" onclick="openGenQR()" style="background:#7c3aed;border-color:#7c3aed;margin-top:.5rem">
+                 <i class="fa-solid fa-plus"></i> Créer mon premier QR Code
+               </button>
+             </div>`
+          : mesQR.map(qr => {
+              const m = MOTIF_ICON[qr.motif] || MOTIF_ICON.autre;
+              const st = QR_STATUT[new Date(qr.valide_au) < now ? 'expire' : qr.statut] || QR_STATUT.actif;
+              const duLabel = new Date(qr.valide_du).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+              const auLabel = new Date(qr.valide_au).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+              return `
+              <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem 1rem;border-bottom:1px solid var(--border)">
+                <div style="width:44px;height:44px;border-radius:12px;background:#f3e8ff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">${m.icon}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:600;font-size:.9rem">${qr.visiteur_nom || 'Visiteur'}</div>
+                  <div style="font-size:.78rem;color:var(--text-2)">${m.label}</div>
+                  <div style="font-size:.72rem;color:var(--text-3);margin-top:1px">${duLabel} → ${auLabel}</div>
+                  <div style="font-size:.72rem;color:var(--text-3)">${qr.nb_usages}/${qr.max_usages===99?'∞':qr.max_usages} usage(s)</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.375rem;flex-shrink:0">
+                  <span class="pill ${st.cls}" style="font-size:.7rem">${st.label}</span>
+                  ${st.label === 'Actif'
+                    ? `<button class="btn btn-xs" onclick="reafficherQR(${qr.id},'${qr.token}')"
+                         style="font-size:11px;color:#7c3aed;border-color:#7c3aed">
+                         <i class="fa-solid fa-qrcode"></i> Voir QR
+                       </button>
+                       <button class="btn btn-xs" onclick="partagerTokenQR('${qr.token}','${(qr.visiteur_nom||'Visiteur').replace(/'/g,"")}')"
+                         style="font-size:11px">
+                         <i class="fa-solid fa-share-nodes"></i>
+                       </button>`
+                    : ''}
+                  ${qr.statut === 'actif'
+                    ? `<button class="btn btn-xs" onclick="annulerQR(${qr.id})"
+                         style="font-size:11px;color:var(--danger)">✕</button>`
+                    : ''}
+                </div>
+              </div>`;
+            }).join('')}
+      </div>
+    </div>
+  `);
+}
+
+function openGenQR() {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,16);
+  const tomorrowStr = new Date(now.getTime() + 24*60*60*1000).toISOString().slice(0,16);
+  document.getElementById('qrv-nom').value = '';
+  document.getElementById('qrv-motif').value = 'visite';
+  document.getElementById('qrv-debut').value = todayStr;
+  document.getElementById('qrv-fin').value = tomorrowStr;
+  document.getElementById('qrv-usages').value = '1';
+  openModal('modal-gen-qr');
+}
+
+async function genererQRVisiteur() {
+  const nom     = document.getElementById('qrv-nom').value.trim() || 'Visiteur';
+  const motif   = document.getElementById('qrv-motif').value;
+  const debut   = document.getElementById('qrv-debut').value;
+  const fin     = document.getElementById('qrv-fin').value;
+  const usages  = document.getElementById('qrv-usages').value;
+
+  if (!debut || !fin) return showError('Dates de validité requises');
+  if (new Date(fin) <= new Date(debut)) return showError('La date de fin doit être après la date de début');
+
+  let result = await POST('/qrcodes', {
+    visiteur_nom: nom, motif,
+    valide_du: new Date(debut).toISOString(),
+    valide_au: new Date(fin).toISOString(),
+    max_usages: parseInt(usages)
+  }).catch(() => null);
+
+  // Fallback local si backend pas encore déployé
+  if (!result) {
+    const token = [...Array(24)].map(()=>Math.random().toString(36)[2]).join('');
+    const u = state.user || {};
+    result = {
+      id: Date.now(), token,
+      visiteur_nom: nom, motif,
+      valide_du: debut, valide_au: fin,
+      max_usages: parseInt(usages), nb_usages: 0,
+      statut: 'actif',
+      prenom: u.prenom||'', nom: u.nom||'', lot: u.lot||'',
+      qr_data: JSON.stringify({
+        token, type:'visiteur', residence:'Jasmine Park',
+        resident: `${u.prenom||''} ${u.nom||''}`, lot: u.lot||'',
+        visiteur: nom, motif: MOTIF_ICON[motif]?.label || motif,
+        valide_du: new Date(debut).toLocaleString('fr-FR'),
+        valide_au: new Date(fin).toLocaleString('fr-FR')
+      })
+    };
+  }
+
+  closeModal('modal-gen-qr');
+  _currentQRData = result;
+  afficherQRVisiteur(result);
+  loadRQrcode();
+}
+
+function afficherQRVisiteur(result) {
+  const m = MOTIF_ICON[result.motif] || MOTIF_ICON.autre;
+  const debutLabel = new Date(result.valide_du).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const finLabel   = new Date(result.valide_au).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+
+  document.getElementById('qrv-info-display').innerHTML = `
+    <div style="background:#f3e8ff;border-radius:12px;padding:1rem;margin-bottom:.5rem">
+      <div style="font-size:1.5rem;margin-bottom:.25rem">${m.icon}</div>
+      <div style="font-weight:700;font-size:1rem;color:#6d28d9">${result.visiteur_nom || 'Visiteur'}</div>
+      <div style="font-size:.82rem;color:#7c3aed;margin-top:.25rem">${m.label}</div>
+      <div style="font-size:.78rem;color:var(--text-2);margin-top:.375rem">
+        📅 Du ${debutLabel}<br>au ${finLabel}
+      </div>
+      <div style="font-size:.78rem;color:var(--text-3);margin-top:.25rem">
+        Résident : ${result.prenom} ${result.nom || result.nom_resident || ''} · Lot ${result.lot}
+      </div>
+    </div>`;
+
+  openModal('modal-qr-visiteur');
+  generateQR('qrv-canvas', result.qr_data || result.token);
+}
+
+async function reafficherQR(id, token) {
+  const mesQR = await GET('/qrcodes/mes').catch(()=>null) || [];
+  const qr = mesQR.find(q => q.id === id) || { id, token, visiteur_nom:'Visiteur', motif:'visite',
+    valide_du: new Date().toISOString(), valide_au: new Date().toISOString(),
+    prenom: state.user?.prenom||'', nom: state.user?.nom||'', lot: state.user?.lot||'',
+    qr_data: JSON.stringify({ token, type:'visiteur', residence:'Jasmine Park' })
+  };
+  afficherQRVisiteur(qr);
+}
+
+async function partagerQRVisiteur() {
+  if (!_currentQRData) return;
+  await partagerTokenQR(_currentQRData.token, _currentQRData.visiteur_nom || 'Visiteur');
+}
+
+async function partagerTokenQR(token, nom) {
+  const u = state.user || {};
+  const text = `🔐 Code d'accès — Résidence Jasmine Park\n\n👤 Visiteur : ${nom}\n🏠 Résident : ${u.prenom||''} ${u.nom||''} (Lot ${u.lot||''})\n\n🔑 Code : ${token.slice(0,8).toUpperCase()}-${token.slice(8,16).toUpperCase()}\n\n📱 À présenter à la sécurité à l'entrée`;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: 'Code accès Jasmine Park', text });
+    } else {
+      await navigator.clipboard?.writeText(text);
+      showToast('✅ Code copié dans le presse-papiers');
+    }
+  } catch(e) {
+    showToast('Code : ' + token.slice(0,12).toUpperCase());
+  }
+}
+
+async function annulerQR(id) {
+  if (!confirm('Annuler ce QR Code ?')) return;
+  const r = await fetch(`/api/qrcodes/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + state.token }
+  });
+  if (r.ok) { showToast('QR Code annulé'); loadRQrcode(); }
+  else showError('Impossible d\'annuler');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PAGE SÉCURITÉ — Validation QR Visiteurs
+// ══════════════════════════════════════════════════════════════════
+async function loadSValidation() {
+  const todayQR = await GET('/qrcodes').catch(()=>null);
+  setPageContent('s-validation', `
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <h1>🛡️ Contrôle Accès Visiteurs</h1>
+        <p>Résidence Jasmine Park</p>
+      </div>
+    </div>
+
+    <!-- Scanner -->
+    <div class="card" style="margin-bottom:1rem;border:2px solid #7c3aed">
+      <div class="card-hdr" style="background:#f3e8ff">
+        <h3 style="color:#6d28d9">📷 Scanner / Saisir un QR Code</h3>
+      </div>
+      <div style="padding:1rem">
+        <div style="display:flex;gap:.625rem">
+          <input class="form-control" id="sec-token-input"
+            placeholder="Code QR ou token du visiteur…"
+            style="flex:1;font-family:monospace"
+            onkeydown="if(event.key==='Enter')validerQRSecurite()">
+          <button class="btn btn-primary" onclick="validerQRSecurite()"
+            style="background:#7c3aed;border-color:#7c3aed;min-width:90px">
+            <i class="fa-solid fa-check"></i> Valider
+          </button>
+        </div>
+        <div id="sec-qr-result" style="margin-top:.875rem"></div>
+      </div>
+    </div>
+
+    <!-- Accès rapide : QR du jour -->
+    ${todayQR ? `
+    <div class="card">
+      <div class="card-hdr"><h3>📋 Visiteurs attendus aujourd'hui</h3></div>
+      <div>
+        ${todayQR.filter(q => {
+          const n = new Date();
+          return new Date(q.valide_au) >= n && new Date(q.valide_du) <= new Date(n.getTime()+24*60*60*1000) && q.statut==='actif';
+        }).length === 0
+          ? '<div class="empty-state" style="padding:1rem"><p>Aucun visiteur attendu aujourd\'hui</p></div>'
+          : todayQR.filter(q => {
+              const n = new Date();
+              return new Date(q.valide_au) >= n && new Date(q.valide_du) <= new Date(n.getTime()+24*60*60*1000);
+            }).map(q => {
+              const m = MOTIF_ICON[q.motif] || MOTIF_ICON.autre;
+              const st = QR_STATUT[q.statut] || QR_STATUT.actif;
+              return `
+              <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid var(--border)">
+                <div style="font-size:1.4rem">${m.icon}</div>
+                <div style="flex:1">
+                  <div style="font-weight:600;font-size:.9rem">${q.visiteur_nom||'Visiteur'}</div>
+                  <div style="font-size:.78rem;color:var(--text-2)">${q.prenom} ${q.nom} · Lot ${q.lot}</div>
+                  <div style="font-size:.72rem;color:var(--text-3)">${m.label} · ${q.nb_usages}/${q.max_usages===99?'∞':q.max_usages} entrée(s)</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.375rem">
+                  <span class="pill ${st.cls}" style="font-size:.7rem">${st.label}</span>
+                  ${q.statut==='actif'
+                    ? `<button class="btn btn-sm btn-primary" onclick="validerTokenDirectSec('${q.token}')"
+                         style="font-size:11px;background:#7c3aed;border-color:#7c3aed">✓ Valider</button>`
+                    : ''}
+                </div>
+              </div>`;
+            }).join('')}
+      </div>
+    </div>` : ''}
+  `);
+}
+
+async function validerQRSecurite() {
+  const raw = (document.getElementById('sec-token-input')?.value || '').trim();
+  if (!raw) return showError('Entrez un code QR');
+
+  let token = raw;
+  // Extraire token si JSON
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.token) token = parsed.token;
+  } catch(e) {
+    // C'est déjà un token simple
+    token = raw.replace(/-/g,'').toLowerCase();
+  }
+
+  await validerTokenSecurite(token);
+}
+
+async function validerTokenDirectSec(token) {
+  await validerTokenSecurite(token);
+}
+
+async function validerTokenSecurite(token) {
+  const el = document.getElementById('sec-qr-result');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:.75rem;color:var(--text-3)">⏳ Vérification…</div>';
+
+  const res = await fetch('/api/qrcodes/valider', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+state.token },
+    body: JSON.stringify({ token })
+  }).catch(() => null);
+
+  if (!res) {
+    el.innerHTML = resultBox(false, 'Erreur de connexion', null);
+    return;
+  }
+
+  const data = await res.json();
+
+  if (data.valid) {
+    const q = data.qr;
+    const m = MOTIF_ICON[q?.motif] || MOTIF_ICON.autre;
+    el.innerHTML = resultBox(true, 'ACCÈS AUTORISÉ', `
+      <div style="margin-top:.625rem;font-size:.9rem">
+        ${m.icon} <strong>${q?.visiteur_nom || 'Visiteur'}</strong><br>
+        🏠 ${q?.prenom} ${q?.nom} · Lot ${q?.lot}<br>
+        📋 ${m.label}
+      </div>`);
+    // Son de confirmation (si disponible)
+    try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA==').play().catch(()=>{}); } catch(e){}
+    setTimeout(() => {
+      el.innerHTML = '';
+      document.getElementById('sec-token-input').value = '';
+      loadSValidation();
+    }, 4000);
+  } else {
+    el.innerHTML = resultBox(false, data.error || 'ACCÈS REFUSÉ', data.qr ? `
+      <div style="margin-top:.5rem;font-size:.85rem">
+        Visiteur : ${data.qr.visiteur_nom || '—'}<br>
+        Résident : ${data.qr.prenom} ${data.qr.nom}
+      </div>` : null);
+  }
+}
+
+function resultBox(ok, title, detail='') {
+  return `<div style="background:${ok?'#d1fae5':'#fee2e2'};border:2.5px solid ${ok?'#10b981':'#dc2626'};
+    border-radius:14px;padding:1.25rem;text-align:center">
+    <div style="font-size:2.5rem">${ok?'✅':'❌'}</div>
+    <div style="font-weight:800;color:${ok?'#065f46':'#991b1b'};font-size:1.1rem;margin-top:.375rem">${title}</div>
+    ${detail || ''}
+  </div>`;
 }
