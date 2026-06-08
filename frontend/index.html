@@ -1228,5 +1228,77 @@ button, [onclick], .btn, .nav-item, .close-modal {
 <button class="fab" style="display:none!important"><i class="fa-solid fa-plus"></i></button>
 <div class="toast" id="toast"><i class="fa-solid fa-circle-check" id="toast-icon"></i><span id="toast-msg"></span></div>
 <script src="app.js"></script>
+
+<!-- ══ Modal Confirmer Réservation ══ -->
+<div class="modal-overlay" id="modal-confirmer-resa">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-calendar-check" style="color:var(--primary)"></i> Confirmer la réservation</h3>
+      <button class="close-modal" onclick="closeModal('modal-confirmer-resa')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="confirm-resa-terrain">
+      <input type="hidden" id="confirm-resa-date">
+      <input type="hidden" id="confirm-resa-debut">
+      <input type="hidden" id="confirm-resa-fin">
+
+      <div style="background:var(--primary-pale);border-radius:10px;padding:.875rem;margin-bottom:1rem;text-align:center">
+        <div style="font-size:.8rem;color:var(--text-3);text-transform:uppercase;font-weight:600;margin-bottom:.25rem">Créneau sélectionné</div>
+        <div id="confirm-resa-info" style="font-size:1rem;color:var(--primary);font-weight:600"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre de joueurs</label>
+          <select class="form-control" id="confirm-resa-joueurs">
+            <option value="2">2 joueurs</option>
+            <option value="3">3 joueurs</option>
+            <option value="4">4 joueurs</option>
+            <option value="6">6 joueurs</option>
+            <option value="10">10 joueurs</option>
+            <option value="14">14 joueurs (équipes)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optionnel)</label>
+        <input class="form-control" id="confirm-resa-notes" placeholder="Ex: Visiteurs invités, équipement nécessaire...">
+      </div>
+      <div style="background:#fef3c7;border-radius:8px;padding:.75rem;font-size:.8rem;color:#92400e">
+        <i class="fa-solid fa-circle-info"></i> Un QR Code sera généré après confirmation. Partagez-le avec vos visiteurs pour l'accès.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-confirmer-resa')">Annuler</button>
+      <button class="btn btn-primary" onclick="submitResa()">
+        <i class="fa-solid fa-calendar-check"></i> Confirmer & Générer QR
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal QR Code ══ -->
+<div class="modal-overlay" id="modal-qr-code">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-qrcode" style="color:var(--primary)"></i> Votre QR Code d'accès</h3>
+      <button class="close-modal" onclick="closeModal('modal-qr-code')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <div id="qr-info"></div>
+      <div id="qr-canvas" style="display:flex;justify-content:center;margin:1rem 0;padding:1rem;background:#fff;border-radius:12px;border:2px solid var(--border)"></div>
+      <div style="font-size:.78rem;color:var(--text-3);margin-bottom:.75rem">
+        Montrez ce QR Code à la sécurité à l'entrée.<br>Valable uniquement pour le créneau réservé.
+      </div>
+      <button id="qr-share-btn" class="btn btn-primary" style="width:100%;display:none">
+        <i class="fa-solid fa-share-nodes"></i> Partager avec mes visiteurs
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-qr-code')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
