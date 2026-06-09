@@ -1666,10 +1666,8 @@ async function loadGJardinage(){
 }
 
 async function openJardinageModal(villaPreset){
-  // Ouvrir le modal immédiatement
   openModal('modal-jardinage');
 
-  // Initialiser les champs
   const selEl  = document.getElementById('jard-villa-select');
   const dateEl = document.getElementById('jard-date');
   const hEl    = document.getElementById('jard-heure');
@@ -1677,46 +1675,58 @@ async function openJardinageModal(villaPreset){
   const prestEl= document.getElementById('jard-prestataire');
   const notifEl= document.getElementById('jard-notifier');
 
-  if(selEl)  selEl.innerHTML = '<option value="">⏳ Chargement…</option>';
   if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
   if(hEl)    hEl.value = '09:00';
   if(descEl) descEl.value = '';
   if(prestEl)prestEl.value = '';
   if(notifEl)notifEl.checked = true;
 
-  // Charger les résidents depuis l'API
-  if(!window._jardinage_villas || window._jardinage_villas.length === 0) {
-    try {
-      const res = await GET('/residents');
-      if(res && res.length > 0) {
-        window._jardinage_villas = res
-          .filter(r => r.lot)
-          .map(r => ({ lot:r.lot, prenom:r.prenom||'', nom:r.nom||'' }));
-      }
-    } catch(e) { console.warn('[Jardinage] residents:', e); }
-  }
-
-  // Peupler le select
-  if(selEl){
-    const villas = window._jardinage_villas || [];
-    const opts = ['<option value="">-- Choisir --</option>'];
-    if(villas.length === 0){
-      ['V07','V10','V24','V31'].forEach(lot =>
-        opts.push('<option value="'+lot+'">'+lot+'</option>')
-      );
-    } else {
+  // Peupler le select IMMÉDIATEMENT avec les données disponibles
+  function buildSelect(villas){
+    if(!selEl) return;
+    const opts = ['<option value="">-- Choisir une villa --</option>'];
+    if(villas.length > 0){
       villas.forEach(v => {
         const lbl = v.lot + (v.prenom ? ' — '+v.prenom+' '+v.nom : '');
         opts.push('<option value="'+v.lot+'">'+lbl+'</option>');
       });
+    } else {
+      // Fallback avec les lots connus de Jasmine Park
+      ['V07 — Fadel Lahlou','V10 — Mustapha Iguirmia','V24 — Raby Boukouraych','V31 — Adnane Loukili']
+        .forEach(item => {
+          const lot = item.split(' — ')[0];
+          opts.push('<option value="'+lot+'">'+item+'</option>');
+        });
     }
-    opts.push('<optgroup label="Espaces partagés">');
-    ['Parc central','Espaces communs','Entrée principale','Parking','Piscine'].forEach(z =>
-      opts.push('<option value="'+z+'">'+z+'</option>')
-    );
+    opts.push('<optgroup label="─── Espaces partagés ───">');
+    ['🌳 Parc central','🌿 Espaces communs','🚪 Entrée principale','🅿️ Parking','🏊 Piscine']
+      .forEach(z => {
+        const val = z.replace(/^[^\s]+\s/, '');
+        opts.push('<option value="'+val+'">'+z+'</option>');
+      });
     opts.push('</optgroup>');
     selEl.innerHTML = opts.join('');
     if(villaPreset) selEl.value = villaPreset;
+  }
+
+  // Si les villas sont déjà en mémoire, afficher immédiatement
+  if(window._jardinage_villas && window._jardinage_villas.length > 0){
+    buildSelect(window._jardinage_villas);
+  } else {
+    // Essayer de charger depuis l'API
+    if(selEl) selEl.innerHTML = '<option value="">⏳ Chargement…</option>';
+    try {
+      const res = await GET('/residents');
+      if(res && res.length > 0){
+        window._jardinage_villas = res.filter(r=>r.lot).map(r=>({lot:r.lot,prenom:r.prenom||'',nom:r.nom||''}));
+        buildSelect(window._jardinage_villas);
+      } else {
+        buildSelect([]);
+      }
+    } catch(e){
+      console.warn('[Jardinage]', e);
+      buildSelect([]);
+    }
   }
 }
 
