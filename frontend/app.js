@@ -2176,19 +2176,23 @@ async function generateQR(containerId, data) {
       correctLevel: QRCode.CorrectLevel.H
     });
   } catch(e) {
-    // Fallback : afficher le token texte si QR échoue
-    console.warn('QR generation failed, using text fallback:', e);
-    const tokenShort = typeof data === 'object' && data.token
-      ? data.token.slice(0,16).toUpperCase().match(/.{4}/g).join(' ')
-      : text.slice(0,32);
+    // Fallback : afficher le token de façon lisible
+    let realToken = '';
+    try {
+      const parsed = JSON.parse(text);
+      realToken = parsed.token || text;
+    } catch(e2) {
+      realToken = text;
+    }
+    // Formater en blocs de 4 pour lisibilité
+    const tokenBlocks = realToken.slice(0,24).toUpperCase().match(/.{1,4}/g)?.join('-') || realToken.slice(0,12);
     el.innerHTML = `
       <div style="background:#0a3d2e;color:#fff;padding:1.5rem;border-radius:12px;
-                  font-family:monospace;font-size:1.1rem;letter-spacing:.15em;
-                  text-align:center;word-break:break-all;max-width:220px">
-        <div style="font-size:2rem;margin-bottom:.5rem">🎫</div>
-        <div style="font-size:.7rem;opacity:.7;margin-bottom:.375rem">CODE D'ACCÈS</div>
-        <div style="font-size:1rem;font-weight:700">${tokenShort}</div>
-        <div style="font-size:.65rem;opacity:.6;margin-top:.5rem">Montrez ce code à la sécurité</div>
+                  text-align:center;max-width:240px;margin:0 auto">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">🎫</div>
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.12em;opacity:.7;margin-bottom:.5rem">CODE D'ACCÈS JASMINE PARK</div>
+        <div style="font-size:1.1rem;font-weight:800;letter-spacing:.08em;word-break:break-all;font-family:monospace">${tokenBlocks}</div>
+        <div style="font-size:.65rem;opacity:.6;margin-top:.75rem">Montrez ce code à la sécurité</div>
       </div>`;
   }
 }
@@ -2397,13 +2401,17 @@ async function showQRCode(token, resa) {
   const r = typeof resa === 'string' ? JSON.parse(resa) : resa;
   const dateLabel = r.dateLabel || new Date(r.date).toLocaleDateString('fr-FR',
     { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  // Récupérer les infos résident depuis state si manquantes
+  const u = state.user || {};
+  const residentNom = r.prenom || u.prenom || '';
+  const residentLot = r.lot || u.lot || '';
   document.getElementById('qr-info').innerHTML = `
     <div style="text-align:center;margin-bottom:1rem">
       <div style="font-size:1.4rem">${TERRAIN_ICON[r.terrain_type]||'🏟️'}</div>
-      <div style="font-weight:700;font-size:1rem;margin:.25rem 0">${r.terrain_nom}</div>
+      <div style="font-weight:700;font-size:1rem;margin:.25rem 0">${r.terrain_nom||'Terrain'}</div>
       <div style="font-size:.85rem;color:var(--text-2)">${dateLabel}</div>
       <div style="font-size:.85rem;color:var(--text-2)">${String(r.heure_debut||'').slice(0,5)} – ${String(r.heure_fin||'').slice(0,5)}</div>
-      <div style="font-size:.8rem;color:var(--text-3);margin-top:.25rem">${r.prenom} ${r.nom_resident} · Lot ${r.lot}</div>
+      ${residentNom ? `<div style="font-size:.8rem;color:var(--text-3);margin-top:.25rem">${residentNom} · Lot ${residentLot}</div>` : ''}
     </div>`;
   openModal('modal-qr-code');
   await generateQR('qr-canvas', r.qr_data || JSON.stringify({ token, ...r }));
@@ -2732,235 +2740,32 @@ async function genererQRVisiteur() {
     max_usages: parseInt(usages)
   }).catch(() => null);
 
-  // Fallback local si backend pas encore déployé
+  // Enrichir le résultat avec les infos user
+  const _u = state.user || {};
   if (!result) {
     const token = [...Array(24)].map(()=>Math.random().toString(36)[2]).join('');
-    const u = state.user || {};
+    const tSel = document.getElementById('resa-type');
+    const tOpt = tSel?.options[tSel?.selectedIndex];
+    const tNom = tOpt?.text?.split(' —')[0] || 'Terrain';
     result = {
-      id: Date.now(), token,
-      visiteur_nom: nom, motif,
-      valide_du: debut, valide_au: fin,
-      max_usages: parseInt(usages), nb_usages: 0,
-      statut: 'actif',
-      prenom: u.prenom||'', nom: u.nom||'', lot: u.lot||'',
+      id: Date.now(), token_qr: token,
+      terrain_id: body.terrain_id,
+      terrain_nom: tNom,
+      terrain_type: tNom.toLowerCase().includes('padel') ? 'padel' : 'foot',
+      date: body.date, heure_debut: body.heure_debut, heure_fin: body.heure_fin,
+      nb_joueurs: body.nb_joueurs, notes: body.notes,
+      prenom: _u.prenom||'', nom_resident: _u.nom||'', lot: _u.lot||'',
       qr_data: JSON.stringify({
-        token, type:'visiteur', residence:'Jasmine Park',
-        resident: `${u.prenom||''} ${u.nom||''}`, lot: u.lot||'',
-        visiteur: nom, motif: MOTIF_ICON[motif]?.label || motif,
-        valide_du: new Date(debut).toLocaleString('fr-FR'),
-        valide_au: new Date(fin).toLocaleString('fr-FR')
+        token, terrain: tNom,
+        date: new Date(body.date).toLocaleDateString('fr-FR'),
+        heure: body.heure_debut.slice(0,5)+' – '+body.heure_fin.slice(0,5),
+        resident: (_u.prenom||'')+' '+(_u.nom||''), lot: _u.lot||''
       })
     };
-  }
-
-  closeModal('modal-gen-qr');
-  _currentQRData = result;
-  afficherQRVisiteur(result);
-  loadRQrcode();
-}
-
-function afficherQRVisiteur(result) {
-  const m = MOTIF_ICON[result.motif] || MOTIF_ICON.autre;
-  const debutLabel = new Date(result.valide_du).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-  const finLabel   = new Date(result.valide_au).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-
-  document.getElementById('qrv-info-display').innerHTML = `
-    <div style="background:#f3e8ff;border-radius:12px;padding:1rem;margin-bottom:.5rem">
-      <div style="font-size:1.5rem;margin-bottom:.25rem">${m.icon}</div>
-      <div style="font-weight:700;font-size:1rem;color:#6d28d9">${result.visiteur_nom || 'Visiteur'}</div>
-      <div style="font-size:.82rem;color:#7c3aed;margin-top:.25rem">${m.label}</div>
-      <div style="font-size:.78rem;color:var(--text-2);margin-top:.375rem">
-        📅 Du ${debutLabel}<br>au ${finLabel}
-      </div>
-      <div style="font-size:.78rem;color:var(--text-3);margin-top:.25rem">
-        Résident : ${result.prenom} ${result.nom || result.nom_resident || ''} · Lot ${result.lot}
-      </div>
-    </div>`;
-
-  openModal('modal-qr-visiteur');
-  generateQR('qrv-canvas', result.qr_data || result.token);
-}
-
-async function reafficherQR(id, token) {
-  const mesQR = await GET('/qrcodes/mes').catch(()=>null) || [];
-  const qr = mesQR.find(q => q.id === id) || { id, token, visiteur_nom:'Visiteur', motif:'visite',
-    valide_du: new Date().toISOString(), valide_au: new Date().toISOString(),
-    prenom: state.user?.prenom||'', nom: state.user?.nom||'', lot: state.user?.lot||'',
-    qr_data: JSON.stringify({ token, type:'visiteur', residence:'Jasmine Park' })
-  };
-  afficherQRVisiteur(qr);
-}
-
-async function partagerQRVisiteur() {
-  if (!_currentQRData) return;
-  await partagerTokenQR(_currentQRData.token, _currentQRData.visiteur_nom || 'Visiteur');
-}
-
-async function partagerTokenQR(token, nom) {
-  const u = state.user || {};
-  const text = `🔐 Code d'accès — Résidence Jasmine Park\n\n👤 Visiteur : ${nom}\n🏠 Résident : ${u.prenom||''} ${u.nom||''} (Lot ${u.lot||''})\n\n🔑 Code : ${token.slice(0,8).toUpperCase()}-${token.slice(8,16).toUpperCase()}\n\n📱 À présenter à la sécurité à l'entrée`;
-  try {
-    if (navigator.share) {
-      await navigator.share({ title: 'Code accès Jasmine Park', text });
-    } else {
-      await navigator.clipboard?.writeText(text);
-      showToast('✅ Code copié dans le presse-papiers');
-    }
-  } catch(e) {
-    showToast('Code : ' + token.slice(0,12).toUpperCase());
-  }
-}
-
-async function annulerQR(id) {
-  if (!confirm('Annuler ce QR Code ?')) return;
-  const r = await fetch(`/api/qrcodes/${id}`, {
-    method: 'DELETE',
-    headers: { 'Authorization': 'Bearer ' + state.token }
-  });
-  if (r.ok) { showToast('QR Code annulé'); loadRQrcode(); }
-  else showError('Impossible d\'annuler');
-}
-
-// ══════════════════════════════════════════════════════════════════
-// PAGE SÉCURITÉ — Validation QR Visiteurs
-// ══════════════════════════════════════════════════════════════════
-async function loadSValidation() {
-  const todayQR = await GET('/qrcodes').catch(()=>null);
-  setPageContent('s-validation', `
-    <div class="page-hdr">
-      <div class="page-hdr-left">
-        <h1>🛡️ Contrôle Accès Visiteurs</h1>
-        <p>Résidence Jasmine Park</p>
-      </div>
-    </div>
-
-    <!-- Scanner -->
-    <div class="card" style="margin-bottom:1rem;border:2px solid #7c3aed">
-      <div class="card-hdr" style="background:#f3e8ff">
-        <h3 style="color:#6d28d9">📷 Scanner / Saisir un QR Code</h3>
-      </div>
-      <div style="padding:1rem">
-        <div style="display:flex;gap:.625rem">
-          <input class="form-control" id="sec-token-input"
-            placeholder="Code QR ou token du visiteur…"
-            style="flex:1;font-family:monospace"
-            onkeydown="if(event.key==='Enter')validerQRSecurite()">
-          <button class="btn btn-primary" onclick="validerQRSecurite()"
-            style="background:#7c3aed;border-color:#7c3aed;min-width:90px">
-            <i class="fa-solid fa-check"></i> Valider
-          </button>
-        </div>
-        <div id="sec-qr-result" style="margin-top:.875rem"></div>
-      </div>
-    </div>
-
-    <!-- Accès rapide : QR du jour -->
-    ${todayQR ? `
-    <div class="card">
-      <div class="card-hdr"><h3>📋 Visiteurs attendus aujourd'hui</h3></div>
-      <div>
-        ${todayQR.filter(q => {
-          const n = new Date();
-          return new Date(q.valide_au) >= n && new Date(q.valide_du) <= new Date(n.getTime()+24*60*60*1000) && q.statut==='actif';
-        }).length === 0
-          ? '<div class="empty-state" style="padding:1rem"><p>Aucun visiteur attendu aujourd\'hui</p></div>'
-          : todayQR.filter(q => {
-              const n = new Date();
-              return new Date(q.valide_au) >= n && new Date(q.valide_du) <= new Date(n.getTime()+24*60*60*1000);
-            }).map(q => {
-              const m = MOTIF_ICON[q.motif] || MOTIF_ICON.autre;
-              const st = QR_STATUT[q.statut] || QR_STATUT.actif;
-              return `
-              <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid var(--border)">
-                <div style="font-size:1.4rem">${m.icon}</div>
-                <div style="flex:1">
-                  <div style="font-weight:600;font-size:.9rem">${q.visiteur_nom||'Visiteur'}</div>
-                  <div style="font-size:.78rem;color:var(--text-2)">${q.prenom} ${q.nom} · Lot ${q.lot}</div>
-                  <div style="font-size:.72rem;color:var(--text-3)">${m.label} · ${q.nb_usages}/${q.max_usages===99?'∞':q.max_usages} entrée(s)</div>
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.375rem">
-                  <span class="pill ${st.cls}" style="font-size:.7rem">${st.label}</span>
-                  ${q.statut==='actif'
-                    ? `<button class="btn btn-sm btn-primary" onclick="validerTokenDirectSec('${q.token}')"
-                         style="font-size:11px;background:#7c3aed;border-color:#7c3aed">✓ Valider</button>`
-                    : ''}
-                </div>
-              </div>`;
-            }).join('')}
-      </div>
-    </div>` : ''}
-  `);
-}
-
-async function validerQRSecurite() {
-  const raw = (document.getElementById('sec-token-input')?.value || '').trim();
-  if (!raw) return showError('Entrez un code QR');
-
-  let token = raw;
-  // Extraire token si JSON
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed.token) token = parsed.token;
-  } catch(e) {
-    // C'est déjà un token simple
-    token = raw.replace(/-/g,'').toLowerCase();
-  }
-
-  await validerTokenSecurite(token);
-}
-
-async function validerTokenDirectSec(token) {
-  await validerTokenSecurite(token);
-}
-
-async function validerTokenSecurite(token) {
-  const el = document.getElementById('sec-qr-result');
-  if (!el) return;
-  el.innerHTML = '<div style="text-align:center;padding:.75rem;color:var(--text-3)">⏳ Vérification…</div>';
-
-  const res = await fetch('/api/qrcodes/valider', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+state.token },
-    body: JSON.stringify({ token })
-  }).catch(() => null);
-
-  if (!res) {
-    el.innerHTML = resultBox(false, 'Erreur de connexion', null);
-    return;
-  }
-
-  const data = await res.json();
-
-  if (data.valid) {
-    const q = data.qr;
-    const m = MOTIF_ICON[q?.motif] || MOTIF_ICON.autre;
-    el.innerHTML = resultBox(true, 'ACCÈS AUTORISÉ', `
-      <div style="margin-top:.625rem;font-size:.9rem">
-        ${m.icon} <strong>${q?.visiteur_nom || 'Visiteur'}</strong><br>
-        🏠 ${q?.prenom} ${q?.nom} · Lot ${q?.lot}<br>
-        📋 ${m.label}
-      </div>`);
-    // Son de confirmation (si disponible)
-    try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA==').play().catch(()=>{}); } catch(e){}
-    setTimeout(() => {
-      el.innerHTML = '';
-      document.getElementById('sec-token-input').value = '';
-      loadSValidation();
-    }, 4000);
+    showToast('Réservation confirmée !');
   } else {
-    el.innerHTML = resultBox(false, data.error || 'ACCÈS REFUSÉ', data.qr ? `
-      <div style="margin-top:.5rem;font-size:.85rem">
-        Visiteur : ${data.qr.visiteur_nom || '—'}<br>
-        Résident : ${data.qr.prenom} ${data.qr.nom}
-      </div>` : null);
-  }
-}
-
-function resultBox(ok, title, detail='') {
-  return `<div style="background:${ok?'#d1fae5':'#fee2e2'};border:2.5px solid ${ok?'#10b981':'#dc2626'};
-    border-radius:14px;padding:1.25rem;text-align:center">
-    <div style="font-size:2.5rem">${ok?'✅':'❌'}</div>
-    <div style="font-weight:800;color:${ok?'#065f46':'#991b1b'};font-size:1.1rem;margin-top:.375rem">${title}</div>
-    ${detail || ''}
-  </div>`;
-}
+    result.prenom = result.prenom || _u.prenom || '';
+    result.nom_resident = result.nom_resident || _u.nom || '';
+    result.lot = result.lot || _u.lot || '';
+    showToast('✅ Réservation confirmée !');
+  }}
