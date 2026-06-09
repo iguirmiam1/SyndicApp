@@ -1621,6 +1621,15 @@ async function loadRJardinage(){
 
 async function loadGJardinage(){
   const all=await GET('/incidents'); if(!all)return;
+  // Charger aussi les résidents pour le dropdown jardinage
+  try {
+    const res = await GET('/residents');
+    if(res && res.length > 0) {
+      window._jardinage_villas = res
+        .map(r=>({lot:r.lot||'',prenom:r.prenom||'',nom:r.nom||''}))
+        .filter(r=>r.lot);
+    }
+  } catch(e) {}
   const jardins=all.filter(i=>i.type==='Jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   setPageContent('g-jardinage',`
     <div class="page-hdr"><div class="page-hdr-left"><h1>Planning Jardinage</h1><p>${jardins.length} intervention(s) configurée(s)</p></div>
@@ -1668,14 +1677,33 @@ async function openJardinageModal(villaPreset){
       }
     } catch(e) { console.warn('Jardinage: cannot load residents', e); }
   }
+  // Fallback : si les villas ne sont pas chargées, charger maintenant
+  if (!window._jardinage_villas || window._jardinage_villas.length === 0) {
+    try {
+      const res = await GET('/residents');
+      if (res && res.length > 0) {
+        window._jardinage_villas = res
+          .map(r => ({ lot: r.lot||'', prenom: r.prenom||'', nom: r.nom||'' }))
+          .filter(r => r.lot);
+      }
+    } catch(e) {}
+  }
   const villas = window._jardinage_villas || [];
   const sel = document.getElementById('jard-villa-select');
   if(sel){
     const opts = ['<option value="">-- Choisir --</option>'];
-    villas.forEach(v => {
-      const lbl = v.lot + (v.prenom ? ' — ' + v.prenom + ' ' + v.nom : '');
-      opts.push('<option value="' + v.lot + '">' + lbl + '</option>');
-    });
+    // Afficher même sans résidents (label villa uniquement si inconnu)
+    if (villas.length === 0) {
+      // Lots par défaut Jasmine Park si API non disponible
+      ['V07','V10','V24','V31'].forEach(lot => {
+        opts.push('<option value="' + lot + '">' + lot + '</option>');
+      });
+    } else {
+      villas.forEach(v => {
+        const lbl = v.lot + (v.prenom ? ' — ' + v.prenom + ' ' + v.nom : '');
+        opts.push('<option value="' + v.lot + '">' + lbl + '</option>');
+      });
+    }
     opts.push('<optgroup label="Espaces partagés">');
     ['Parc central','Espaces communs','Entrée principale','Parking','Piscine'].forEach(z=>{
       opts.push('<option value="'+z+'">'+z+'</option>');
