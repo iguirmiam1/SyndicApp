@@ -1633,7 +1633,7 @@ async function loadGJardinage(){
   const jardins=all.filter(i=>i.type==='Jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   setPageContent('g-jardinage',`
     <div class="page-hdr"><div class="page-hdr-left"><h1>Planning Jardinage</h1><p>${jardins.length} intervention(s) configurée(s)</p></div>
-      <div class="hdr-actions"><button class="btn btn-primary" onclick="openModal('modal-jardinage')"><i class="fa-solid fa-plus"></i> Planifier une intervention</button></div>
+      <div class="hdr-actions"><button class="btn btn-primary" onclick="openJardinageModal()"><i class="fa-solid fa-plus"></i> Planifier une intervention</button></div>
     </div>
     <div class="card" style="background:linear-gradient(135deg,#1a7a52 0%,#27ae60 100%);border:none;color:#fff;padding:1.25rem">
       <div style="display:flex;align-items:center;gap:1rem">
@@ -1666,61 +1666,60 @@ async function loadGJardinage(){
 }
 
 async function openJardinageModal(villaPreset){
-  // Charger les résidents depuis l'API si pas encore fait
+  // Ouvrir le modal immédiatement
+  openModal('modal-jardinage');
+
+  // Initialiser les champs
+  const selEl  = document.getElementById('jard-villa-select');
+  const dateEl = document.getElementById('jard-date');
+  const hEl    = document.getElementById('jard-heure');
+  const descEl = document.getElementById('jard-desc');
+  const prestEl= document.getElementById('jard-prestataire');
+  const notifEl= document.getElementById('jard-notifier');
+
+  if(selEl)  selEl.innerHTML = '<option value="">⏳ Chargement…</option>';
+  if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  if(hEl)    hEl.value = '09:00';
+  if(descEl) descEl.value = '';
+  if(prestEl)prestEl.value = '';
+  if(notifEl)notifEl.checked = true;
+
+  // Charger les résidents depuis l'API
   if(!window._jardinage_villas || window._jardinage_villas.length === 0) {
     try {
-      const residents = await GET('/residents');
-      if(residents && residents.length > 0) {
-        window._jardinage_villas = residents.map(r => ({
-          lot: r.lot||'', prenom: r.prenom||'', nom: r.nom||'', id: r.id
-        })).filter(r => r.lot);
-      }
-    } catch(e) { console.warn('Jardinage: cannot load residents', e); }
-  }
-  // Fallback : si les villas ne sont pas chargées, charger maintenant
-  if (!window._jardinage_villas || window._jardinage_villas.length === 0) {
-    try {
       const res = await GET('/residents');
-      if (res && res.length > 0) {
+      if(res && res.length > 0) {
         window._jardinage_villas = res
-          .map(r => ({ lot: r.lot||'', prenom: r.prenom||'', nom: r.nom||'' }))
-          .filter(r => r.lot);
+          .filter(r => r.lot)
+          .map(r => ({ lot:r.lot, prenom:r.prenom||'', nom:r.nom||'' }));
       }
-    } catch(e) {}
+    } catch(e) { console.warn('[Jardinage] residents:', e); }
   }
-  const villas = window._jardinage_villas || [];
-  const sel = document.getElementById('jard-villa-select');
-  if(sel){
+
+  // Peupler le select
+  if(selEl){
+    const villas = window._jardinage_villas || [];
     const opts = ['<option value="">-- Choisir --</option>'];
-    // Afficher même sans résidents (label villa uniquement si inconnu)
-    if (villas.length === 0) {
-      // Lots par défaut Jasmine Park si API non disponible
-      ['V07','V10','V24','V31'].forEach(lot => {
-        opts.push('<option value="' + lot + '">' + lot + '</option>');
-      });
+    if(villas.length === 0){
+      ['V07','V10','V24','V31'].forEach(lot =>
+        opts.push('<option value="'+lot+'">'+lot+'</option>')
+      );
     } else {
       villas.forEach(v => {
-        const lbl = v.lot + (v.prenom ? ' — ' + v.prenom + ' ' + v.nom : '');
-        opts.push('<option value="' + v.lot + '">' + lbl + '</option>');
+        const lbl = v.lot + (v.prenom ? ' — '+v.prenom+' '+v.nom : '');
+        opts.push('<option value="'+v.lot+'">'+lbl+'</option>');
       });
     }
     opts.push('<optgroup label="Espaces partagés">');
-    ['Parc central','Espaces communs','Entrée principale','Parking','Piscine'].forEach(z=>{
-      opts.push('<option value="'+z+'">'+z+'</option>');
-    });
+    ['Parc central','Espaces communs','Entrée principale','Parking','Piscine'].forEach(z =>
+      opts.push('<option value="'+z+'">'+z+'</option>')
+    );
     opts.push('</optgroup>');
-    sel.innerHTML = opts.join('');
-    if(villaPreset) sel.value = villaPreset;
+    selEl.innerHTML = opts.join('');
+    if(villaPreset) selEl.value = villaPreset;
   }
-  document.getElementById('jard-date').value = new Date().toISOString().split('T')[0];
-  const h = document.getElementById('jard-heure');
-  if(h) h.value = '09:00';
-  ['jard-desc','jard-prestataire'].forEach(id => {
-    const el = document.getElementById(id); if(el) el.value = '';
-  });
-  const n = document.getElementById('jard-notifier'); if(n) n.checked = true;
-  openModal('modal-jardinage');
 }
+
 
 async function submitJardinage(){
   const sel = document.getElementById('jard-villa-select');
