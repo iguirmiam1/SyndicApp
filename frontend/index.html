@@ -581,6 +581,38 @@ button, [onclick], .btn, .nav-item, .close-modal {
   }
 }
 
+  
+/* ══ Masquer sidebar et nav pendant la page login ══ */
+body:not(.logged-in) #sidebar,
+body:not(.logged-in) nav[id^="nav-"],
+body:not(.logged-in) #bottom-nav {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+  
+/* ══ Bouton QR Code toujours visible ══ */
+#page-r-qrcode .hdr-actions,
+#page-r-qrcode .hdr-actions .btn {
+  display: flex !important;
+  visibility: visible !important;
+}
+@media (max-width: 768px) {
+  #page-r-qrcode .page-hdr {
+    flex-wrap: wrap !important;
+  }
+  #page-r-qrcode .hdr-actions {
+    width: 100% !important;
+    margin-top: .5rem !important;
+  }
+  #page-r-qrcode .hdr-actions .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 48px !important;
+    font-size: 1rem !important;
+  }
+}
+
   </style>
 </head>
 <body>
