@@ -2800,7 +2800,9 @@ async function partagerQRVisiteur() {
 
 async function partagerTokenQR(token, nom) {
   const u = state.user || {};
-  const text = `🔐 Code d'accès — Résidence Jasmine Park\n\n👤 Visiteur : ${nom}\n🏠 Résident : ${u.prenom||''} ${u.nom||''} (Lot ${u.lot||''})\n\n🔑 Code : ${token.slice(0,8).toUpperCase()}-${token.slice(8,16).toUpperCase()}\n\n📱 À présenter à la sécurité à l'entrée`;
+  // Formater le token complet en blocs de 6 pour lisibilité + validation
+  const tokenFull = token.toUpperCase().match(/.{1,6}/g)?.join('-') || token.toUpperCase();
+  const text = `🔐 Code d'accès — Résidence Jasmine Park\n\n👤 Visiteur : ${nom}\n🏠 Résident : ${u.prenom||''} ${u.nom||''} (Lot ${u.lot||''})\n\n🔑 Code : ${tokenFull}\n\n📱 À présenter à la sécurité à l'entrée`;
   try {
     if (navigator.share) {
       await navigator.share({ title: 'Code accès Jasmine Park', text });
@@ -2827,7 +2829,7 @@ async function annulerQR(id) {
 // PAGE SÉCURITÉ — Validation QR Visiteurs
 // ══════════════════════════════════════════════════════════════════
 async function loadSValidation() {
-  const todayQR = await GET('/qrcodes').catch(()=>null);
+  const todayQR = await GET('/qrcodes/today').catch(()=>null);
   setPageContent('s-validation', `
     <div class="page-hdr">
       <div class="page-hdr-left">
@@ -2903,11 +2905,9 @@ async function validerQRSecurite() {
   try {
     const parsed = JSON.parse(raw);
     if (parsed.token) token = parsed.token;
-  } catch(e) {
-    // C'est déjà un token simple
-    token = raw.replace(/-/g,'').toLowerCase();
-  }
-
+  } catch(e) {}
+  // Nettoyer : supprimer tirets, espaces, mettre en minuscules
+  token = token.replace(/[-\s]/g, '').toLowerCase();
   await validerTokenSecurite(token);
 }
 
