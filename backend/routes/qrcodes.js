@@ -7,6 +7,25 @@ const auth   = require('../middleware/auth');
 const { query } = require('../db');
 const crypto = require('crypto');
 
+// ── Email ─────────────────────────────────────────────────────
+let transporter = null;
+try {
+  const nodemailer = require('nodemailer');
+  if (process.env.SMTP_USER) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    });
+  }
+} catch(e) {}
+const sendMail = async (to, subject, html) => {
+  if (!transporter || !to) return;
+  try { await transporter.sendMail({ from: `"Syndic Jasmine Park" <${process.env.SMTP_USER}>`, to, subject, html }); }
+  catch(e) { console.warn('[QR] Mail failed:', e.message); }
+};
+
 // ── Auto-migration ────────────────────────────────────────────
 (async () => {
   try {
@@ -47,6 +66,23 @@ const authResident = (req, res, next) => {
     return res.status(403).json({ error: 'Accès refusé' });
   next();
 };
+
+// ── GET /today — QR actifs du jour (sécurité + gestionnaire) ──
+router.get('/today', auth, async (req, res) => {
+  if (!['gestionnaire','admin','securite'].includes(req.user.role))
+    return res.status(403).json({ error: 'Accès refusé' });
+  const now = new Date();
+  const { rows } = await query(
+    `SELECT q.*, u.prenom, u.nom, u.lot, u.telephone
+     FROM qr_visiteurs q
+     JOIN utilisateurs u ON u.id = q.resident_id
+     WHERE q.statut = 'actif'
+       AND q.valide_du <= NOW()
+       AND q.valide_au >= NOW()
+     ORDER BY q.valide_du`
+  );
+  res.json(rows);
+});
 
 // ── GET /mes — QR codes du résident connecté ──────────────────
 router.get('/mes', auth, async (req, res) => {
@@ -109,6 +145,33 @@ router.post('/', auth, async (req, res) => {
   const valide_au_label = new Date(valide_au).toLocaleDateString('fr-FR',
     { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
+  // Email de confirmation au résident
+  const tokenFormatted = token.toUpperCase().match(/.{1,6}/g)?.join('-') || token.toUpperCase();
+  const debutLabel = new Date(valide_du).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const finLabel = new Date(valide_au).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  sendMail(u.email,
+    `🔐 QR Code visiteur généré — ${visiteur_nom}`,
+    `<div style="font-family:Arial,sans-serif;max-width:500px">
+      <div style="background:#7c3aed;color:#fff;padding:1.25rem;border-radius:10px 10px 0 0;text-align:center">
+        <h2 style="margin:0">🔐 QR Code d'accès visiteur</h2>
+        <p style="margin:.4rem 0 0;opacity:.85">Résidence Jasmine Park</p>
+      </div>
+      <div style="padding:1.25rem;border:1px solid #e2e0d8;border-top:none;border-radius:0 0 10px 10px">
+        <p>Bonjour <strong>${u.prenom}</strong>,</p>
+        <p>Un code d'accès a été généré pour :</p>
+        <div style="background:#f3e8ff;border-radius:8px;padding:1rem;margin:1rem 0">
+          <div>👤 Visiteur : <strong>${visiteur_nom}</strong></div>
+          <div>📋 Motif : ${motif}</div>
+          <div>📅 Valide du ${debutLabel} au ${finLabel}</div>
+        </div>
+        <div style="background:#0a3d2e;color:#fff;padding:1rem;border-radius:8px;text-align:center;font-family:monospace;font-size:1.1rem;letter-spacing:.08em;margin:1rem 0">
+          🔑 <strong>${tokenFormatted}</strong>
+        </div>
+        <p style="font-size:.85rem;color:#666">Partagez ce code avec votre visiteur. La sécurité le demandera à l'entrée.</p>
+      </div>
+    </div>`
+  );
+
   res.json({
     ...qr,
     prenom: u.prenom, nom: u.nom, lot: u.lot,
@@ -128,15 +191,17 @@ router.post('/', auth, async (req, res) => {
 
 // ── POST /valider — Sécurité valide un QR ─────────────────────
 router.post('/valider', auth, async (req, res) => {
-  const { token } = req.body;
-  if (!token) return res.status(400).json({ error: 'Token requis' });
+  let { token } = req.body;
+  if (!token) return res.status(400).json({ valid: false, error: 'Token requis' });
+  // Normaliser : supprimer tirets/espaces, mettre en minuscules
+  const tokenNorm = token.replace(/[-\s]/g, '').toLowerCase();
 
   const { rows } = await query(
-    `SELECT q.*, u.prenom, u.nom, u.lot, u.telephone
+    `SELECT q.*, u.prenom, u.nom, u.lot, u.telephone, u.email as resident_email
      FROM qr_visiteurs q
      JOIN utilisateurs u ON u.id = q.resident_id
-     WHERE q.token = $1`,
-    [token]
+     WHERE LOWER(REPLACE(q.token, '-', '')) = $1`,
+    [tokenNorm]
   );
 
   if (!rows.length)
