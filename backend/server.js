@@ -21,6 +21,14 @@ app.use((req, res, next) => { console.log(`${new Date().toISOString()} ${req.met
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/dashboard',     require('./routes/dashboard'));
 app.use('/api/residents',     require('./routes/residents'));
+app.use('/api/push',          require('./routes/push'));
+app.use('/api/reservations',  require('./routes/reservations'));
+app.use('/api/qrcodes',       require('./routes/qrcodes'));
+app.get('/vapid-key.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  const key = process.env.VAPID_PUBLIC_KEY || '';
+  res.send('window.VAPID_PUBLIC_KEY="'+key+'";');
+});
 app.use('/api/charges',       require('./routes/charges'));
 app.use('/api/incidents',     require('./routes/incidents'));
 app.use('/api/documents',     require('./routes/documents'));
@@ -29,8 +37,6 @@ app.use('/api/ag',            require('./routes/ag'));
 app.use('/api/settings',      require('./routes/settings'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/push', require('./routes/push'));
-app.use('/api/reservations', require('./routes/reservations'));
 
 // Agenda — chargement sécurisé
 try {
