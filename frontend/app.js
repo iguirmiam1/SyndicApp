@@ -1575,10 +1575,17 @@ function extractJardDesc(desc){
   return m?m[1].trim():desc;
 }
 async function loadRJardinage(){
-  // Lire les interventions jardinage depuis les incidents de type Jardinage
   const all=await GET('/incidents'); if(!all)return;
-  const now=new Date();
-  const jardins=all.filter(i=>i.type==='Jardinage'||i.type==='jardinage').sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const lot = (state.user?.lot||'').toUpperCase().trim();
+  const jardins=all
+    .filter(i=>i.type==='Jardinage'||i.type==='jardinage')
+    .filter(i=>{
+      // Afficher si c'est mon lot OU espaces communs
+      const loc=(i.localisation||'').toUpperCase().trim();
+      const communList=['PARC CENTRAL','ESPACES COMMUNS','ENTRÉE PRINCIPALE','PARKING','PISCINE','ESPACES VERTS','COMMUN'];
+      return !lot || loc===lot || communList.some(c=>loc.includes(c));
+    })
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   const aVenir=jardins.filter(i=>i.statut!=='resolu'&&i.statut!=='ferme');
   const passes=jardins.filter(i=>i.statut==='resolu').slice(0,5);
   const typeIcon={tonte:'scissors',taille:'leaf',arrosage:'droplet',nettoyage:'broom',plantation:'seedling',traitement:'spray-can-sparkles'};
@@ -1752,9 +1759,35 @@ async function submitJardinage(){
     statut:'ouvert',
   };
   try{
-    await POST('/incidents',body);
-    showToast(' Intervention jardinage planifiée pour le '+dateLabel);
+    const incident = await POST('/incidents',body);
+    showToast('🌿 Intervention jardinage planifiée pour le '+dateLabel);
     closeModal('modal-jardinage');
+
+    // Envoyer notification email au résident concerné
+    const notifEl = document.getElementById('jard-notifier');
+    if(!notifEl || notifEl.checked){
+      try {
+        // Trouver le(s) résident(s) concerné(s)
+        const residents = window._jardinage_villas || [];
+        const communList = ['Parc central','Espaces communs','Entrée principale','Parking','Piscine'];
+        let residentIds = [];
+        if(communList.some(c => c.toLowerCase() === villa.toLowerCase())){
+          // Espaces communs : notifier tous
+          residentIds = residents.map(r=>r.id).filter(Boolean);
+        } else {
+          // Villa spécifique : trouver l'ID
+          const found = residents.find(r => r.lot === villa);
+          if(found?.id) residentIds = [found.id];
+        }
+        await POST('/notifications/jardinage', {
+          villa, date, dateLabel, heure: heure||'', heureLabel: heureLabel||'',
+          description: desc||'Intervention jardinage',
+          prestataire: prest,
+          resident_ids: residentIds,
+          incident_id: incident?.id
+        });
+      } catch(ne) { console.warn('Notif jardinage:', ne); }
+    }
     ['jard-villa','jard-date','jard-desc','jard-prestataire'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     loaded.delete('g-jardinage');loaded.delete('r-jardinage');
     loadGJardinage();
