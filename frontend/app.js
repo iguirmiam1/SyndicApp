@@ -1725,14 +1725,14 @@ async function submitJardinage(){
 }
 
 // ── Admin Actions ─────────────────────────────────────────
-function openUserModal(user){
+function openUserModal(user, defaultRole='resident'){
   document.getElementById('modal-user-title').innerHTML=`<i class="fa-solid fa-user-${user?'edit':'plus'}" style="color:var(--primary)"></i> ${user?'Modifier':'Nouvel'} utilisateur`;
   document.getElementById('au-id').value=user?.id||'';
   document.getElementById('au-prenom').value=user?.prenom||'';
   document.getElementById('au-nom').value=user?.nom||'';
   document.getElementById('au-email').value=user?.email||'';
   document.getElementById('au-password').value='';
-  document.getElementById('au-role').value=user?.role||'resident';
+  document.getElementById('au-role').value=user?.role||defaultRole;
   document.getElementById('au-lot').value=user?.lot||'';
   document.getElementById('au-tantiemes').value=user?.tantiemes||'';
   document.getElementById('au-tel').value=user?.telephone||'';
