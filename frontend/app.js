@@ -52,7 +52,6 @@ async function doLogin() {
     if(!data)return;
     state.token=data.token; state.user=data.user;
     localStorage.setItem('sp_token',data.token);
-    document.body.classList.add('logged-in');
     initApp();
   } catch(e){
     document.getElementById('login-error-msg').textContent=e.error||'Identifiants incorrects.';
@@ -62,7 +61,6 @@ async function doLogin() {
 document.getElementById('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 function doLogout(){
-  document.body.classList.remove('logged-in');
   localStorage.removeItem('sp_token'); state.token=null; state.user=null; loaded.clear();
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
