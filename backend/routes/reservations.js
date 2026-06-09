@@ -7,6 +7,30 @@ const auth   = require('../middleware/auth');
 const { query } = require('../db');
 const crypto = require('crypto');
 
+// ── Notification email ──────────────────────────────────
+let transporter = null;
+try {
+  const nodemailer = require('nodemailer');
+  if (process.env.SMTP_USER) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    });
+  }
+} catch(e) { console.warn('[Reservations] Nodemailer not available'); }
+
+const sendResaEmail = async (to, subject, html) => {
+  if (!transporter || !to) return;
+  try {
+    await transporter.sendMail({
+      from: `"Syndic Jasmine Park" <${process.env.SMTP_USER}>`,
+      to, subject, html
+    });
+  } catch(e) { console.warn('[Reservations] Email failed:', e.message); }
+};
+
 // ── Auto-migration ─────────────────────────────────────────
 async function migrate() {
   await query(`
@@ -157,6 +181,26 @@ router.post('/', auth, async (req, res) => {
   const { rows: terrain } = await query(`SELECT * FROM terrains WHERE id=$1`, [terrain_id]);
   const dateLabel = new Date(date).toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
 
+  const emailHtml = `
+    <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto">
+      <div style="background:#0d5c47;color:#fff;padding:1.5rem;border-radius:10px 10px 0 0;text-align:center">
+        <h2 style="margin:0">🏟️ Réservation Confirmée</h2>
+        <p style="margin:.5rem 0 0;opacity:.85">Résidence Jasmine Park</p>
+      </div>
+      <div style="padding:1.5rem;border:1px solid #e2e0d8;border-top:none;border-radius:0 0 10px 10px">
+        <p>Bonjour <strong>${req.user.prenom}</strong>,</p>
+        <p>Votre réservation est confirmée :</p>
+        <div style="background:#f5f4ee;border-radius:8px;padding:1rem;margin:1rem 0">
+          <div>🏟️ <strong>${terrain[0]?.nom}</strong></div>
+          <div>📅 <strong>${dateLabel}</strong></div>
+          <div>⏰ <strong>${heure_debut.slice(0,5)} – ${heure_fin.slice(0,5)}</strong></div>
+          <div>👥 ${nb_joueurs} joueur(s)</div>
+        </div>
+        <p style="font-size:.85rem;color:#666">Présentez votre QR Code à l'entrée du terrain.</p>
+      </div>
+    </div>`;
+  sendResaEmail(req.user.email, `✅ Réservation ${terrain[0]?.nom} – ${dateLabel}`, emailHtml);
+
   res.json({
     ...reservation,
     terrain_nom: terrain[0]?.nom,
@@ -218,6 +262,17 @@ router.put('/:id/annuler', auth, async (req, res) => {
     [req.params.id, req.user.id, req.user.role]
   );
   if (!rows.length) return res.status(404).json({ error: 'Réservation introuvable' });
+  // Email annulation
+  try {
+    const resa = rows[0];
+    const { rows: [u] } = await query(`SELECT email, prenom FROM utilisateurs WHERE id=$1`, [resa.resident_id]);
+    if (u?.email) {
+      sendResaEmail(u.email,
+        '❌ Réservation annulée – Jasmine Park',
+        `<p>Bonjour ${u.prenom},</p><p>Votre réservation du <strong>${resa.date}</strong> (${String(resa.heure_debut).slice(0,5)} – ${String(resa.heure_fin).slice(0,5)}) a été annulée.</p>`
+      );
+    }
+  } catch(e) {}
   res.json(rows[0]);
 });
 
